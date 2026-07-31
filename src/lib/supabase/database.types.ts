@@ -185,6 +185,49 @@ export type Database = {
         }
         Returns: undefined
       }
+      create_dispatch: {
+        Args: {
+          p_dispatch_date: string
+          p_client_id: string | null
+          p_origin: string
+          p_destination: string
+          p_pallet_count: number | null
+          p_vehicle_id: string | null
+          p_plate_no_snapshot: string | null
+          p_driver_name_snapshot: string | null
+          p_driver_phone_snapshot: string | null
+          p_carrier_name: string | null
+          p_dispatcher_name: string | null
+          p_total_amount: number
+          p_is_vat_exempt: boolean
+          p_fee_amount: number
+          p_payment_method: PaymentMethod
+          p_memo?: string | null
+        }
+        Returns: string
+      }
+      update_dispatch: {
+        Args: {
+          p_id: string
+          p_dispatch_date: string
+          p_client_id: string | null
+          p_origin: string
+          p_destination: string
+          p_pallet_count: number | null
+          p_vehicle_id: string | null
+          p_plate_no_snapshot: string | null
+          p_driver_name_snapshot: string | null
+          p_driver_phone_snapshot: string | null
+          p_carrier_name: string | null
+          p_dispatcher_name: string | null
+          p_total_amount: number
+          p_is_vat_exempt: boolean
+          p_fee_amount: number
+          p_payment_method: PaymentMethod
+          p_memo?: string | null
+        }
+        Returns: undefined
+      }
     }
   }
 }
