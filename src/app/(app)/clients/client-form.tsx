@@ -1,7 +1,7 @@
 "use client"
 
 import { zodResolver } from "@hookform/resolvers/zod"
-import { useActionState } from "react"
+import { startTransition, useActionState } from "react"
 import { useForm } from "react-hook-form"
 
 import { Button } from "@/components/ui/button"
@@ -44,7 +44,9 @@ export function ClientForm({
   function onSubmit(values: ClientFormValues) {
     const fd = new FormData()
     Object.entries(values).forEach(([key, value]) => fd.set(key, value))
-    formAction(fd)
+    startTransition(() => {
+      formAction(fd)
+    })
   }
 
   return (

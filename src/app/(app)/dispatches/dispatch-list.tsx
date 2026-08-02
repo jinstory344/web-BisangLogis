@@ -186,6 +186,8 @@ export function DispatchList({
               <TableHead>구간</TableHead>
               <TableHead className="text-right">파렛</TableHead>
               <TableHead>차량(기사)</TableHead>
+              <TableHead className="text-right">공급가액</TableHead>
+              <TableHead className="text-right">세액</TableHead>
               <TableHead className="text-right">합계운임</TableHead>
               <TableHead className="text-right">수수료</TableHead>
               <TableHead>지불방법</TableHead>
@@ -217,6 +219,12 @@ export function DispatchList({
                 <TableCell>
                   {d.plate_no_snapshot ?? "-"}
                   {d.driver_name_snapshot ? ` (${d.driver_name_snapshot})` : ""}
+                </TableCell>
+                <TableCell className="text-right">
+                  {formatKRW(d.supply_amount)}
+                </TableCell>
+                <TableCell className="text-right">
+                  {formatKRW(d.vat_amount)}
                 </TableCell>
                 <TableCell className="text-right">
                   {formatKRW(d.total_amount)}

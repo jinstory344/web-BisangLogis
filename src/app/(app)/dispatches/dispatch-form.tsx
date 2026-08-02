@@ -1,7 +1,7 @@
 "use client"
 
 import { zodResolver } from "@hookform/resolvers/zod"
-import { useActionState, useState } from "react"
+import { startTransition, useActionState, useState } from "react"
 import { useForm } from "react-hook-form"
 
 import type { ClientSearchResult } from "@/app/(app)/clients/actions"
@@ -128,12 +128,16 @@ export function DispatchForm({
       setIsCheckingDuplicate(false)
     }
 
-    formAction(fd)
+    startTransition(() => {
+      formAction(fd)
+    })
   }
 
   function handleConfirmDuplicate() {
     if (pendingFormData) {
-      formAction(pendingFormData)
+      startTransition(() => {
+        formAction(pendingFormData)
+      })
     }
     setPendingFormData(null)
   }

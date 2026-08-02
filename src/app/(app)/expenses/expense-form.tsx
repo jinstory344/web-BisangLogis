@@ -1,7 +1,7 @@
 "use client"
 
 import { zodResolver } from "@hookform/resolvers/zod"
-import { useActionState, useEffect } from "react"
+import { startTransition, useActionState, useEffect } from "react"
 import { useForm } from "react-hook-form"
 
 import { Button } from "@/components/ui/button"
@@ -82,7 +82,9 @@ export function ExpenseForm({
   }, [categoryMajor])
 
   function onSubmit(values: ExpenseFormValues) {
-    formAction(buildFormData(values))
+    startTransition(() => {
+      formAction(buildFormData(values))
+    })
   }
 
   return (
