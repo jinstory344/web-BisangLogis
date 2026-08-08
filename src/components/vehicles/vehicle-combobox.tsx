@@ -29,19 +29,25 @@ interface VehicleComboboxProps {
 
 const MIN_QUERY_LENGTH = 1
 
-/** 2.4 차량 자동완성: 선택 시 기사명·연락처 자동 채움, 직접 입력도 허용 */
+/**
+ * 2.4 차량 자동완성: 선택 시 기사명·연락처 자동 채움, 직접 입력도 허용.
+ * base-ui Combobox의 `value`를 등록 차량 객체로 두면(선택되지 않은 자유 입력 시
+ * value=null) 포커스가 빠져나갈 때 라이브러리가 inputValue를 value의 라벨("")로
+ * 되돌려 입력한 텍스트가 사라진다. value/inputValue를 항상 같은 문자열로 유지해
+ * (거래처/상차지 콤보박스와 동일한 방식) 되돌아갈 대상 자체를 없앤다.
+ */
 export function VehicleCombobox({
   plateNo,
   onPlateNoChange,
   onVehicleSelected,
   disabled,
 }: VehicleComboboxProps) {
+  const [inputValue, setInputValue] = useState(plateNo)
   const [items, setItems] = useState<VehicleSearchResult[]>([])
-  const [selected, setSelected] = useState<VehicleSearchResult | null>(null)
   const [, startTransition] = useTransition()
 
   useEffect(() => {
-    const query = plateNo.trim()
+    const query = inputValue.trim()
     if (query.length < MIN_QUERY_LENGTH) {
       setItems([])
       return
@@ -59,38 +65,35 @@ export function VehicleCombobox({
     }, 250)
 
     return () => clearTimeout(timeout)
-  }, [plateNo])
+  }, [inputValue])
 
-  function handleValueChange(next: VehicleSearchResult | null) {
-    setSelected(next)
-    onPlateNoChange(next?.plate_no ?? "")
-    onVehicleSelected(next)
-  }
+  useEffect(() => {
+    const matched = items.find((item) => item.plate_no === inputValue) ?? null
+    onVehicleSelected(matched)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [items, inputValue])
 
-  function handleInputValueChange(text: string) {
+  function handleTextChange(text: string) {
+    setInputValue(text)
     onPlateNoChange(text)
-    if (selected && text !== selected.plate_no) {
-      setSelected(null)
-      onVehicleSelected(null)
-    }
   }
 
   return (
-    <Combobox<VehicleSearchResult>
-      items={items}
-      value={selected}
-      onValueChange={handleValueChange}
-      inputValue={plateNo}
-      onInputValueChange={handleInputValueChange}
-      itemToStringLabel={(item) => item?.plate_no ?? ""}
+    <Combobox<string>
+      items={items.map((item) => item.plate_no)}
+      value={inputValue || null}
+      onValueChange={(next) => handleTextChange(next ?? "")}
+      inputValue={inputValue}
+      onInputValueChange={handleTextChange}
+      itemToStringLabel={(item) => item ?? ""}
       filter={null}
       disabled={disabled}
     >
-      <ComboboxInput placeholder="차량번호 (직접 입력 가능)" />
+      <ComboboxInput placeholder="차량번호" />
       <ComboboxContent>
         <ComboboxList>
           {items.map((item) => (
-            <ComboboxItem key={item.id} value={item}>
+            <ComboboxItem key={item.id} value={item.plate_no}>
               {item.plate_no} ({item.driver_name})
             </ComboboxItem>
           ))}
