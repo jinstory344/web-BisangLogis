@@ -37,9 +37,13 @@ yarn-error.log*
 # vercel
 .vercel
 
+# supabase CLI local link state (project-ref는 재생성 가능, 공유 불필요)
+/supabase/.temp/
+
 # claude code local settings (personal, not shared)
 .claude/settings.local.json
 
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+.supabase-access-token.local
