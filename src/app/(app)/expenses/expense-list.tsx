@@ -15,7 +15,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
   Table,
@@ -89,13 +88,11 @@ export function ExpenseList({
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>지출일자</TableHead>
+              <TableHead>날짜</TableHead>
               <TableHead>대분류</TableHead>
               <TableHead>소분류</TableHead>
-              <TableHead>거래처</TableHead>
               <TableHead className="text-right">금액</TableHead>
               <TableHead>결제수단</TableHead>
-              <TableHead>증빙</TableHead>
               <TableHead>비고</TableHead>
               <TableHead className="text-right">관리</TableHead>
             </TableRow>
@@ -106,7 +103,6 @@ export function ExpenseList({
                 <TableCell>{expense.expense_date}</TableCell>
                 <TableCell>{expense.category_major}</TableCell>
                 <TableCell>{expense.category_minor}</TableCell>
-                <TableCell>{expense.vendor ?? "-"}</TableCell>
                 <TableCell className="text-right">
                   {formatKRW(expense.amount)}
                 </TableCell>
@@ -114,13 +110,6 @@ export function ExpenseList({
                   {expense.payment_method
                     ? EXPENSE_PAYMENT_METHOD_LABELS[expense.payment_method]
                     : "-"}
-                </TableCell>
-                <TableCell>
-                  {expense.has_tax_invoice ? (
-                    <Badge variant="secondary">수취</Badge>
-                  ) : (
-                    <Badge variant="outline">미수취</Badge>
-                  )}
                 </TableCell>
                 <TableCell className="max-w-40 truncate">
                   {expense.memo ?? "-"}
@@ -172,18 +161,10 @@ export function ExpenseList({
                 <p className="font-medium">
                   {expense.category_major} · {expense.category_minor}
                 </p>
-                <p className="text-sm text-muted-foreground">
-                  {expense.vendor ?? "-"}
-                </p>
               </div>
               <span className="font-medium">{formatKRW(expense.amount)}</span>
             </div>
-            <div className="mt-2 flex items-center justify-between">
-              {expense.has_tax_invoice ? (
-                <Badge variant="secondary">증빙 수취</Badge>
-              ) : (
-                <Badge variant="outline">증빙 미수취</Badge>
-              )}
+            <div className="mt-2 flex items-center justify-end">
               <div className="flex gap-2">
                 <Button variant="outline" size="sm" asChild>
                   <Link href={`/expenses/${expense.id}/edit`}>수정</Link>

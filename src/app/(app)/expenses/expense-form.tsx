@@ -1,11 +1,10 @@
 "use client"
 
 import { zodResolver } from "@hookform/resolvers/zod"
-import { startTransition, useActionState, useEffect } from "react"
+import { startTransition, useActionState, useEffect, useState } from "react"
 import { useForm } from "react-hook-form"
 
 import { Button } from "@/components/ui/button"
-import { Checkbox } from "@/components/ui/checkbox"
 import {
   Form,
   FormControl,
@@ -22,11 +21,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
 import { EXPENSE_PAYMENT_METHOD_OPTIONS } from "@/lib/constants/payment-method"
 import {
   EXPENSE_CATEGORY_MAJORS,
   getMinorCategories,
+  isValidCategoryPair,
 } from "@/lib/constants/expense-categories"
 import { getTodayInSeoul } from "@/lib/date"
 import {
@@ -72,11 +73,17 @@ export function ExpenseForm({
 
   const categoryMajor = form.watch("category_major")
   const minorOptions = getMinorCategories(categoryMajor)
+  const [isCustomMinor, setIsCustomMinor] = useState(() => {
+    const initialMinor = defaultValues.category_minor
+    const initialMinors = getMinorCategories(defaultValues.category_major)
+    return initialMinor !== "" && !initialMinors.includes(initialMinor)
+  })
 
   useEffect(() => {
     const currentMinor = form.getValues("category_minor")
-    if (currentMinor && !minorOptions.includes(currentMinor)) {
+    if (currentMinor && !isValidCategoryPair(categoryMajor, currentMinor)) {
       form.setValue("category_minor", "")
+      setIsCustomMinor(false)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [categoryMajor])
@@ -106,6 +113,81 @@ export function ExpenseForm({
             </FormItem>
           )}
         />
+
+        <div className="grid grid-cols-3 gap-4">
+          <FormField
+            control={form.control}
+            name="amount"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>금액 *</FormLabel>
+                <FormControl>
+                  <Input
+                    type="number"
+                    min={0}
+                    value={field.value === 0 ? "" : field.value}
+                    onChange={(e) => {
+                      const next =
+                        e.target.value === "" ? 0 : e.target.valueAsNumber
+                      field.onChange(Number.isNaN(next) ? 0 : next)
+                    }}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="payment_method"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>결제방법</FormLabel>
+                <Tabs value={field.value} onValueChange={field.onChange}>
+                  <TabsList className="w-full">
+                    {EXPENSE_PAYMENT_METHOD_OPTIONS.map((option) => (
+                      <TabsTrigger key={option.value} value={option.value}>
+                        {option.label}
+                      </TabsTrigger>
+                    ))}
+                  </TabsList>
+                </Tabs>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="installment_months"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>할부</FormLabel>
+                <Select
+                  value={field.value ? String(field.value) : ""}
+                  onValueChange={(v) =>
+                    field.onChange(v ? Number(v) : undefined)
+                  }
+                >
+                  <FormControl>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="할부 선택" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {Array.from({ length: 12 }, (_, i) => i + 1).map(
+                      (month) => (
+                        <SelectItem key={month} value={String(month)}>
+                          {month}개월
+                        </SelectItem>
+                      )
+                    )}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
 
         <div className="grid grid-cols-2 gap-4">
           <FormField
@@ -139,8 +221,16 @@ export function ExpenseForm({
               <FormItem>
                 <FormLabel>소분류 *</FormLabel>
                 <Select
-                  value={field.value}
-                  onValueChange={field.onChange}
+                  value={isCustomMinor ? "기타" : field.value}
+                  onValueChange={(v) => {
+                    if (v === "기타") {
+                      setIsCustomMinor(true)
+                      field.onChange("")
+                    } else {
+                      setIsCustomMinor(false)
+                      field.onChange(v)
+                    }
+                  }}
                   disabled={!categoryMajor}
                 >
                   <FormControl>
@@ -156,85 +246,18 @@ export function ExpenseForm({
                     ))}
                   </SelectContent>
                 </Select>
+                {isCustomMinor ? (
+                  <Input
+                    placeholder="소분류 직접 입력"
+                    value={field.value}
+                    onChange={(e) => field.onChange(e.target.value)}
+                  />
+                ) : null}
                 <FormMessage />
               </FormItem>
             )}
           />
         </div>
-
-        <FormField
-          control={form.control}
-          name="amount"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>금액 *</FormLabel>
-              <FormControl>
-                <Input
-                  type="number"
-                  min={0}
-                  value={field.value}
-                  onChange={(e) => field.onChange(e.target.valueAsNumber || 0)}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="vendor"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>거래처/상호</FormLabel>
-              <FormControl>
-                <Input {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="payment_method"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>결제수단</FormLabel>
-              <Select value={field.value} onValueChange={field.onChange}>
-                <FormControl>
-                  <SelectTrigger className="w-full">
-                    <SelectValue />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {EXPENSE_PAYMENT_METHOD_OPTIONS.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="has_tax_invoice"
-          render={({ field }) => (
-            <FormItem className="flex flex-row items-center gap-2">
-              <FormControl>
-                <Checkbox
-                  checked={field.value}
-                  onCheckedChange={(checked) => field.onChange(checked === true)}
-                />
-              </FormControl>
-              <FormLabel className="!mt-0">증빙(계산서) 수취</FormLabel>
-            </FormItem>
-          )}
-        />
 
         <FormField
           control={form.control}

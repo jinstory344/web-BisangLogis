@@ -26,7 +26,6 @@ interface ExpenseFiltersProps {
   to: string
   categoryMajor: string
   categoryMinor: string
-  hasTaxInvoice: string
 }
 
 export function ExpenseFilters({
@@ -34,7 +33,6 @@ export function ExpenseFilters({
   to,
   categoryMajor,
   categoryMinor,
-  hasTaxInvoice,
 }: ExpenseFiltersProps) {
   const router = useRouter()
   const pathname = usePathname()
@@ -142,22 +140,6 @@ export function ExpenseFilters({
                 {minor}
               </SelectItem>
             ))}
-          </SelectContent>
-        </Select>
-
-        <Select
-          value={hasTaxInvoice || "ALL"}
-          onValueChange={(value) =>
-            pushParams({ has_tax_invoice: value === "ALL" ? "" : value })
-          }
-        >
-          <SelectTrigger className="w-40">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="ALL">증빙 전체</SelectItem>
-            <SelectItem value="true">증빙 수취</SelectItem>
-            <SelectItem value="false">증빙 미수취</SelectItem>
           </SelectContent>
         </Select>
       </div>

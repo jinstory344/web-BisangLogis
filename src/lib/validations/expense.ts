@@ -16,6 +16,7 @@ export const expenseFormSchema = z
     category_minor: z.string().min(1, "소분류를 선택하세요"),
     amount: amountSchema,
     payment_method: z.enum(["CARD", "TRANSFER", "CASH"]),
+    installment_months: z.number().int().min(1).max(12).optional(),
     vendor: z.string().trim(),
     has_tax_invoice: z.boolean(),
     memo: z.string().trim(),
@@ -33,6 +34,7 @@ export const expenseFormDefaults: ExpenseFormValues = {
   category_minor: "",
   amount: 0,
   payment_method: "CARD",
+  installment_months: undefined,
   vendor: "",
   has_tax_invoice: false,
   memo: "",
@@ -45,6 +47,10 @@ export function coerceExpenseFormData(
   return {
     ...raw,
     amount: Number(raw.amount),
+    installment_months:
+      raw.installment_months === "" || raw.installment_months === undefined
+        ? undefined
+        : Number(raw.installment_months),
     has_tax_invoice: raw.has_tax_invoice === "true",
   }
 }

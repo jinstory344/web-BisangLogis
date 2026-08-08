@@ -18,7 +18,6 @@ interface ExpenseSearchParams {
   to?: string
   category_major?: string
   category_minor?: string
-  has_tax_invoice?: string
   page?: string
 }
 
@@ -33,7 +32,6 @@ export default async function ExpensesPage({
   const to = params.to || defaultRange.to
   const categoryMajor = params.category_major ?? ""
   const categoryMinor = params.category_minor ?? ""
-  const hasTaxInvoice = params.has_tax_invoice ?? ""
   const page = Math.max(1, Number(params.page) || 1)
 
   const supabase = await createClient()
@@ -47,9 +45,6 @@ export default async function ExpensesPage({
 
   if (categoryMajor) baseQuery = baseQuery.eq("category_major", categoryMajor)
   if (categoryMinor) baseQuery = baseQuery.eq("category_minor", categoryMinor)
-  if (hasTaxInvoice) {
-    baseQuery = baseQuery.eq("has_tax_invoice", hasTaxInvoice === "true")
-  }
 
   const rangeStart = (page - 1) * PAGE_SIZE
   const rangeEnd = rangeStart + PAGE_SIZE - 1
@@ -67,9 +62,6 @@ export default async function ExpensesPage({
 
   if (categoryMajor) summaryQuery = summaryQuery.eq("category_major", categoryMajor)
   if (categoryMinor) summaryQuery = summaryQuery.eq("category_minor", categoryMinor)
-  if (hasTaxInvoice) {
-    summaryQuery = summaryQuery.eq("has_tax_invoice", hasTaxInvoice === "true")
-  }
 
   const { data: summaryRows } = await summaryQuery
 
@@ -119,7 +111,6 @@ export default async function ExpensesPage({
             to={to}
             categoryMajor={categoryMajor}
             categoryMinor={categoryMinor}
-            hasTaxInvoice={hasTaxInvoice}
           />
 
           {error ? (
