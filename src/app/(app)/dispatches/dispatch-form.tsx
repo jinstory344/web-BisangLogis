@@ -37,9 +37,11 @@ import {
 } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { VehicleCombobox } from "@/components/vehicles/vehicle-combobox"
+import { CARGO_BOX_TYPE_OPTIONS } from "@/lib/constants/cargo-box-type"
+import { DROPOFF_TYPE_OPTIONS } from "@/lib/constants/dropoff-type"
 import { PAYMENT_METHOD_OPTIONS } from "@/lib/constants/payment-method"
 import { getTodayInSeoul } from "@/lib/date"
-import { formatKRW, splitVat } from "@/lib/money"
+import { calcVatFromSupply } from "@/lib/money"
 import {
   dispatchFormSchema,
   type DispatchFormValues,
@@ -47,10 +49,15 @@ import {
 
 import {
   checkDuplicateDispatchAction,
+  searchCarrierNameSuggestionsAction,
+  searchContactNameSuggestionsAction,
   searchDestinationSuggestionsAction,
   searchOriginSuggestionsAction,
   type DispatchActionState,
 } from "./actions"
+
+/** 적재함 종류 "선택 안 함"을 나타내는 Select 전용 센티넬 값(폼 상태에는 ""로 저장). */
+const CARGO_BOX_TYPE_NONE = "__NONE__"
 
 interface DispatchFormProps {
   action: (
@@ -94,17 +101,12 @@ export function DispatchForm({
     },
   })
 
-  const totalAmount = form.watch("total_amount")
+  const supplyAmount = form.watch("supply_amount")
   const isVatExempt = form.watch("is_vat_exempt")
-  const dispatchDate = form.watch("dispatch_date")
-  const { supplyAmount, vatAmount } = splitVat(
-    Number.isFinite(totalAmount) ? totalAmount : 0,
+  const { vatAmount, totalAmount } = calcVatFromSupply(
+    Number.isFinite(supplyAmount) ? supplyAmount : 0,
     isVatExempt
   )
-  // 문자열(yyyy-MM-dd) 그대로 비교 — Date로 파싱하면 UTC 자정으로 해석되어
-  // 로컬 타임존에 따라 "오늘"도 미래로 잘못 판정될 수 있다.
-  const isFutureDate =
-    !!dispatchDate && dispatchDate > getTodayInSeoul()
 
   async function onSubmit(values: DispatchFormValues) {
     const fd = buildFormData(values)
@@ -117,7 +119,7 @@ export function DispatchForm({
         origin: values.origin,
         destination: values.destination,
         plateNoSnapshot: values.plate_no_snapshot,
-        totalAmount: values.total_amount,
+        supplyAmount: values.supply_amount,
       })
 
       if (isDuplicate) {
@@ -157,15 +159,14 @@ export function DispatchForm({
               <FormControl>
                 <Input {...field} type="date" />
               </FormControl>
-              {isFutureDate ? (
-                <p className="text-sm text-amber-600">
-                  미래 일자입니다. 확인 후 저장하세요.
-                </p>
-              ) : null}
               <FormMessage />
             </FormItem>
           )}
         />
+
+        <h2 className="mt-2 text-sm font-semibold text-muted-foreground">
+          거래처 정보
+        </h2>
 
         <FormItem>
           <FormLabel>거래처 *</FormLabel>
@@ -184,6 +185,26 @@ export function DispatchForm({
               {form.formState.errors.client_id.message}
             </p>
           ) : null}
+        </FormItem>
+
+        <FormItem>
+          <FormLabel>담당자</FormLabel>
+          <FreeTextCombobox
+            value={form.watch("contact_name")}
+            onChange={(v) => form.setValue("contact_name", v)}
+            fetchSuggestions={searchContactNameSuggestionsAction}
+            placeholder="담당자명"
+          />
+        </FormItem>
+
+        <FormItem>
+          <FormLabel>사업자정보</FormLabel>
+          <FreeTextCombobox
+            value={form.watch("carrier_name")}
+            onChange={(v) => form.setValue("carrier_name", v)}
+            fetchSuggestions={searchCarrierNameSuggestionsAction}
+            placeholder="사업자정보 (직접 입력 가능)"
+          />
         </FormItem>
 
         <FormItem>
@@ -222,21 +243,122 @@ export function DispatchForm({
 
         <FormField
           control={form.control}
-          name="pallet_count"
+          name="dropoff_type"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>파렛 수량</FormLabel>
+              <FormLabel>하차일</FormLabel>
+              <Select value={field.value} onValueChange={field.onChange}>
+                <FormControl>
+                  <SelectTrigger className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {DROPOFF_TYPE_OPTIONS.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <h2 className="mt-2 text-sm font-semibold text-muted-foreground">
+          화물내용
+        </h2>
+
+        <FormField
+          control={form.control}
+          name="cargo_box_type"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>적재함 종류</FormLabel>
+              {/* Radix Select은 SelectItem에 빈 문자열을 허용하지 않으므로
+                  "선택 안 함"은 센티넬 값으로 표현하고 폼 상태에는 ""로 저장한다. */}
+              <Select
+                value={field.value || CARGO_BOX_TYPE_NONE}
+                onValueChange={(value) =>
+                  field.onChange(value === CARGO_BOX_TYPE_NONE ? "" : value)
+                }
+              >
+                <FormControl>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="선택 안 함" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  <SelectItem value={CARGO_BOX_TYPE_NONE}>선택 안 함</SelectItem>
+                  {CARGO_BOX_TYPE_OPTIONS.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <div className="grid grid-cols-2 gap-4">
+          <FormField
+            control={form.control}
+            name="pallet_count"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>파렛 수량</FormLabel>
+                <FormControl>
+                  <Input
+                    type="number"
+                    min={0}
+                    value={field.value ?? ""}
+                    onChange={(e) =>
+                      field.onChange(
+                        e.target.value === "" ? undefined : e.target.valueAsNumber
+                      )
+                    }
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="weight_ton"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>중량</FormLabel>
+                <FormControl>
+                  <Input
+                    type="number"
+                    min={0}
+                    step={0.01}
+                    value={field.value ?? ""}
+                    onChange={(e) =>
+                      field.onChange(
+                        e.target.value === "" ? undefined : e.target.valueAsNumber
+                      )
+                    }
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+
+        <FormField
+          control={form.control}
+          name="memo"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>비고</FormLabel>
               <FormControl>
-                <Input
-                  type="number"
-                  min={0}
-                  value={field.value ?? ""}
-                  onChange={(e) =>
-                    field.onChange(
-                      e.target.value === "" ? undefined : e.target.valueAsNumber
-                    )
-                  }
-                />
+                <Textarea {...field} rows={3} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -244,7 +366,7 @@ export function DispatchForm({
         />
 
         <FormItem>
-          <FormLabel>차량 (직접 입력 가능)</FormLabel>
+          <FormLabel>차량정보</FormLabel>
           <VehicleCombobox
             plateNo={form.watch("plate_no_snapshot")}
             onPlateNoChange={(v) => form.setValue("plate_no_snapshot", v)}
@@ -265,7 +387,7 @@ export function DispatchForm({
             name="driver_name_snapshot"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>기사명</FormLabel>
+                <FormLabel>이름</FormLabel>
                 <FormControl>
                   <Input {...field} />
                 </FormControl>
@@ -278,7 +400,7 @@ export function DispatchForm({
             name="driver_phone_snapshot"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>기사 연락처</FormLabel>
+                <FormLabel>연락처</FormLabel>
                 <FormControl>
                   <Input {...field} type="tel" />
                 </FormControl>
@@ -288,56 +410,38 @@ export function DispatchForm({
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-3 gap-4">
           <FormField
             control={form.control}
-            name="carrier_name"
+            name="supply_amount"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>운수사</FormLabel>
+                <FormLabel>공급가액 *</FormLabel>
                 <FormControl>
-                  <Input {...field} />
+                  <Input
+                    type="number"
+                    min={0}
+                    value={field.value}
+                    onChange={(e) => field.onChange(e.target.valueAsNumber || 0)}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
             )}
           />
-          <FormField
-            control={form.control}
-            name="dispatcher_name"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>배차자</FormLabel>
-                <FormControl>
-                  <Input {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+          <FormItem>
+            <FormLabel>세액</FormLabel>
+            <FormControl>
+              <Input type="number" value={vatAmount} disabled readOnly />
+            </FormControl>
+          </FormItem>
+          <FormItem>
+            <FormLabel>합계</FormLabel>
+            <FormControl>
+              <Input type="number" value={totalAmount} disabled readOnly />
+            </FormControl>
+          </FormItem>
         </div>
-
-        <FormField
-          control={form.control}
-          name="total_amount"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>합계 운임 *</FormLabel>
-              <FormControl>
-                <Input
-                  type="number"
-                  min={0}
-                  value={field.value}
-                  onChange={(e) => field.onChange(e.target.valueAsNumber || 0)}
-                />
-              </FormControl>
-              <p className="text-sm text-muted-foreground">
-                공급가액 {formatKRW(supplyAmount)} / 부가세 {formatKRW(vatAmount)}
-              </p>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
 
         <FormField
           control={form.control}
@@ -350,7 +454,7 @@ export function DispatchForm({
                   onCheckedChange={(checked) => field.onChange(checked === true)}
                 />
               </FormControl>
-              <FormLabel className="!mt-0">면세 (부가세 없음)</FormLabel>
+              <FormLabel className="!mt-0">현금</FormLabel>
             </FormItem>
           )}
         />
@@ -365,8 +469,12 @@ export function DispatchForm({
                 <Input
                   type="number"
                   min={0}
-                  value={field.value}
-                  onChange={(e) => field.onChange(e.target.valueAsNumber || 0)}
+                  value={field.value === 0 ? "" : field.value}
+                  onChange={(e) => {
+                    const next =
+                      e.target.value === "" ? 0 : e.target.valueAsNumber
+                    field.onChange(Number.isNaN(next) ? 0 : next)
+                  }}
                 />
               </FormControl>
               <FormMessage />
@@ -394,20 +502,6 @@ export function DispatchForm({
                   ))}
                 </SelectContent>
               </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="memo"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>비고</FormLabel>
-              <FormControl>
-                <Textarea {...field} rows={3} />
-              </FormControl>
               <FormMessage />
             </FormItem>
           )}
@@ -442,7 +536,7 @@ export function DispatchForm({
           <AlertDialogHeader>
             <AlertDialogTitle>중복 가능성 있는 건이 있습니다</AlertDialogTitle>
             <AlertDialogDescription>
-              운송일자·거래처·상차지·하차지·차량번호·합계운임이 동일한 배차
+              운송일자·거래처·상차지·하차지·차량번호·공급가액이 동일한 배차
               건이 이미 등록되어 있습니다. 그래도 저장하시겠습니까?
             </AlertDialogDescription>
           </AlertDialogHeader>

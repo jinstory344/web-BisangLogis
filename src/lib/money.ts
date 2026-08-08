@@ -69,6 +69,28 @@ export function calcNetAmount(supplyAmount: number, feeAmount: number): number {
   return supplyAmount - feeAmount
 }
 
+export interface VatFromSupply {
+  vatAmount: number
+  totalAmount: number
+}
+
+/**
+ * 공급가액을 진실의 원천으로 받아 부가세·합계금액을 역산한다 (배차 등록 폼).
+ * vat_amount = round(supply_amount / 10) (round-half-up)을 정수 연산으로 계산해
+ * 부동소수점 오차 없이 구한다.
+ */
+export function calcVatFromSupply(
+  supplyAmount: number,
+  isVatExempt: boolean
+): VatFromSupply {
+  if (isVatExempt) {
+    return { vatAmount: 0, totalAmount: supplyAmount }
+  }
+
+  const vatAmount = Math.floor((supplyAmount + 5) / 10)
+  return { vatAmount, totalAmount: supplyAmount + vatAmount }
+}
+
 /** 3자리 콤마 + "원" 표기 (4.4 UI 표시 규칙) */
 export function formatKRW(amount: number): string {
   return `${amount.toLocaleString("ko-KR")}원`

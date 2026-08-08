@@ -20,6 +20,13 @@ export type TaxInvoiceStatus =
   | "CANCELLED"
 export type PurchaseInvoiceSource = "POPBILL" | "MANUAL"
 export type AuditAction = "CREATE" | "UPDATE" | "DELETE" | "RESTORE"
+export type DropoffType = "SAME_DAY" | "NEXT_DAY"
+export type CargoBoxType =
+  | "CARGO"
+  | "BOX"
+  | "WING"
+  | "REFRIGERATED"
+  | "OTHER"
 
 type BaseColumns = {
   id: string
@@ -53,15 +60,22 @@ export type VehicleRow = BaseColumns & {
 export type DispatchRow = BaseColumns & {
   dispatch_date: string
   client_id: string | null
+  contact_name: string | null
   origin: string
   destination: string
+  dropoff_type: DropoffType
   pallet_count: number | null
+  weight_ton: number | null
+  cargo_box_type: CargoBoxType | null
   vehicle_id: string | null
   plate_no_snapshot: string | null
   driver_name_snapshot: string | null
   driver_phone_snapshot: string | null
   carrier_name: string | null
   dispatcher_name: string | null
+  source_major: string | null
+  source_minor: string | null
+  source_note: string | null
   total_amount: number
   supply_amount: number
   vat_amount: number
@@ -79,6 +93,7 @@ export type ExpenseRow = BaseColumns & {
   category_minor: string
   amount: number
   payment_method: ExpensePaymentMethod | null
+  installment_months: number | null
   vendor: string | null
   has_tax_invoice: boolean
   memo: string | null
@@ -191,18 +206,24 @@ export type Database = {
           p_client_id: string | null
           p_origin: string
           p_destination: string
+          p_dropoff_type: DropoffType
           p_pallet_count: number | null
+          p_weight_ton: number | null
           p_vehicle_id: string | null
           p_plate_no_snapshot: string | null
           p_driver_name_snapshot: string | null
           p_driver_phone_snapshot: string | null
           p_carrier_name: string | null
-          p_dispatcher_name: string | null
-          p_total_amount: number
+          p_contact_name: string | null
+          p_source_major: string | null
+          p_source_minor: string | null
+          p_source_note: string | null
+          p_supply_amount: number
           p_is_vat_exempt: boolean
           p_fee_amount: number
           p_payment_method: PaymentMethod
           p_memo?: string | null
+          p_cargo_box_type?: CargoBoxType | null
         }
         Returns: string
       }
@@ -213,18 +234,24 @@ export type Database = {
           p_client_id: string | null
           p_origin: string
           p_destination: string
+          p_dropoff_type: DropoffType
           p_pallet_count: number | null
+          p_weight_ton: number | null
           p_vehicle_id: string | null
           p_plate_no_snapshot: string | null
           p_driver_name_snapshot: string | null
           p_driver_phone_snapshot: string | null
           p_carrier_name: string | null
-          p_dispatcher_name: string | null
-          p_total_amount: number
+          p_contact_name: string | null
+          p_source_major: string | null
+          p_source_minor: string | null
+          p_source_note: string | null
+          p_supply_amount: number
           p_is_vat_exempt: boolean
           p_fee_amount: number
           p_payment_method: PaymentMethod
           p_memo?: string | null
+          p_cargo_box_type?: CargoBoxType | null
         }
         Returns: undefined
       }

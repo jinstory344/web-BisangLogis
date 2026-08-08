@@ -61,14 +61,70 @@ export async function searchDestinationSuggestionsAction(
   return Array.from(new Set(data.map((row) => row.destination))).slice(0, 10)
 }
 
-/** 4.3.6 중복 입력 감지: 운송일자+거래처+상차지+하차지+차량번호+합계운임 동일 건 존재 여부 */
+/** 담당자 최근 입력값 자동완성 */
+export async function searchContactNameSuggestionsAction(
+  query: string
+): Promise<string[]> {
+  const trimmed = query.trim()
+  const supabase = await createClient()
+  let request = supabase
+    .from("dispatches")
+    .select("contact_name")
+    .is("deleted_at", null)
+    .not("contact_name", "is", null)
+    .order("dispatch_date", { ascending: false })
+    .limit(50)
+
+  if (trimmed) {
+    request = request.ilike("contact_name", `%${trimmed}%`)
+  }
+
+  const { data, error } = await request
+  if (error) {
+    throw new Error(`최근 입력값 조회 실패: ${error.message}`)
+  }
+
+  return Array.from(
+    new Set(data.map((row) => row.contact_name).filter((v): v is string => !!v))
+  ).slice(0, 10)
+}
+
+/** 사업자정보(운수사) 최근 입력값 자동완성 */
+export async function searchCarrierNameSuggestionsAction(
+  query: string
+): Promise<string[]> {
+  const trimmed = query.trim()
+  const supabase = await createClient()
+  let request = supabase
+    .from("dispatches")
+    .select("carrier_name")
+    .is("deleted_at", null)
+    .not("carrier_name", "is", null)
+    .order("dispatch_date", { ascending: false })
+    .limit(50)
+
+  if (trimmed) {
+    request = request.ilike("carrier_name", `%${trimmed}%`)
+  }
+
+  const { data, error } = await request
+  if (error) {
+    throw new Error(`최근 입력값 조회 실패: ${error.message}`)
+  }
+
+  return Array.from(
+    new Set(data.map((row) => row.carrier_name).filter((v): v is string => !!v))
+  ).slice(0, 10)
+}
+
+/** 4.3.6 중복 입력 감지: 운송일자+거래처+상차지+하차지+차량번호+공급가액 동일 건 존재 여부 */
 export async function checkDuplicateDispatchAction(input: {
   dispatchDate: string
   clientId: string
   origin: string
   destination: string
   plateNoSnapshot: string
-  totalAmount: number
+  supplyAmount: number
 }): Promise<boolean> {
   const supabase = await createClient()
   const { count, error } = await supabase
@@ -80,7 +136,7 @@ export async function checkDuplicateDispatchAction(input: {
     .eq("origin", input.origin)
     .eq("destination", input.destination)
     .eq("plate_no_snapshot", input.plateNoSnapshot)
-    .eq("total_amount", input.totalAmount)
+    .eq("supply_amount", input.supplyAmount)
 
   if (error) {
     throw new Error(`중복 확인 실패: ${error.message}`)
@@ -93,8 +149,13 @@ export interface DispatchActionState {
   error: string | null
 }
 
-/** 3.1~3.3, 4.3.9: 배차 등록 → 매출 자동 생성을 하나의 트랜잭션(RPC)으로 처리 */
-export async function createDispatchAction(
+/**
+ * 3.1~3.3, 4.3.9: 배차 등록 → 매출 자동 생성을 하나의 트랜잭션(RPC)으로 처리.
+ * 배차/매출 등록 페이지가 이 하나의 구현을 공유하되, 저장 후 자기 페이지로
+ * 돌아가도록 redirectTo만 바인딩해서 분기한다.
+ */
+async function createDispatchImpl(
+  redirectTo: string,
   _prevState: DispatchActionState,
   formData: FormData
 ): Promise<DispatchActionState> {
@@ -113,14 +174,21 @@ export async function createDispatchAction(
     p_client_id: values.client_id,
     p_origin: values.origin,
     p_destination: values.destination,
+    p_dropoff_type: values.dropoff_type,
+    // 미선택("")은 DB가 빈 문자열을 허용하지 않으므로 null로 정규화한다.
+    p_cargo_box_type: values.cargo_box_type || null,
     p_pallet_count: values.pallet_count ?? null,
+    p_weight_ton: values.weight_ton ?? null,
     p_vehicle_id: values.vehicle_id || null,
     p_plate_no_snapshot: values.plate_no_snapshot || null,
     p_driver_name_snapshot: values.driver_name_snapshot || null,
     p_driver_phone_snapshot: values.driver_phone_snapshot || null,
     p_carrier_name: values.carrier_name || null,
-    p_dispatcher_name: values.dispatcher_name || null,
-    p_total_amount: values.total_amount,
+    p_contact_name: values.contact_name || null,
+    p_source_major: values.source_major || null,
+    p_source_minor: values.source_minor || null,
+    p_source_note: values.source_note || null,
+    p_supply_amount: values.supply_amount,
     p_is_vat_exempt: values.is_vat_exempt,
     p_fee_amount: values.fee_amount,
     p_payment_method: values.payment_method,
@@ -132,7 +200,22 @@ export async function createDispatchAction(
   }
 
   revalidatePath("/dispatches")
-  redirect("/dispatches")
+  revalidatePath("/sales")
+  redirect(redirectTo)
+}
+
+export async function createDispatchAction(
+  prevState: DispatchActionState,
+  formData: FormData
+): Promise<DispatchActionState> {
+  return createDispatchImpl("/dispatches", prevState, formData)
+}
+
+export async function createDispatchActionForSales(
+  prevState: DispatchActionState,
+  formData: FormData
+): Promise<DispatchActionState> {
+  return createDispatchImpl("/sales", prevState, formData)
 }
 
 /** 3.6 입금 처리 (개별): 입금완료로 변경하고 입금일을 기록한다 */
@@ -211,14 +294,21 @@ export async function updateDispatchAction(
     p_client_id: values.client_id,
     p_origin: values.origin,
     p_destination: values.destination,
+    p_dropoff_type: values.dropoff_type,
+    // 미선택("")은 DB가 빈 문자열을 허용하지 않으므로 null로 정규화한다.
+    p_cargo_box_type: values.cargo_box_type || null,
     p_pallet_count: values.pallet_count ?? null,
+    p_weight_ton: values.weight_ton ?? null,
     p_vehicle_id: values.vehicle_id || null,
     p_plate_no_snapshot: values.plate_no_snapshot || null,
     p_driver_name_snapshot: values.driver_name_snapshot || null,
     p_driver_phone_snapshot: values.driver_phone_snapshot || null,
     p_carrier_name: values.carrier_name || null,
-    p_dispatcher_name: values.dispatcher_name || null,
-    p_total_amount: values.total_amount,
+    p_contact_name: values.contact_name || null,
+    p_source_major: values.source_major || null,
+    p_source_minor: values.source_minor || null,
+    p_source_note: values.source_note || null,
+    p_supply_amount: values.supply_amount,
     p_is_vat_exempt: values.is_vat_exempt,
     p_fee_amount: values.fee_amount,
     p_payment_method: values.payment_method,

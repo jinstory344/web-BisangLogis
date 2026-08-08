@@ -1,8 +1,11 @@
 import { notFound } from "next/navigation"
 
 import { PaymentBadge } from "@/components/dispatches/payment-badge"
+import { CARGO_BOX_TYPE_LABELS } from "@/lib/constants/cargo-box-type"
+import { DROPOFF_TYPE_LABELS } from "@/lib/constants/dropoff-type"
 import { PAYMENT_METHOD_LABELS } from "@/lib/constants/payment-method"
 import { formatKRW } from "@/lib/money"
+import { formatPhoneNumber } from "@/lib/phone"
 import { createClient } from "@/lib/supabase/server"
 
 import { DetailActions } from "./detail-actions"
@@ -61,10 +64,26 @@ export default async function DispatchDetailPage({
       <div className="mt-4 max-w-lg rounded-md border p-4">
         <Field label="운송일자" value={dispatch.dispatch_date} />
         <Field label="거래처" value={clientName} />
+        <Field label="담당자" value={dispatch.contact_name ?? "-"} />
+        <Field label="사업자정보" value={dispatch.carrier_name ?? "-"} />
         <Field label="구간" value={`${dispatch.origin} → ${dispatch.destination}`} />
+        <Field label="하차일" value={DROPOFF_TYPE_LABELS[dispatch.dropoff_type]} />
+        <Field
+          label="적재함 종류"
+          value={
+            dispatch.cargo_box_type
+              ? CARGO_BOX_TYPE_LABELS[dispatch.cargo_box_type]
+              : "-"
+          }
+        />
         <Field label="파렛 수량" value={String(dispatch.pallet_count ?? "-")} />
         <Field
-          label="차량(기사)"
+          label="중량"
+          value={dispatch.weight_ton != null ? `${dispatch.weight_ton}톤` : "-"}
+        />
+        <Field label="비고" value={dispatch.memo ?? "-"} />
+        <Field
+          label="차량정보"
           value={
             dispatch.plate_no_snapshot
               ? `${dispatch.plate_no_snapshot}${
@@ -75,23 +94,13 @@ export default async function DispatchDetailPage({
               : "-"
           }
         />
-        <Field label="기사 연락처" value={dispatch.driver_phone_snapshot ?? "-"} />
-        <Field label="운수사" value={dispatch.carrier_name ?? "-"} />
-        <Field label="배차자" value={dispatch.dispatcher_name ?? "-"} />
-        <Field label="합계운임" value={formatKRW(dispatch.total_amount)} />
-        <Field label="공급가액" value={formatKRW(dispatch.supply_amount)} />
-        <Field label="부가세" value={formatKRW(dispatch.vat_amount)} />
+        <Field label="연락처" value={formatPhoneNumber(dispatch.driver_phone_snapshot)} />
+        <Field label="운임" value={formatKRW(dispatch.total_amount)} />
         <Field label="수수료" value={formatKRW(dispatch.fee_amount)} />
-        <Field
-          label="순수익(공급가액-수수료)"
-          value={formatKRW(dispatch.supply_amount - dispatch.fee_amount)}
-        />
         <Field
           label="지불방법"
           value={PAYMENT_METHOD_LABELS[dispatch.payment_method]}
         />
-        <Field label="입금일" value={dispatch.paid_at ?? "-"} />
-        <Field label="비고" value={dispatch.memo ?? "-"} />
       </div>
     </div>
   )
