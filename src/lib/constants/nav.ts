@@ -6,6 +6,7 @@ import {
   Receipt,
   Settings,
   Trash2,
+  TrendingUp,
   Truck,
   Users,
   Wallet,
@@ -21,17 +22,36 @@ export interface NavItem {
 export const primaryNavItems: NavItem[] = [
   { label: "대시보드", href: "/", icon: LayoutDashboard },
   { label: "배차", href: "/dispatches", icon: Truck },
+  { label: "매출", href: "/sales", icon: TrendingUp },
   { label: "지출", href: "/expenses", icon: Wallet },
-  { label: "계산서", href: "/tax-invoices", icon: Receipt },
 ]
 
 /** 모바일 "더보기" 시트 및 데스크톱 사이드바 하단에 노출되는 메뉴 */
 export const secondaryNavItems: NavItem[] = [
   { label: "거래처", href: "/clients", icon: Users },
   { label: "차량·기사", href: "/vehicles", icon: Car },
+  { label: "계산서", href: "/tax-invoices", icon: Receipt },
   { label: "엑셀 가져오기", href: "/import", icon: FileSpreadsheet },
   { label: "휴지통", href: "/trash", icon: Trash2 },
   { label: "설정", href: "/settings", icon: Settings },
 ]
 
-export const allNavItems: NavItem[] = [...primaryNavItems, ...secondaryNavItems]
+/** 데스크톱 사이드바 전용 — 구분선으로 나뉘는 메뉴 그룹 */
+export const sidebarNavGroups: NavItem[][] = [
+  [{ label: "대시보드", href: "/", icon: LayoutDashboard }],
+  [
+    { label: "매출", href: "/sales", icon: TrendingUp },
+    { label: "지출", href: "/expenses", icon: Wallet },
+  ],
+  [
+    { label: "배차", href: "/dispatches", icon: Truck },
+    { label: "거래처", href: "/clients", icon: Users },
+    { label: "차량 정보", href: "/vehicles", icon: Car },
+  ],
+  [
+    { label: "계산서", href: "/tax-invoices", icon: Receipt },
+    { label: "엑셀 가져오기", href: "/import", icon: FileSpreadsheet },
+    { label: "휴지통", href: "/trash", icon: Trash2 },
+    { label: "설정", href: "/settings", icon: Settings },
+  ],
+]

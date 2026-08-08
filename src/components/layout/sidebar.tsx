@@ -1,11 +1,12 @@
 "use client"
 
 import { LogOut } from "lucide-react"
+import { Fragment } from "react"
 
 import { logout } from "@/app/(app)/actions"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
-import { allNavItems } from "@/lib/constants/nav"
+import { sidebarNavGroups } from "@/lib/constants/nav"
 
 import { NavLink } from "./nav-link"
 
@@ -17,13 +18,18 @@ export function Sidebar({ userEmail }: { userEmail: string | null }) {
       </div>
       <Separator />
       <nav className="flex flex-1 flex-col gap-1 p-2">
-        {allNavItems.map((item) => (
-          <NavLink
-            key={item.href}
-            item={item}
-            className="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-muted hover:text-foreground"
-            iconClassName="size-4"
-          />
+        {sidebarNavGroups.map((group, index) => (
+          <Fragment key={index}>
+            {index > 0 ? <Separator className="my-1" /> : null}
+            {group.map((item) => (
+              <NavLink
+                key={item.href}
+                item={item}
+                className="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-muted hover:text-foreground"
+                iconClassName="size-4"
+              />
+            ))}
+          </Fragment>
         ))}
       </nav>
       <Separator />

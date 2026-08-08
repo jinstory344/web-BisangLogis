@@ -27,6 +27,11 @@ export function getCurrentMonthRangeInSeoul(): DateRange {
   return { from, to }
 }
 
+/** yyyy-MM-dd -> yy-MM-dd 축약 표기 (예: 2026-08-06 -> 26-08-06) */
+export function formatShortDate(dateStr: string): string {
+  return dateStr.slice(2)
+}
+
 /** 7.3 기간 빠른 선택: 지난 달 (서울 기준) */
 export function getPreviousMonthRangeInSeoul(): DateRange {
   const today = getTodayInSeoul()

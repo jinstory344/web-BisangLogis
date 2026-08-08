@@ -8,24 +8,36 @@ import { ClientCombobox } from "@/components/clients/client-combobox"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { PAYMENT_METHOD_OPTIONS } from "@/lib/constants/payment-method"
+import {
   getCurrentMonthRangeInSeoul,
   getPreviousMonthRangeInSeoul,
 } from "@/lib/date"
 
-interface DispatchFiltersProps {
+interface SalesFiltersProps {
   from: string
   to: string
   clientId: string
   clientName: string
+  paymentStatus: string
+  paymentMethod: string
 }
 
-/** 배차(운영 정보) 페이지 필터: 기간 + 거래처만. 재무 필터는 매출 페이지에서 처리한다. */
-export function DispatchFilters({
+/** 매출(재무 정보) 페이지 필터: 기간 + 거래처 + 입금여부 + 지불방법 */
+export function SalesFilters({
   from,
   to,
   clientId,
   clientName,
-}: DispatchFiltersProps) {
+  paymentStatus,
+  paymentMethod,
+}: SalesFiltersProps) {
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
@@ -91,17 +103,54 @@ export function DispatchFilters({
         />
       </div>
 
-      <div className="w-full max-w-56">
-        <ClientCombobox
-          value={client}
-          onChange={(next) => {
-            setClient(next)
-            pushParams({
-              client_id: next?.id ?? "",
-              client_name: next?.name ?? "",
-            })
-          }}
-        />
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="w-full max-w-56">
+          <ClientCombobox
+            value={client}
+            onChange={(next) => {
+              setClient(next)
+              pushParams({
+                client_id: next?.id ?? "",
+                client_name: next?.name ?? "",
+              })
+            }}
+          />
+        </div>
+
+        <Select
+          value={paymentStatus || "ALL"}
+          onValueChange={(value) =>
+            pushParams({ payment_status: value === "ALL" ? "" : value })
+          }
+        >
+          <SelectTrigger className="w-36">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="ALL">입금여부 전체</SelectItem>
+            <SelectItem value="UNPAID">미입금</SelectItem>
+            <SelectItem value="PAID">입금완료</SelectItem>
+          </SelectContent>
+        </Select>
+
+        <Select
+          value={paymentMethod || "ALL"}
+          onValueChange={(value) =>
+            pushParams({ payment_method: value === "ALL" ? "" : value })
+          }
+        >
+          <SelectTrigger className="w-36">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="ALL">지불방법 전체</SelectItem>
+            {PAYMENT_METHOD_OPTIONS.map((option) => (
+              <SelectItem key={option.value} value={option.value}>
+                {option.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
     </div>
   )
