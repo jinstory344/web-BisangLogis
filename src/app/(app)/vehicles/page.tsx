@@ -32,7 +32,7 @@ export default async function VehiclesPage({
   return (
     <div className="p-4 md:p-6">
       <div className="flex items-center justify-between gap-4">
-        <h1 className="text-2xl font-semibold">차량·기사 관리</h1>
+        <h1 className="text-2xl font-semibold">차량 정보</h1>
         <Button asChild size="sm">
           <Link href="/vehicles/new">
             <Plus />
@@ -42,7 +42,7 @@ export default async function VehiclesPage({
       </div>
 
       <div className="mt-4">
-        <SearchBox defaultValue={query} placeholder="차량번호 또는 기사명 검색" />
+        <SearchBox defaultValue={query} placeholder="차량번호 또는 이름 검색" />
       </div>
 
       {error ? (

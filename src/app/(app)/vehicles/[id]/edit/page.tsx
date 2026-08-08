@@ -35,7 +35,7 @@ export default async function EditVehiclePage({
 
   return (
     <div className="p-4 md:p-6">
-      <h1 className="text-2xl font-semibold">차량 수정</h1>
+      <h1 className="text-2xl font-semibold">차량 정보 수정</h1>
       <div className="mt-4 max-w-lg">
         <VehicleForm
           action={updateVehicleAction.bind(null, id)}

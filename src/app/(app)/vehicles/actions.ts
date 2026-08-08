@@ -18,7 +18,7 @@ export interface VehicleSearchResult {
   driver_phone: string | null
 }
 
-/** 2.4 차량 자동완성: 차량번호/기사명으로 검색 */
+/** 2.4 차량 자동완성: 차량번호/이름으로 검색 */
 export async function searchVehiclesAction(
   query: string
 ): Promise<VehicleSearchResult[]> {

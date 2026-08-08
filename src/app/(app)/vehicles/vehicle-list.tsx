@@ -23,6 +23,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { formatPhoneNumber } from "@/lib/phone"
 import type { VehicleRow } from "@/lib/supabase/database.types"
 
 import { deleteVehicleAction, getVehicleDispatchCount } from "./actions"
@@ -70,9 +71,9 @@ export function VehicleList({ vehicles }: { vehicles: VehicleRow[] }) {
           <TableHeader>
             <TableRow>
               <TableHead>차량번호</TableHead>
-              <TableHead>기사명</TableHead>
+              <TableHead>이름</TableHead>
               <TableHead>연락처</TableHead>
-              <TableHead>운수사</TableHead>
+              <TableHead>사업자명</TableHead>
               <TableHead>차종</TableHead>
               <TableHead className="text-right">관리</TableHead>
             </TableRow>
@@ -84,7 +85,7 @@ export function VehicleList({ vehicles }: { vehicles: VehicleRow[] }) {
                   {vehicle.plate_no}
                 </TableCell>
                 <TableCell>{vehicle.driver_name}</TableCell>
-                <TableCell>{vehicle.driver_phone ?? "-"}</TableCell>
+                <TableCell>{formatPhoneNumber(vehicle.driver_phone)}</TableCell>
                 <TableCell>{vehicle.carrier_name ?? "-"}</TableCell>
                 <TableCell>{vehicle.vehicle_type ?? "-"}</TableCell>
                 <TableCell className="text-right">
@@ -115,7 +116,7 @@ export function VehicleList({ vehicles }: { vehicles: VehicleRow[] }) {
               <div>
                 <p className="font-medium">{vehicle.plate_no}</p>
                 <p className="text-sm text-muted-foreground">
-                  {vehicle.driver_name} · {vehicle.driver_phone ?? "-"}
+                  {vehicle.driver_name} · {formatPhoneNumber(vehicle.driver_phone)}
                 </p>
               </div>
               <div className="flex gap-2">

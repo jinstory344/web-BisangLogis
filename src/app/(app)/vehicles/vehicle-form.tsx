@@ -14,6 +14,13 @@ import {
   FormMessage,
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import {
   vehicleFormSchema,
@@ -76,7 +83,7 @@ export function VehicleForm({
           name="driver_name"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>기사명 *</FormLabel>
+              <FormLabel>이름 *</FormLabel>
               <FormControl>
                 <Input {...field} />
               </FormControl>
@@ -89,7 +96,7 @@ export function VehicleForm({
           name="driver_phone"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>기사 연락처</FormLabel>
+              <FormLabel>연락처</FormLabel>
               <FormControl>
                 <Input {...field} type="tel" />
               </FormControl>
@@ -102,7 +109,7 @@ export function VehicleForm({
           name="carrier_name"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>소속 운수사</FormLabel>
+              <FormLabel>사업자명</FormLabel>
               <FormControl>
                 <Input {...field} />
               </FormControl>
@@ -116,9 +123,22 @@ export function VehicleForm({
           render={({ field }) => (
             <FormItem>
               <FormLabel>차종/톤수</FormLabel>
-              <FormControl>
-                <Input {...field} />
-              </FormControl>
+              <Select value={field.value} onValueChange={field.onChange}>
+                <FormControl>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="차종/톤수 선택" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {Array.from({ length: 17 }, (_, i) => `${i + 2}p`).map(
+                    (option) => (
+                      <SelectItem key={option} value={option}>
+                        {option}
+                      </SelectItem>
+                    )
+                  )}
+                </SelectContent>
+              </Select>
               <FormMessage />
             </FormItem>
           )}
