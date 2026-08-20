@@ -218,8 +218,12 @@ export function SalesForm({
                   <Input
                     type="number"
                     min={0}
-                    value={field.value}
-                    onChange={(e) => field.onChange(e.target.valueAsNumber || 0)}
+                    value={field.value === 0 ? "" : field.value}
+                    onChange={(e) => {
+                      const next =
+                        e.target.value === "" ? 0 : e.target.valueAsNumber
+                      field.onChange(Number.isNaN(next) ? 0 : next)
+                    }}
                   />
                 </FormControl>
                 <FormMessage />
