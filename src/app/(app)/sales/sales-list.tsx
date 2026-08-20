@@ -7,8 +7,19 @@ import { toast } from "sonner"
 
 import {
   bulkMarkDispatchesPaidAction,
+  deleteDispatchAction,
   markDispatchPaidAction,
 } from "@/app/(app)/dispatches/actions"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import {
@@ -63,6 +74,7 @@ export function SalesList({
     null
   )
   const [singlePaidAt, setSinglePaidAt] = useState(getTodayInSeoul())
+  const [deleteTarget, setDeleteTarget] = useState<DispatchRow | null>(null)
   const [isPending, startTransition] = useTransition()
 
   function pageHref(nextPage: number) {
@@ -110,6 +122,21 @@ export function SalesList({
         toast.error(err instanceof Error ? err.message : "입금 처리 실패")
       } finally {
         setSinglePayTarget(null)
+      }
+    })
+  }
+
+  function handleDeleteConfirm() {
+    if (!deleteTarget) return
+    const target = deleteTarget
+    startTransition(async () => {
+      try {
+        await deleteDispatchAction(target.id)
+        toast.success("삭제했습니다")
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : "삭제 실패")
+      } finally {
+        setDeleteTarget(null)
       }
     })
   }
@@ -217,6 +244,13 @@ export function SalesList({
                     <Button variant="outline" size="sm" asChild>
                       <Link href={`/dispatches/${d.id}`}>상세</Link>
                     </Button>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => setDeleteTarget(d)}
+                    >
+                      삭제
+                    </Button>
                   </div>
                 </TableCell>
               </TableRow>
@@ -285,6 +319,13 @@ export function SalesList({
                 ) : null}
                 <Button variant="outline" size="sm" asChild>
                   <Link href={`/dispatches/${d.id}`}>상세</Link>
+                </Button>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => setDeleteTarget(d)}
+                >
+                  삭제
                 </Button>
               </div>
             </div>
@@ -375,6 +416,26 @@ export function SalesList({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog
+        open={deleteTarget !== null}
+        onOpenChange={(open) => !open && setDeleteTarget(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>매출 건을 삭제할까요?</AlertDialogTitle>
+            <AlertDialogDescription>
+              휴지통으로 이동하며, 30일 내 복구할 수 있습니다.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>취소</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteConfirm} disabled={isPending}>
+              삭제
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   )
 }
