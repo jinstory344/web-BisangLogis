@@ -270,6 +270,14 @@ export async function deleteDispatchAction(id: string): Promise<void> {
   const supabase = await createClient()
   await softDelete(supabase, "dispatches", id)
   revalidatePath("/dispatches")
+  revalidatePath("/sales")
+}
+
+/** 배차/매출 목록에서 체크박스로 선택한 여러 건을 한 번에 삭제 */
+export async function bulkDeleteDispatchesAction(ids: string[]): Promise<void> {
+  if (ids.length === 0) return
+
+  await Promise.all(ids.map((id) => deleteDispatchAction(id)))
 }
 
 /** 3.7 배차 수정 (update_dispatch RPC로 부가세 재계산 + 감사 로그를 함께 처리) */

@@ -6,6 +6,7 @@ import { useState, useTransition } from "react"
 import { toast } from "sonner"
 
 import {
+  bulkDeleteDispatchesAction,
   bulkMarkDispatchesPaidAction,
   deleteDispatchAction,
   markDispatchPaidAction,
@@ -75,6 +76,7 @@ export function SalesList({
   )
   const [singlePaidAt, setSinglePaidAt] = useState(getTodayInSeoul())
   const [deleteTarget, setDeleteTarget] = useState<DispatchRow | null>(null)
+  const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState(false)
   const [isPending, startTransition] = useTransition()
 
   function pageHref(nextPage: number) {
@@ -126,6 +128,21 @@ export function SalesList({
     })
   }
 
+  function handleBulkDeleteConfirm() {
+    const ids = Array.from(selected)
+    startTransition(async () => {
+      try {
+        await bulkDeleteDispatchesAction(ids)
+        toast.success(`${ids.length}건 삭제했습니다`)
+        setSelected(new Set())
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : "삭제 실패")
+      } finally {
+        setBulkDeleteDialogOpen(false)
+      }
+    })
+  }
+
   function handleDeleteConfirm() {
     if (!deleteTarget) return
     const target = deleteTarget
@@ -163,6 +180,14 @@ export function SalesList({
             }}
           >
             일괄 입금 처리
+          </Button>
+          <Button
+            type="button"
+            variant="destructive"
+            size="sm"
+            onClick={() => setBulkDeleteDialogOpen(true)}
+          >
+            일괄삭제
           </Button>
         </div>
       ) : null}
@@ -431,6 +456,29 @@ export function SalesList({
           <AlertDialogFooter>
             <AlertDialogCancel>취소</AlertDialogCancel>
             <AlertDialogAction onClick={handleDeleteConfirm} disabled={isPending}>
+              삭제
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog
+        open={bulkDeleteDialogOpen}
+        onOpenChange={setBulkDeleteDialogOpen}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{selected.size}건을 삭제할까요?</AlertDialogTitle>
+            <AlertDialogDescription>
+              휴지통으로 이동하며, 30일 내 복구할 수 있습니다.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>취소</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleBulkDeleteConfirm}
+              disabled={isPending}
+            >
               삭제
             </AlertDialogAction>
           </AlertDialogFooter>
