@@ -21,9 +21,9 @@ export interface NavItem {
 /** 모바일 하단 탭에 노출되는 핵심 메뉴 */
 export const primaryNavItems: NavItem[] = [
   { label: "대시보드", href: "/", icon: LayoutDashboard },
-  { label: "배차", href: "/dispatches", icon: Truck },
   { label: "매출", href: "/sales", icon: TrendingUp },
   { label: "지출", href: "/expenses", icon: Wallet },
+  { label: "배차", href: "/dispatches", icon: Truck },
 ]
 
 /** 모바일 "더보기" 시트 및 데스크톱 사이드바 하단에 노출되는 메뉴 */
