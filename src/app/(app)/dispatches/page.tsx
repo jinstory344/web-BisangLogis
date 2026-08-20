@@ -46,10 +46,6 @@ export default async function DispatchesPage({
   const rangeStart = (page - 1) * PAGE_SIZE
   const rangeEnd = rangeStart + PAGE_SIZE - 1
 
-  const { data, error, count } = await baseQuery
-    .order("dispatch_date", { ascending: false })
-    .range(rangeStart, rangeEnd)
-
   // 하단 합계 행: 페이지가 아닌 필터 전체 기준 (건수/수수료 합)
   let summaryQuery = supabase
     .from("dispatches")
@@ -60,7 +56,11 @@ export default async function DispatchesPage({
 
   if (clientId) summaryQuery = summaryQuery.eq("client_id", clientId)
 
-  const { data: summaryRows } = await summaryQuery
+  // 서로 독립된 조회라 순차 대기 대신 동시에 보내 왕복 지연을 줄인다.
+  const [{ data, error, count }, { data: summaryRows }] = await Promise.all([
+    baseQuery.order("dispatch_date", { ascending: false }).range(rangeStart, rangeEnd),
+    summaryQuery,
+  ])
 
   const summary = (summaryRows ?? []).reduce(
     (acc, row) => ({

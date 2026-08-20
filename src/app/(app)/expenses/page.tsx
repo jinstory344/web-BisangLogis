@@ -49,10 +49,6 @@ export default async function ExpensesPage({
   const rangeStart = (page - 1) * PAGE_SIZE
   const rangeEnd = rangeStart + PAGE_SIZE - 1
 
-  const { data, error, count } = await baseQuery
-    .order("expense_date", { ascending: false })
-    .range(rangeStart, rangeEnd)
-
   let summaryQuery = supabase
     .from("expenses")
     .select("category_major, amount")
@@ -63,7 +59,11 @@ export default async function ExpensesPage({
   if (categoryMajor) summaryQuery = summaryQuery.eq("category_major", categoryMajor)
   if (categoryMinor) summaryQuery = summaryQuery.eq("category_minor", categoryMinor)
 
-  const { data: summaryRows } = await summaryQuery
+  // 서로 독립된 조회라 순차 대기 대신 동시에 보내 왕복 지연을 줄인다.
+  const [{ data, error, count }, { data: summaryRows }] = await Promise.all([
+    baseQuery.order("expense_date", { ascending: false }).range(rangeStart, rangeEnd),
+    summaryQuery,
+  ])
 
   const byMajorMap = new Map<string, number>()
   let total = 0
