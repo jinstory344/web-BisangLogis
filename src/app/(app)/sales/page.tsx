@@ -4,7 +4,7 @@ import { Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { getCurrentMonthRangeInSeoul } from "@/lib/date"
 import { createClient } from "@/lib/supabase/server"
-import type { DispatchRow, PaymentStatus } from "@/lib/supabase/database.types"
+import type { PaymentMethod, PaymentStatus, SaleRow } from "@/lib/supabase/database.types"
 
 import { SalesFilters } from "./sales-filters"
 import { SalesList } from "./sales-list"
@@ -14,8 +14,7 @@ const PAGE_SIZE = 50
 interface SalesSearchParams {
   from?: string
   to?: string
-  client_id?: string
-  client_name?: string
+  source_major?: string
   payment_status?: string
   payment_method?: string
   page?: string
@@ -30,8 +29,7 @@ export default async function SalesPage({
   const defaultRange = getCurrentMonthRangeInSeoul()
   const from = params.from || defaultRange.from
   const to = params.to || defaultRange.to
-  const clientId = params.client_id ?? ""
-  const clientName = params.client_name ?? ""
+  const sourceMajor = params.source_major ?? ""
   const paymentStatus = params.payment_status ?? ""
   const paymentMethod = params.payment_method ?? ""
   const page = Math.max(1, Number(params.page) || 1)
@@ -39,21 +37,18 @@ export default async function SalesPage({
   const supabase = await createClient()
 
   let baseQuery = supabase
-    .from("dispatches")
+    .from("sales")
     .select("*", { count: "exact" })
     .is("deleted_at", null)
-    .gte("dispatch_date", from)
-    .lte("dispatch_date", to)
+    .gte("sale_date", from)
+    .lte("sale_date", to)
 
-  if (clientId) baseQuery = baseQuery.eq("client_id", clientId)
+  if (sourceMajor) baseQuery = baseQuery.eq("source_major", sourceMajor)
   if (paymentStatus) {
     baseQuery = baseQuery.eq("payment_status", paymentStatus as PaymentStatus)
   }
   if (paymentMethod) {
-    baseQuery = baseQuery.eq(
-      "payment_method",
-      paymentMethod as DispatchRow["payment_method"]
-    )
+    baseQuery = baseQuery.eq("payment_method", paymentMethod as PaymentMethod)
   }
 
   const rangeStart = (page - 1) * PAGE_SIZE
@@ -61,13 +56,13 @@ export default async function SalesPage({
 
   // 4.4 목록 하단 합계 행: 페이지가 아닌 필터 전체 기준 (건수/합계금액/공급가액)
   let summaryQuery = supabase
-    .from("dispatches")
+    .from("sales")
     .select("total_amount, supply_amount")
     .is("deleted_at", null)
-    .gte("dispatch_date", from)
-    .lte("dispatch_date", to)
+    .gte("sale_date", from)
+    .lte("sale_date", to)
 
-  if (clientId) summaryQuery = summaryQuery.eq("client_id", clientId)
+  if (sourceMajor) summaryQuery = summaryQuery.eq("source_major", sourceMajor)
   if (paymentStatus) {
     summaryQuery = summaryQuery.eq(
       "payment_status",
@@ -77,7 +72,7 @@ export default async function SalesPage({
   if (paymentMethod) {
     summaryQuery = summaryQuery.eq(
       "payment_method",
-      paymentMethod as DispatchRow["payment_method"]
+      paymentMethod as PaymentMethod
     )
   }
 
@@ -86,7 +81,7 @@ export default async function SalesPage({
     { data, error, count },
     { data: summaryRows, error: summaryError },
   ] = await Promise.all([
-    baseQuery.order("dispatch_date", { ascending: false }).range(rangeStart, rangeEnd),
+    baseQuery.order("sale_date", { ascending: false }).range(rangeStart, rangeEnd),
     summaryQuery,
   ])
 
@@ -104,20 +99,6 @@ export default async function SalesPage({
   const hasFetchError = !!error || !!summaryError
   const reconciliationMismatch =
     !hasFetchError && summary.count !== (count ?? 0)
-
-  const clientIds = Array.from(
-    new Set((data ?? []).map((d) => d.client_id).filter((v): v is string => !!v))
-  )
-  let clientNameMap: Record<string, string> = {}
-  if (clientIds.length > 0) {
-    const { data: clientRows } = await supabase
-      .from("clients")
-      .select("id, name")
-      .in("id", clientIds)
-    clientNameMap = Object.fromEntries(
-      (clientRows ?? []).map((c) => [c.id, c.name])
-    )
-  }
 
   const totalPages = Math.max(1, Math.ceil((count ?? 0) / PAGE_SIZE))
 
@@ -144,8 +125,7 @@ export default async function SalesPage({
         <SalesFilters
           from={from}
           to={to}
-          clientId={clientId}
-          clientName={clientName}
+          sourceMajor={sourceMajor}
           paymentStatus={paymentStatus}
           paymentMethod={paymentMethod}
         />
@@ -158,8 +138,7 @@ export default async function SalesPage({
       ) : (
         <div className="mt-4">
           <SalesList
-            dispatches={(data ?? []) as DispatchRow[]}
-            clientNameMap={clientNameMap}
+            sales={(data ?? []) as SaleRow[]}
             summary={summary}
             page={page}
             totalPages={totalPages}

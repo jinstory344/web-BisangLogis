@@ -46,29 +46,11 @@ export default async function DispatchesPage({
   const rangeStart = (page - 1) * PAGE_SIZE
   const rangeEnd = rangeStart + PAGE_SIZE - 1
 
-  // 하단 합계 행: 페이지가 아닌 필터 전체 기준 (건수/수수료 합)
-  let summaryQuery = supabase
-    .from("dispatches")
-    .select("fee_amount")
-    .is("deleted_at", null)
-    .gte("dispatch_date", from)
-    .lte("dispatch_date", to)
-
-  if (clientId) summaryQuery = summaryQuery.eq("client_id", clientId)
-
-  // 서로 독립된 조회라 순차 대기 대신 동시에 보내 왕복 지연을 줄인다.
-  const [{ data, error, count }, { data: summaryRows }] = await Promise.all([
-    baseQuery.order("dispatch_date", { ascending: false }).range(rangeStart, rangeEnd),
-    summaryQuery,
-  ])
-
-  const summary = (summaryRows ?? []).reduce(
-    (acc, row) => ({
-      count: acc.count + 1,
-      feeAmount: acc.feeAmount + row.fee_amount,
-    }),
-    { count: 0, feeAmount: 0 }
-  )
+  // 배차는 금액을 갖지 않으므로 하단 합계 행은 건수만 표시한다 —
+  // count: "exact"로 이미 필터 전체 건수를 받아오므로 별도 집계 조회가 필요 없다.
+  const { data, error, count } = await baseQuery
+    .order("dispatch_date", { ascending: false })
+    .range(rangeStart, rangeEnd)
 
   const clientIds = Array.from(
     new Set((data ?? []).map((d) => d.client_id).filter((v): v is string => !!v))
@@ -116,7 +98,7 @@ export default async function DispatchesPage({
           <DispatchList
             dispatches={(data ?? []) as DispatchRow[]}
             clientNameMap={clientNameMap}
-            summary={summary}
+            totalCount={count ?? 0}
             page={page}
             totalPages={totalPages}
           />

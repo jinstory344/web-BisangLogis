@@ -57,6 +57,10 @@ export type VehicleRow = BaseColumns & {
   memo: string | null
 }
 
+/**
+ * 배차 = 차량 섭외/중개(물류 운영 정보) 전용. 금액은 다루지 않는다.
+ * 실제 수익은 별도 테이블인 sales가 담당한다 (배차 1건 = 매출 1건이 아님).
+ */
 export type DispatchRow = BaseColumns & {
   dispatch_date: string
   client_id: string | null
@@ -73,17 +77,36 @@ export type DispatchRow = BaseColumns & {
   driver_phone_snapshot: string | null
   carrier_name: string | null
   dispatcher_name: string | null
-  source_major: string | null
-  source_minor: string | null
-  source_note: string | null
-  total_amount: number
+  /** 운임 — 배차 완료 후 기사/차량에게 지급할 금액. 부가세 분리 계산 대상이 아니다. */
+  freight_amount: number | null
+  /** 수수료 — 일부 거래처에 한해 발생. 단순 기록용이며 매출과 자동 연결되지 않는다. */
+  fee_amount: number
+  memo: string | null
+}
+
+/**
+ * 매출 = 실제 수익(직접 운행 또는 일부 업체 수수료) 전용.
+ * dispatches와 완전히 독립된 테이블이며 거래처/차량/기사 정보를 갖지 않는다.
+ */
+export type SaleRow = BaseColumns & {
+  sale_date: string
+  origin: string
+  destination: string
   supply_amount: number
   vat_amount: number
+  total_amount: number
   is_vat_exempt: boolean
-  fee_amount: number
   payment_method: PaymentMethod
   payment_status: PaymentStatus
   paid_at: string | null
+  source_major: string | null
+  source_minor: string | null
+  source_note: string | null
+  carrier_name: string | null
+  /** 계산서발행할사업자 — 직접 운송 건에서 운임을 지급하고 계산서를 받을 상대 상호명(FK 아님). */
+  billing_entity_name: string | null
+  /** 오더자 전화번호 — source_minor(오더자)와 짝을 이루는 연락처. */
+  order_contact_phone: string | null
   memo: string | null
 }
 
@@ -167,6 +190,7 @@ export type Database = {
       clients: TableDef<ClientRow>
       vehicles: TableDef<VehicleRow>
       dispatches: TableDef<DispatchRow>
+      sales: TableDef<SaleRow>
       expenses: TableDef<ExpenseRow>
       tax_invoices: TableDef<TaxInvoiceRow>
       tax_invoice_dispatches: TableDef<TaxInvoiceDispatchRow>
@@ -215,15 +239,11 @@ export type Database = {
           p_driver_phone_snapshot: string | null
           p_carrier_name: string | null
           p_contact_name: string | null
-          p_source_major: string | null
-          p_source_minor: string | null
-          p_source_note: string | null
-          p_supply_amount: number
-          p_is_vat_exempt: boolean
-          p_fee_amount: number
-          p_payment_method: PaymentMethod
           p_memo?: string | null
           p_cargo_box_type?: CargoBoxType | null
+          p_freight_amount?: number | null
+          /** null을 넘겨도 RPC 내부에서 coalesce(...,0) 처리된다. */
+          p_fee_amount?: number | null
         }
         Returns: string
       }
@@ -243,15 +263,49 @@ export type Database = {
           p_driver_phone_snapshot: string | null
           p_carrier_name: string | null
           p_contact_name: string | null
+          p_memo?: string | null
+          p_cargo_box_type?: CargoBoxType | null
+          p_freight_amount?: number | null
+          /** null을 넘겨도 RPC 내부에서 coalesce(...,0) 처리된다. */
+          p_fee_amount?: number | null
+        }
+        Returns: undefined
+      }
+      /** vat_amount/total_amount는 RPC 내부에서 supply_amount로부터 계산한다 (4.3). */
+      create_sale: {
+        Args: {
+          p_sale_date: string
+          p_origin: string
+          p_destination: string
+          p_supply_amount: number
+          p_is_vat_exempt: boolean
+          p_payment_method: PaymentMethod
           p_source_major: string | null
           p_source_minor: string | null
           p_source_note: string | null
+          p_carrier_name: string | null
+          p_memo?: string | null
+          p_billing_entity_name?: string | null
+          p_order_contact_phone?: string | null
+        }
+        Returns: string
+      }
+      update_sale: {
+        Args: {
+          p_id: string
+          p_sale_date: string
+          p_origin: string
+          p_destination: string
           p_supply_amount: number
           p_is_vat_exempt: boolean
-          p_fee_amount: number
           p_payment_method: PaymentMethod
+          p_source_major: string | null
+          p_source_minor: string | null
+          p_source_note: string | null
+          p_carrier_name: string | null
           p_memo?: string | null
-          p_cargo_box_type?: CargoBoxType | null
+          p_billing_entity_name?: string | null
+          p_order_contact_phone?: string | null
         }
         Returns: undefined
       }

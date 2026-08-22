@@ -24,7 +24,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { PAYMENT_METHOD_LABELS } from "@/lib/constants/payment-method"
 import { formatKRW } from "@/lib/money"
 import { formatPhoneNumber } from "@/lib/phone"
 import type { DispatchRow } from "@/lib/supabase/database.types"
@@ -34,19 +33,16 @@ import { deleteDispatchAction } from "./actions"
 interface DispatchListProps {
   dispatches: DispatchRow[]
   clientNameMap: Record<string, string>
-  summary: {
-    count: number
-    feeAmount: number
-  }
+  totalCount: number
   page: number
   totalPages: number
 }
 
-/** 배차(운영 정보) 목록 — 재무 정보(공급가액/세액/합계금액/지불방법/입금여부)는 매출 페이지 담당 */
+/** 배차(차량 섭외) 목록 — 금액은 다루지 않는다. 실제 수익은 매출 페이지 담당. */
 export function DispatchList({
   dispatches,
   clientNameMap,
-  summary,
+  totalCount,
   page,
   totalPages,
 }: DispatchListProps) {
@@ -101,7 +97,6 @@ export function DispatchList({
               <TableHead>차량정보</TableHead>
               <TableHead>전화번호</TableHead>
               <TableHead className="text-right">운임</TableHead>
-              <TableHead>지불방법</TableHead>
               <TableHead className="text-right">수수료</TableHead>
               <TableHead className="text-right">관리</TableHead>
             </TableRow>
@@ -130,9 +125,8 @@ export function DispatchList({
                 </TableCell>
                 <TableCell>{formatPhoneNumber(d.driver_phone_snapshot)}</TableCell>
                 <TableCell className="text-right">
-                  {formatKRW(d.supply_amount)}
+                  {d.freight_amount != null ? formatKRW(d.freight_amount) : "-"}
                 </TableCell>
-                <TableCell>{PAYMENT_METHOD_LABELS[d.payment_method]}</TableCell>
                 <TableCell className="text-right">
                   {formatKRW(d.fee_amount)}
                 </TableCell>
@@ -154,9 +148,8 @@ export function DispatchList({
             ))}
           </TableBody>
         </Table>
-        <div className="flex items-center justify-between border-t bg-muted/30 p-3 text-sm font-medium">
-          <span>{summary.count}건</span>
-          <span>수수료 합계 {formatKRW(summary.feeAmount)}</span>
+        <div className="border-t bg-muted/30 p-3 text-sm font-medium">
+          <span>{totalCount}건</span>
         </div>
       </div>
 
@@ -173,8 +166,13 @@ export function DispatchList({
                   {d.origin} → {d.destination}
                 </p>
                 <p className="text-sm text-foreground">
-                  운임 {formatKRW(d.supply_amount)}
-                  {d.fee_amount > 0 ? ` (${formatKRW(d.fee_amount)})` : ""}
+                  운임{" "}
+                  {d.freight_amount != null
+                    ? formatKRW(d.freight_amount)
+                    : "-"}
+                  {d.fee_amount > 0
+                    ? ` / 수수료 ${formatKRW(d.fee_amount)}`
+                    : ""}
                 </p>
                 <p className="text-sm text-muted-foreground">
                   {d.plate_no_snapshot ?? "-"}
@@ -210,10 +208,7 @@ export function DispatchList({
           </div>
         ))}
         <div className="rounded-md border bg-muted/30 p-3 text-sm">
-          <div className="flex justify-between">
-            <span>{summary.count}건</span>
-            <span>수수료 합계 {formatKRW(summary.feeAmount)}</span>
-          </div>
+          <span>{totalCount}건</span>
         </div>
       </div>
 

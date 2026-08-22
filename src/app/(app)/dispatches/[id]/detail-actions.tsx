@@ -16,46 +16,14 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { getTodayInSeoul } from "@/lib/date"
-import type { PaymentStatus } from "@/lib/supabase/database.types"
 
-import { deleteDispatchAction, markDispatchPaidAction } from "../actions"
+import { deleteDispatchAction } from "../actions"
 
-export function DetailActions({
-  id,
-  paymentStatus,
-}: {
-  id: string
-  paymentStatus: PaymentStatus
-}) {
+/** 배차는 금액/입금을 다루지 않으므로 입금 처리는 매출 상세에서만 제공한다. */
+export function DetailActions({ id }: { id: string }) {
   const router = useRouter()
-  const [payDialogOpen, setPayDialogOpen] = useState(false)
-  const [paidAt, setPaidAt] = useState(getTodayInSeoul())
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [isPending, startTransition] = useTransition()
-
-  function handlePayConfirm() {
-    startTransition(async () => {
-      try {
-        await markDispatchPaidAction(id, paidAt)
-        toast.success("입금 처리했습니다")
-        router.refresh()
-      } catch (err) {
-        toast.error(err instanceof Error ? err.message : "입금 처리 실패")
-      } finally {
-        setPayDialogOpen(false)
-      }
-    })
-  }
 
   function handleDeleteConfirm() {
     startTransition(async () => {
@@ -72,51 +40,12 @@ export function DetailActions({
 
   return (
     <div className="flex gap-2">
-      {paymentStatus === "UNPAID" ? (
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={() => {
-            setPaidAt(getTodayInSeoul())
-            setPayDialogOpen(true)
-          }}
-        >
-          입금 처리
-        </Button>
-      ) : null}
       <Button variant="outline" size="sm" asChild>
         <Link href={`/dispatches/${id}/edit`}>수정</Link>
       </Button>
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={() => setDeleteOpen(true)}
-      >
+      <Button variant="outline" size="sm" onClick={() => setDeleteOpen(true)}>
         삭제
       </Button>
-
-      <Dialog open={payDialogOpen} onOpenChange={setPayDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>입금 처리</DialogTitle>
-          </DialogHeader>
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="detail-paid-at">입금일</Label>
-            <Input
-              id="detail-paid-at"
-              type="date"
-              value={paidAt}
-              onChange={(e) => setPaidAt(e.target.value)}
-            />
-          </div>
-          <DialogFooter>
-            <Button onClick={handlePayConfirm} disabled={isPending}>
-              확인
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
         <AlertDialogContent>

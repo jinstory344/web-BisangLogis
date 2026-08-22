@@ -3,8 +3,6 @@
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { useState } from "react"
 
-import type { ClientSearchResult } from "@/app/(app)/clients/actions"
-import { ClientCombobox } from "@/components/clients/client-combobox"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {
@@ -15,6 +13,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { PAYMENT_METHOD_OPTIONS } from "@/lib/constants/payment-method"
+import { SOURCE_MAJOR_OPTIONS } from "@/lib/constants/source"
 import {
   getCurrentMonthRangeInSeoul,
   getPreviousMonthRangeInSeoul,
@@ -23,18 +22,19 @@ import {
 interface SalesFiltersProps {
   from: string
   to: string
-  clientId: string
-  clientName: string
+  sourceMajor: string
   paymentStatus: string
   paymentMethod: string
 }
 
-/** 매출(재무 정보) 페이지 필터: 기간 + 거래처 + 입금여부 + 지불방법 */
+/**
+ * 매출 페이지 필터: 기간 + 출처 대분류 + 입금여부 + 지불방법.
+ * 매출은 거래처(client_id)를 갖지 않으므로 거래처 필터는 제공하지 않는다.
+ */
 export function SalesFilters({
   from,
   to,
-  clientId,
-  clientName,
+  sourceMajor,
   paymentStatus,
   paymentMethod,
 }: SalesFiltersProps) {
@@ -44,9 +44,6 @@ export function SalesFilters({
 
   const [dateFrom, setDateFrom] = useState(from)
   const [dateTo, setDateTo] = useState(to)
-  const [client, setClient] = useState<ClientSearchResult | null>(
-    clientId ? { id: clientId, name: clientName, biz_no: null } : null
-  )
 
   function pushParams(next: Record<string, string>) {
     const params = new URLSearchParams(searchParams.toString())
@@ -104,18 +101,24 @@ export function SalesFilters({
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
-        <div className="w-full max-w-56">
-          <ClientCombobox
-            value={client}
-            onChange={(next) => {
-              setClient(next)
-              pushParams({
-                client_id: next?.id ?? "",
-                client_name: next?.name ?? "",
-              })
-            }}
-          />
-        </div>
+        <Select
+          value={sourceMajor || "ALL"}
+          onValueChange={(value) =>
+            pushParams({ source_major: value === "ALL" ? "" : value })
+          }
+        >
+          <SelectTrigger className="w-36">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="ALL">출처 전체</SelectItem>
+            {SOURCE_MAJOR_OPTIONS.map((major) => (
+              <SelectItem key={major} value={major}>
+                {major}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
 
         <Select
           value={paymentStatus || "ALL"}

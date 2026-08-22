@@ -11,6 +11,7 @@ export const SOFT_DELETABLE_TABLES = [
   "clients",
   "vehicles",
   "dispatches",
+  "sales",
   "expenses",
   "tax_invoices",
   "purchase_invoices",

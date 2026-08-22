@@ -1,6 +1,6 @@
-import { createDispatchActionForSales } from "@/app/(app)/dispatches/actions"
-import { dispatchFormDefaults } from "@/lib/validations/dispatch"
+import { saleFormDefaults } from "@/lib/validations/sales"
 
+import { createSaleAction } from "../actions"
 import { SalesForm } from "../sales-form"
 
 export default function NewSalesPage() {
@@ -9,9 +9,8 @@ export default function NewSalesPage() {
       <h1 className="text-2xl font-semibold">매출 등록</h1>
       <div className="mt-4 max-w-lg">
         <SalesForm
-          action={createDispatchActionForSales}
-          defaultValues={{ ...dispatchFormDefaults, payment_method: "TAX_INVOICE" }}
-          defaultClient={null}
+          action={createSaleAction}
+          defaultValues={saleFormDefaults}
           submitLabel="등록"
         />
       </div>

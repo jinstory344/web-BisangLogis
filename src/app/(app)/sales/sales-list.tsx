@@ -6,12 +6,6 @@ import { useState, useTransition } from "react"
 import { toast } from "sonner"
 
 import {
-  bulkDeleteDispatchesAction,
-  bulkMarkDispatchesPaidAction,
-  deleteDispatchAction,
-  markDispatchPaidAction,
-} from "@/app/(app)/dispatches/actions"
-import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -44,11 +38,18 @@ import { PaymentBadge } from "@/components/dispatches/payment-badge"
 import { PAYMENT_METHOD_LABELS } from "@/lib/constants/payment-method"
 import { formatShortDate, getTodayInSeoul } from "@/lib/date"
 import { formatKRW } from "@/lib/money"
-import type { DispatchRow } from "@/lib/supabase/database.types"
+import { formatPhoneNumber } from "@/lib/phone"
+import type { SaleRow } from "@/lib/supabase/database.types"
+
+import {
+  bulkDeleteSalesAction,
+  bulkMarkSalesPaidAction,
+  deleteSaleAction,
+  markSalePaidAction,
+} from "./actions"
 
 interface SalesListProps {
-  dispatches: DispatchRow[]
-  clientNameMap: Record<string, string>
+  sales: SaleRow[]
   summary: {
     count: number
     totalAmount: number
@@ -58,10 +59,9 @@ interface SalesListProps {
   totalPages: number
 }
 
-/** 매출(재무 정보) 목록 — 수수료는 배차 페이지 담당, 여기서는 다루지 않는다 */
+/** 매출(실제 수익) 목록 — 차량/기사/화물 정보는 배차 페이지 담당, 여기서는 다루지 않는다 */
 export function SalesList({
-  dispatches,
-  clientNameMap,
+  sales,
   summary,
   page,
   totalPages,
@@ -71,11 +71,9 @@ export function SalesList({
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [bulkPaidAt, setBulkPaidAt] = useState(getTodayInSeoul())
   const [bulkDialogOpen, setBulkDialogOpen] = useState(false)
-  const [singlePayTarget, setSinglePayTarget] = useState<DispatchRow | null>(
-    null
-  )
+  const [singlePayTarget, setSinglePayTarget] = useState<SaleRow | null>(null)
   const [singlePaidAt, setSinglePaidAt] = useState(getTodayInSeoul())
-  const [deleteTarget, setDeleteTarget] = useState<DispatchRow | null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<SaleRow | null>(null)
   const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState(false)
   const [isPending, startTransition] = useTransition()
 
@@ -86,7 +84,7 @@ export function SalesList({
   }
 
   function toggleAll(checked: boolean) {
-    setSelected(checked ? new Set(dispatches.map((d) => d.id)) : new Set())
+    setSelected(checked ? new Set(sales.map((s) => s.id)) : new Set())
   }
 
   function toggleOne(id: string, checked: boolean) {
@@ -102,7 +100,7 @@ export function SalesList({
     const ids = Array.from(selected)
     startTransition(async () => {
       try {
-        await bulkMarkDispatchesPaidAction(ids, bulkPaidAt)
+        await bulkMarkSalesPaidAction(ids, bulkPaidAt)
         toast.success(`${ids.length}건 입금 처리했습니다`)
         setSelected(new Set())
       } catch (err) {
@@ -118,7 +116,7 @@ export function SalesList({
     const target = singlePayTarget
     startTransition(async () => {
       try {
-        await markDispatchPaidAction(target.id, singlePaidAt)
+        await markSalePaidAction(target.id, singlePaidAt)
         toast.success("입금 처리했습니다")
       } catch (err) {
         toast.error(err instanceof Error ? err.message : "입금 처리 실패")
@@ -132,7 +130,7 @@ export function SalesList({
     const ids = Array.from(selected)
     startTransition(async () => {
       try {
-        await bulkDeleteDispatchesAction(ids)
+        await bulkDeleteSalesAction(ids)
         toast.success(`${ids.length}건 삭제했습니다`)
         setSelected(new Set())
       } catch (err) {
@@ -148,7 +146,7 @@ export function SalesList({
     const target = deleteTarget
     startTransition(async () => {
       try {
-        await deleteDispatchAction(target.id)
+        await deleteSaleAction(target.id)
         toast.success("삭제했습니다")
       } catch (err) {
         toast.error(err instanceof Error ? err.message : "삭제 실패")
@@ -158,7 +156,7 @@ export function SalesList({
     })
   }
 
-  if (dispatches.length === 0) {
+  if (sales.length === 0) {
     return (
       <p className="py-12 text-center text-sm text-muted-foreground">
         조건에 맞는 매출 건이 없습니다.
@@ -199,15 +197,15 @@ export function SalesList({
             <TableRow>
               <TableHead className="w-10">
                 <Checkbox
-                  checked={
-                    selected.size > 0 && selected.size === dispatches.length
-                  }
+                  checked={selected.size > 0 && selected.size === sales.length}
                   onCheckedChange={(checked) => toggleAll(checked === true)}
                 />
               </TableHead>
               <TableHead>날짜</TableHead>
-              <TableHead>거래처</TableHead>
               <TableHead>구간</TableHead>
+              <TableHead>출처</TableHead>
+              <TableHead>사업자</TableHead>
+              <TableHead>계산서발행</TableHead>
               <TableHead className="text-right">공급가액</TableHead>
               <TableHead className="text-right">세액</TableHead>
               <TableHead className="text-right">합계금액</TableHead>
@@ -218,61 +216,64 @@ export function SalesList({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {dispatches.map((d) => (
-              <TableRow key={d.id}>
+            {sales.map((s) => (
+              <TableRow key={s.id}>
                 <TableCell>
                   <Checkbox
-                    checked={selected.has(d.id)}
+                    checked={selected.has(s.id)}
                     onCheckedChange={(checked) =>
-                      toggleOne(d.id, checked === true)
+                      toggleOne(s.id, checked === true)
                     }
                   />
                 </TableCell>
-                <TableCell>{d.dispatch_date}</TableCell>
+                <TableCell>{s.sale_date}</TableCell>
                 <TableCell>
-                  {d.client_id ? clientNameMap[d.client_id] ?? "-" : "-"}
+                  {s.origin} → {s.destination}
                 </TableCell>
                 <TableCell>
-                  {d.origin} → {d.destination}
+                  {s.source_major ?? "-"}
+                  {s.source_minor ? ` / ${s.source_minor}` : ""}
+                </TableCell>
+                <TableCell>{s.carrier_name ?? "-"}</TableCell>
+                <TableCell>{s.billing_entity_name ?? "-"}</TableCell>
+                <TableCell className="text-right">
+                  {formatKRW(s.supply_amount)}
                 </TableCell>
                 <TableCell className="text-right">
-                  {formatKRW(d.supply_amount)}
+                  {formatKRW(s.vat_amount)}
                 </TableCell>
                 <TableCell className="text-right">
-                  {formatKRW(d.vat_amount)}
+                  {formatKRW(s.total_amount)}
                 </TableCell>
-                <TableCell className="text-right">
-                  {formatKRW(d.total_amount)}
-                </TableCell>
-                <TableCell>{PAYMENT_METHOD_LABELS[d.payment_method]}</TableCell>
+                <TableCell>{PAYMENT_METHOD_LABELS[s.payment_method]}</TableCell>
                 <TableCell>
-                  <PaymentBadge status={d.payment_status} />
+                  <PaymentBadge status={s.payment_status} />
                 </TableCell>
                 <TableCell>
-                  {d.paid_at ? formatShortDate(d.paid_at) : "-"}
+                  {s.paid_at ? formatShortDate(s.paid_at) : "-"}
                 </TableCell>
                 <TableCell className="text-right">
                   <div className="flex justify-end gap-2">
-                    {d.payment_status === "UNPAID" ? (
+                    {s.payment_status === "UNPAID" ? (
                       <Button
                         type="button"
                         variant="outline"
                         size="sm"
                         onClick={() => {
                           setSinglePaidAt(getTodayInSeoul())
-                          setSinglePayTarget(d)
+                          setSinglePayTarget(s)
                         }}
                       >
                         입금 처리
                       </Button>
                     ) : null}
                     <Button variant="outline" size="sm" asChild>
-                      <Link href={`/dispatches/${d.id}`}>상세</Link>
+                      <Link href={`/sales/${s.id}`}>상세</Link>
                     </Button>
                     <Button
                       variant="destructive"
                       size="sm"
-                      onClick={() => setDeleteTarget(d)}
+                      onClick={() => setDeleteTarget(s)}
                     >
                       삭제
                     </Button>
@@ -291,64 +292,67 @@ export function SalesList({
 
       {/* 모바일 카드 리스트 */}
       <div className="flex flex-col gap-2 md:hidden">
-        {dispatches.map((d) => (
-          <div key={d.id} className="rounded-md border p-3">
+        {sales.map((s) => (
+          <div key={s.id} className="rounded-md border p-3">
             <div className="flex items-start justify-between gap-2">
               <div className="flex items-start gap-2">
                 <Checkbox
                   className="mt-1"
-                  checked={selected.has(d.id)}
+                  checked={selected.has(s.id)}
                   onCheckedChange={(checked) =>
-                    toggleOne(d.id, checked === true)
+                    toggleOne(s.id, checked === true)
                   }
                 />
                 <div>
                   <p className="inline-block rounded bg-muted px-1.5 py-0.5 text-sm text-muted-foreground italic">
-                    {d.dispatch_date}
+                    {s.sale_date}
                   </p>
                   <p className="font-medium">
-                    {d.origin} → {d.destination}
+                    {s.origin} → {s.destination}
                   </p>
                   <p className="text-sm text-muted-foreground">
-                    {d.client_id ? clientNameMap[d.client_id] ?? "-" : "-"}
-                    {d.contact_name ? ` (${d.contact_name})` : ""}
+                    {s.source_major ?? "-"}
+                    {s.source_minor ? ` / ${s.source_minor}` : ""}
+                    {s.order_contact_phone
+                      ? ` ${formatPhoneNumber(s.order_contact_phone)}`
+                      : ""}
                   </p>
                 </div>
               </div>
               <div className="flex flex-col items-end gap-1">
-                <PaymentBadge status={d.payment_status} />
-                {d.paid_at ? (
+                <PaymentBadge status={s.payment_status} />
+                {s.paid_at ? (
                   <span className="text-xs text-muted-foreground">
-                    {formatShortDate(d.paid_at)}
+                    {formatShortDate(s.paid_at)}
                   </span>
                 ) : null}
               </div>
             </div>
             <div className="mt-2 flex items-center justify-between">
               <span className="text-right font-medium">
-                {formatKRW(d.supply_amount)}
+                {formatKRW(s.supply_amount)}
               </span>
               <div className="flex gap-2">
-                {d.payment_status === "UNPAID" ? (
+                {s.payment_status === "UNPAID" ? (
                   <Button
                     type="button"
                     variant="outline"
                     size="sm"
                     onClick={() => {
                       setSinglePaidAt(getTodayInSeoul())
-                      setSinglePayTarget(d)
+                      setSinglePayTarget(s)
                     }}
                   >
                     입금 처리
                   </Button>
                 ) : null}
                 <Button variant="outline" size="sm" asChild>
-                  <Link href={`/dispatches/${d.id}`}>상세</Link>
+                  <Link href={`/sales/${s.id}`}>상세</Link>
                 </Button>
                 <Button
                   variant="destructive"
                   size="sm"
-                  onClick={() => setDeleteTarget(d)}
+                  onClick={() => setDeleteTarget(s)}
                 >
                   삭제
                 </Button>
@@ -360,8 +364,11 @@ export function SalesList({
           <div className="flex justify-between">
             <span>{summary.count}건</span>
             <span className="text-base">
-              합계금액 {formatKRW(summary.supplyAmount)}
+              합계금액 {formatKRW(summary.totalAmount)}
             </span>
+          </div>
+          <div className="mt-1 flex justify-end text-muted-foreground">
+            <span>공급가액 {formatKRW(summary.supplyAmount)}</span>
           </div>
         </div>
       </div>

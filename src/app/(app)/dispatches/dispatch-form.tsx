@@ -17,7 +17,6 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
-import { Checkbox } from "@/components/ui/checkbox"
 import {
   Form,
   FormControl,
@@ -39,9 +38,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { VehicleCombobox } from "@/components/vehicles/vehicle-combobox"
 import { CARGO_BOX_TYPE_OPTIONS } from "@/lib/constants/cargo-box-type"
 import { DROPOFF_TYPE_OPTIONS } from "@/lib/constants/dropoff-type"
-import { PAYMENT_METHOD_OPTIONS } from "@/lib/constants/payment-method"
 import { getTodayInSeoul } from "@/lib/date"
-import { calcVatFromSupply } from "@/lib/money"
 import {
   dispatchFormSchema,
   type DispatchFormValues,
@@ -72,7 +69,10 @@ interface DispatchFormProps {
 function buildFormData(values: DispatchFormValues): FormData {
   const fd = new FormData()
   Object.entries(values).forEach(([key, value]) => {
-    if (value === undefined) return
+    // null/undefined(미입력)는 아예 전송하지 않는다 — String(null)이 "null"이라는
+    // 문자열로 직렬화되어 서버에서 NaN이 되는 것을 막는다.
+    // 서버의 coerceDispatchFormData가 "전송되지 않음"을 null로 되돌린다.
+    if (value === undefined || value === null) return
     fd.set(key, String(value))
   })
   return fd
@@ -101,13 +101,6 @@ export function DispatchForm({
     },
   })
 
-  const supplyAmount = form.watch("supply_amount")
-  const isVatExempt = form.watch("is_vat_exempt")
-  const { vatAmount, totalAmount } = calcVatFromSupply(
-    Number.isFinite(supplyAmount) ? supplyAmount : 0,
-    isVatExempt
-  )
-
   async function onSubmit(values: DispatchFormValues) {
     const fd = buildFormData(values)
 
@@ -119,7 +112,6 @@ export function DispatchForm({
         origin: values.origin,
         destination: values.destination,
         plateNoSnapshot: values.plate_no_snapshot,
-        supplyAmount: values.supply_amount,
       })
 
       if (isDuplicate) {
@@ -130,6 +122,8 @@ export function DispatchForm({
       setIsCheckingDuplicate(false)
     }
 
+    // useActionState의 formAction을 handleSubmit 콜백에서 수동 호출할 때는
+    // 반드시 transition으로 감싼다 (감싸지 않으면 폼이 클라이언트에서 크래시).
     startTransition(() => {
       formAction(fd)
     })
@@ -315,11 +309,12 @@ export function DispatchForm({
                     type="number"
                     min={0}
                     value={field.value ?? ""}
-                    onChange={(e) =>
+                    onChange={(e) => {
+                      const next = e.target.valueAsNumber
                       field.onChange(
-                        e.target.value === "" ? undefined : e.target.valueAsNumber
+                        e.target.value === "" || Number.isNaN(next) ? null : next
                       )
-                    }
+                    }}
                   />
                 </FormControl>
                 <FormMessage />
@@ -338,11 +333,12 @@ export function DispatchForm({
                     min={0}
                     step={0.01}
                     value={field.value ?? ""}
-                    onChange={(e) =>
+                    onChange={(e) => {
+                      const next = e.target.valueAsNumber
                       field.onChange(
-                        e.target.value === "" ? undefined : e.target.valueAsNumber
+                        e.target.value === "" || Number.isNaN(next) ? null : next
                       )
-                    }
+                    }}
                   />
                 </FormControl>
                 <FormMessage />
@@ -410,102 +406,60 @@ export function DispatchForm({
           />
         </div>
 
-        <div className="grid grid-cols-3 gap-4">
+        <h2 className="mt-2 text-sm font-semibold text-muted-foreground">
+          지급 정보
+        </h2>
+
+        <div className="grid grid-cols-2 gap-4">
           <FormField
             control={form.control}
-            name="supply_amount"
+            name="freight_amount"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>공급가액 *</FormLabel>
+                <FormLabel>운임</FormLabel>
                 <FormControl>
+                  {/* 미입력은 null로 둬야 "값 없음"과 0이 구분되고, 수정 폼에서
+                      지웠을 때 RHF가 defaultValues로 되돌리지 않는다. */}
                   <Input
                     type="number"
                     min={0}
-                    value={field.value}
-                    onChange={(e) => field.onChange(e.target.valueAsNumber || 0)}
+                    value={field.value ?? ""}
+                    onChange={(e) => {
+                      const next = e.target.valueAsNumber
+                      field.onChange(
+                        e.target.value === "" || Number.isNaN(next) ? null : next
+                      )
+                    }}
                   />
                 </FormControl>
                 <FormMessage />
               </FormItem>
             )}
           />
-          <FormItem>
-            <FormLabel>세액</FormLabel>
-            <FormControl>
-              <Input type="number" value={vatAmount} disabled readOnly />
-            </FormControl>
-          </FormItem>
-          <FormItem>
-            <FormLabel>합계</FormLabel>
-            <FormControl>
-              <Input type="number" value={totalAmount} disabled readOnly />
-            </FormControl>
-          </FormItem>
-        </div>
-
-        <FormField
-          control={form.control}
-          name="is_vat_exempt"
-          render={({ field }) => (
-            <FormItem className="flex flex-row items-center gap-2">
-              <FormControl>
-                <Checkbox
-                  checked={field.value}
-                  onCheckedChange={(checked) => field.onChange(checked === true)}
-                />
-              </FormControl>
-              <FormLabel className="!mt-0">현금</FormLabel>
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="fee_amount"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>수수료</FormLabel>
-              <FormControl>
-                <Input
-                  type="number"
-                  min={0}
-                  value={field.value === 0 ? "" : field.value}
-                  onChange={(e) => {
-                    const next =
-                      e.target.value === "" ? 0 : e.target.valueAsNumber
-                    field.onChange(Number.isNaN(next) ? 0 : next)
-                  }}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="payment_method"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>지불방법</FormLabel>
-              <Select value={field.value} onValueChange={field.onChange}>
+          <FormField
+            control={form.control}
+            name="fee_amount"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>수수료</FormLabel>
                 <FormControl>
-                  <SelectTrigger className="w-full">
-                    <SelectValue />
-                  </SelectTrigger>
+                  {/* 기본값 0을 빈 칸으로 보여줘야 앞자리 0이 남는 입력 버그를 피한다. */}
+                  <Input
+                    type="number"
+                    min={0}
+                    value={field.value === 0 ? "" : field.value}
+                    onChange={(e) => {
+                      const next =
+                        e.target.value === "" ? 0 : e.target.valueAsNumber
+                      field.onChange(Number.isNaN(next) ? 0 : next)
+                    }}
+                  />
                 </FormControl>
-                <SelectContent>
-                  {PAYMENT_METHOD_OPTIONS.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
 
         {state.error ? (
           <p className="text-sm text-destructive" role="alert">
@@ -536,8 +490,8 @@ export function DispatchForm({
           <AlertDialogHeader>
             <AlertDialogTitle>중복 가능성 있는 건이 있습니다</AlertDialogTitle>
             <AlertDialogDescription>
-              운송일자·거래처·상차지·하차지·차량번호·공급가액이 동일한 배차
-              건이 이미 등록되어 있습니다. 그래도 저장하시겠습니까?
+              운송일자·거래처·상차지·하차지·차량번호가 동일한 배차 건이 이미
+              등록되어 있습니다. 그래도 저장하시겠습니까?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

@@ -3,7 +3,6 @@
 import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
 
-import { recordAuditLog } from "@/lib/audit/log"
 import { softDelete } from "@/lib/soft-delete/soft-delete"
 import { createClient } from "@/lib/supabase/server"
 import {
@@ -117,14 +116,13 @@ export async function searchCarrierNameSuggestionsAction(
   ).slice(0, 10)
 }
 
-/** 4.3.6 중복 입력 감지: 운송일자+거래처+상차지+하차지+차량번호+공급가액 동일 건 존재 여부 */
+/** 4.3.6 중복 입력 감지: 운송일자+거래처+상차지+하차지+차량번호 동일 건 존재 여부 */
 export async function checkDuplicateDispatchAction(input: {
   dispatchDate: string
   clientId: string
   origin: string
   destination: string
   plateNoSnapshot: string
-  supplyAmount: number
 }): Promise<boolean> {
   const supabase = await createClient()
   const { count, error } = await supabase
@@ -136,7 +134,6 @@ export async function checkDuplicateDispatchAction(input: {
     .eq("origin", input.origin)
     .eq("destination", input.destination)
     .eq("plate_no_snapshot", input.plateNoSnapshot)
-    .eq("supply_amount", input.supplyAmount)
 
   if (error) {
     throw new Error(`중복 확인 실패: ${error.message}`)
@@ -149,13 +146,8 @@ export interface DispatchActionState {
   error: string | null
 }
 
-/**
- * 3.1~3.3, 4.3.9: 배차 등록 → 매출 자동 생성을 하나의 트랜잭션(RPC)으로 처리.
- * 배차/매출 등록 페이지가 이 하나의 구현을 공유하되, 저장 후 자기 페이지로
- * 돌아가도록 redirectTo만 바인딩해서 분기한다.
- */
-async function createDispatchImpl(
-  redirectTo: string,
+/** 3.1~3.3 배차(차량 섭외) 등록. 금액은 다루지 않는다 — 수익은 매출(sales) 담당. */
+export async function createDispatchAction(
   _prevState: DispatchActionState,
   formData: FormData
 ): Promise<DispatchActionState> {
@@ -175,8 +167,6 @@ async function createDispatchImpl(
     p_origin: values.origin,
     p_destination: values.destination,
     p_dropoff_type: values.dropoff_type,
-    // 미선택("")은 DB가 빈 문자열을 허용하지 않으므로 null로 정규화한다.
-    p_cargo_box_type: values.cargo_box_type || null,
     p_pallet_count: values.pallet_count ?? null,
     p_weight_ton: values.weight_ton ?? null,
     p_vehicle_id: values.vehicle_id || null,
@@ -185,14 +175,12 @@ async function createDispatchImpl(
     p_driver_phone_snapshot: values.driver_phone_snapshot || null,
     p_carrier_name: values.carrier_name || null,
     p_contact_name: values.contact_name || null,
-    p_source_major: values.source_major || null,
-    p_source_minor: values.source_minor || null,
-    p_source_note: values.source_note || null,
-    p_supply_amount: values.supply_amount,
-    p_is_vat_exempt: values.is_vat_exempt,
-    p_fee_amount: values.fee_amount,
-    p_payment_method: values.payment_method,
     p_memo: values.memo || null,
+    // 미선택("")은 DB가 빈 문자열을 허용하지 않으므로 null로 정규화한다.
+    p_cargo_box_type: values.cargo_box_type || null,
+    // 미입력(undefined)은 null로 넘겨 "값 없음"으로 저장한다.
+    p_freight_amount: values.freight_amount ?? null,
+    p_fee_amount: values.fee_amount,
   })
 
   if (error) {
@@ -200,69 +188,7 @@ async function createDispatchImpl(
   }
 
   revalidatePath("/dispatches")
-  revalidatePath("/sales")
-  redirect(redirectTo)
-}
-
-export async function createDispatchAction(
-  prevState: DispatchActionState,
-  formData: FormData
-): Promise<DispatchActionState> {
-  return createDispatchImpl("/dispatches", prevState, formData)
-}
-
-export async function createDispatchActionForSales(
-  prevState: DispatchActionState,
-  formData: FormData
-): Promise<DispatchActionState> {
-  return createDispatchImpl("/sales", prevState, formData)
-}
-
-/** 3.6 입금 처리 (개별): 입금완료로 변경하고 입금일을 기록한다 */
-export async function markDispatchPaidAction(
-  id: string,
-  paidAt: string
-): Promise<void> {
-  const supabase = await createClient()
-
-  const { data: before, error: fetchError } = await supabase
-    .from("dispatches")
-    .select("*")
-    .eq("id", id)
-    .single()
-
-  if (fetchError || !before) {
-    throw new Error("대상 배차를 찾을 수 없습니다")
-  }
-
-  const { error } = await supabase
-    .from("dispatches")
-    .update({ payment_status: "PAID", paid_at: paidAt })
-    .eq("id", id)
-
-  if (error) {
-    throw new Error(`입금 처리 실패: ${error.message}`)
-  }
-
-  await recordAuditLog(supabase, {
-    tableName: "dispatches",
-    recordId: id,
-    action: "UPDATE",
-    beforeData: before,
-    afterData: { ...before, payment_status: "PAID", paid_at: paidAt },
-  })
-
-  revalidatePath("/dispatches")
-}
-
-/** 3.6 입금 처리 (일괄): 체크박스로 선택한 여러 건을 한 번에 입금완료 처리 */
-export async function bulkMarkDispatchesPaidAction(
-  ids: string[],
-  paidAt: string
-): Promise<void> {
-  if (ids.length === 0) return
-
-  await Promise.all(ids.map((id) => markDispatchPaidAction(id, paidAt)))
+  redirect("/dispatches")
 }
 
 /** 3.7 배차 삭제 (소프트 삭제 + 이력 로그) */
@@ -270,17 +196,16 @@ export async function deleteDispatchAction(id: string): Promise<void> {
   const supabase = await createClient()
   await softDelete(supabase, "dispatches", id)
   revalidatePath("/dispatches")
-  revalidatePath("/sales")
 }
 
-/** 배차/매출 목록에서 체크박스로 선택한 여러 건을 한 번에 삭제 */
+/** 배차 목록에서 체크박스로 선택한 여러 건을 한 번에 삭제 */
 export async function bulkDeleteDispatchesAction(ids: string[]): Promise<void> {
   if (ids.length === 0) return
 
   await Promise.all(ids.map((id) => deleteDispatchAction(id)))
 }
 
-/** 3.7 배차 수정 (update_dispatch RPC로 부가세 재계산 + 감사 로그를 함께 처리) */
+/** 3.7 배차 수정 (update_dispatch RPC가 갱신 + 감사 로그를 함께 처리) */
 export async function updateDispatchAction(
   id: string,
   _prevState: DispatchActionState,
@@ -303,8 +228,6 @@ export async function updateDispatchAction(
     p_origin: values.origin,
     p_destination: values.destination,
     p_dropoff_type: values.dropoff_type,
-    // 미선택("")은 DB가 빈 문자열을 허용하지 않으므로 null로 정규화한다.
-    p_cargo_box_type: values.cargo_box_type || null,
     p_pallet_count: values.pallet_count ?? null,
     p_weight_ton: values.weight_ton ?? null,
     p_vehicle_id: values.vehicle_id || null,
@@ -313,14 +236,12 @@ export async function updateDispatchAction(
     p_driver_phone_snapshot: values.driver_phone_snapshot || null,
     p_carrier_name: values.carrier_name || null,
     p_contact_name: values.contact_name || null,
-    p_source_major: values.source_major || null,
-    p_source_minor: values.source_minor || null,
-    p_source_note: values.source_note || null,
-    p_supply_amount: values.supply_amount,
-    p_is_vat_exempt: values.is_vat_exempt,
-    p_fee_amount: values.fee_amount,
-    p_payment_method: values.payment_method,
     p_memo: values.memo || null,
+    // 미선택("")은 DB가 빈 문자열을 허용하지 않으므로 null로 정규화한다.
+    p_cargo_box_type: values.cargo_box_type || null,
+    // 미입력(undefined)은 null로 넘겨 "값 없음"으로 저장한다.
+    p_freight_amount: values.freight_amount ?? null,
+    p_fee_amount: values.fee_amount,
   })
 
   if (error) {

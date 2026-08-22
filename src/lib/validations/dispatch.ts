@@ -4,9 +4,10 @@ import { amountSchema } from "@/lib/money"
 
 /**
  * 4.3.5 배차 등록 폼 입력 검증.
- * 필수값: 운송일자, 거래처, 상차지, 하차지, 공급가액.
- * 부가세 분리는 서버(create_dispatch RPC)에서 supply_amount로부터 다시 계산하며,
- * 여기서는 클라이언트 UX(실시간 표시)와 1차 방어선 역할만 한다.
+ * 필수값: 운송일자, 거래처, 상차지, 하차지.
+ * 배차가 다루는 금액은 지출 성격의 단순 기록(운임/수수료)뿐이며 부가세 분리 대상이
+ * 아니다 — 공급가액/부가세/지불방법/출처는 매출(sales) 전용이고
+ * lib/validations/sales.ts가 담당한다.
  *
  * 필드 타입은 항상 react-hook-form의 실제 상태 타입(숫자/불리언)과 정확히 일치시킨다.
  * z.coerce/z.preprocess는 쓰지 않는다 — 입력 타입이 `unknown`이 되어 zodResolver와
@@ -34,20 +35,28 @@ export const dispatchFormSchema = z.object({
     "REFRIGERATED",
     "OTHER",
   ]),
-  pallet_count: z.number().int().min(0).max(9999).optional(),
-  weight_ton: z.number().min(0).max(9999.99).optional(),
+  /**
+   * 선택 입력 숫자 필드의 "미입력"은 반드시 null로 표현한다 (undefined 금지).
+   * react-hook-form의 useController는 값을 `get(_formValues, name,
+   * get(_defaultValues, name))`로 읽는데, 이 get()은 값이 undefined면
+   * defaultValues로 되돌린다. 따라서 undefined로 비우면 수정 폼에서
+   * 입력란에 기존 값이 되살아나 보이면서 저장은 null로 되는 불일치가 생긴다.
+   * null은 "undefined 아님"이라 그대로 유지되어 화면과 저장값이 일치한다.
+   */
+  pallet_count: z.number().int().min(0).max(9999).nullable(),
+  weight_ton: z.number().min(0).max(9999.99).nullable(),
   vehicle_id: z.string().optional(),
   plate_no_snapshot: z.string().trim(),
   driver_name_snapshot: z.string().trim(),
   driver_phone_snapshot: z.string().trim(),
   carrier_name: z.string().trim(),
-  source_major: z.string().trim(),
-  source_minor: z.string().trim(),
-  source_note: z.string().trim(),
-  supply_amount: amountSchema,
-  is_vat_exempt: z.boolean(),
+  /**
+   * 운임(선택 입력) — 기사/차량에게 지급할 금액.
+   * 미입력은 pallet_count/weight_ton과 동일하게 null로 표현한다(위 주석 참고).
+   */
+  freight_amount: amountSchema.nullable(),
+  /** 수수료 — DB가 NOT NULL default 0이므로 미입력은 0으로 취급한다. */
   fee_amount: amountSchema,
-  payment_method: z.enum(["TAX_INVOICE", "TRANSFER", "CASH"]),
   memo: z.string().trim(),
 })
 
@@ -62,20 +71,15 @@ export const dispatchFormDefaults: DispatchFormValues = {
   destination: "",
   dropoff_type: "SAME_DAY",
   cargo_box_type: "",
-  pallet_count: undefined,
-  weight_ton: undefined,
+  pallet_count: null,
+  weight_ton: null,
   vehicle_id: "",
   plate_no_snapshot: "",
   driver_name_snapshot: "",
   driver_phone_snapshot: "",
   carrier_name: "",
-  source_major: "",
-  source_minor: "",
-  source_note: "",
-  supply_amount: 0,
-  is_vat_exempt: false,
+  freight_amount: null,
   fee_amount: 0,
-  payment_method: "TRANSFER",
   memo: "",
 }
 
@@ -87,16 +91,25 @@ export function coerceDispatchFormData(
     ...raw,
     // 선택 필드가 아예 전송되지 않은 경우(구버전 클라이언트 등)도 "미선택"으로 취급한다.
     cargo_box_type: raw.cargo_box_type ?? "",
+    // 미입력(빈 문자열이거나 아예 전송되지 않음)은 null로 정규화한다.
+    // 폼의 buildFormData가 null/undefined 필드를 아예 전송하지 않으므로
+    // 두 경우 모두 여기서 null이 된다.
     pallet_count:
       raw.pallet_count === "" || raw.pallet_count === undefined
-        ? undefined
+        ? null
         : Number(raw.pallet_count),
     weight_ton:
       raw.weight_ton === "" || raw.weight_ton === undefined
-        ? undefined
+        ? null
         : Number(raw.weight_ton),
-    supply_amount: Number(raw.supply_amount),
-    fee_amount: Number(raw.fee_amount),
-    is_vat_exempt: raw.is_vat_exempt === "true",
+    freight_amount:
+      raw.freight_amount === "" || raw.freight_amount === undefined
+        ? null
+        : Number(raw.freight_amount),
+    // DB가 NOT NULL default 0이므로 미입력은 0으로 채운다.
+    fee_amount:
+      raw.fee_amount === "" || raw.fee_amount === undefined
+        ? 0
+        : Number(raw.fee_amount),
   }
 }

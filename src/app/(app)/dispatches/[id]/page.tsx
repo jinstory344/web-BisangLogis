@@ -1,9 +1,7 @@
 import { notFound } from "next/navigation"
 
-import { PaymentBadge } from "@/components/dispatches/payment-badge"
 import { CARGO_BOX_TYPE_LABELS } from "@/lib/constants/cargo-box-type"
 import { DROPOFF_TYPE_LABELS } from "@/lib/constants/dropoff-type"
-import { PAYMENT_METHOD_LABELS } from "@/lib/constants/payment-method"
 import { formatKRW } from "@/lib/money"
 import { formatPhoneNumber } from "@/lib/phone"
 import { createClient } from "@/lib/supabase/server"
@@ -51,14 +49,7 @@ export default async function DispatchDetailPage({
     <div className="p-4 md:p-6">
       <div className="flex items-center justify-between gap-4">
         <h1 className="text-2xl font-semibold">배차 상세</h1>
-        <DetailActions id={dispatch.id} paymentStatus={dispatch.payment_status} />
-      </div>
-
-      <div className="mt-4 flex items-center gap-2">
-        <PaymentBadge status={dispatch.payment_status} />
-        {dispatch.is_vat_exempt ? (
-          <span className="text-sm text-muted-foreground">면세</span>
-        ) : null}
+        <DetailActions id={dispatch.id} />
       </div>
 
       <div className="mt-4 max-w-lg rounded-md border p-4">
@@ -95,12 +86,15 @@ export default async function DispatchDetailPage({
           }
         />
         <Field label="연락처" value={formatPhoneNumber(dispatch.driver_phone_snapshot)} />
-        <Field label="운임" value={formatKRW(dispatch.total_amount)} />
-        <Field label="수수료" value={formatKRW(dispatch.fee_amount)} />
         <Field
-          label="지불방법"
-          value={PAYMENT_METHOD_LABELS[dispatch.payment_method]}
+          label="운임"
+          value={
+            dispatch.freight_amount != null
+              ? formatKRW(dispatch.freight_amount)
+              : "-"
+          }
         />
+        <Field label="수수료" value={formatKRW(dispatch.fee_amount)} />
       </div>
     </div>
   )
