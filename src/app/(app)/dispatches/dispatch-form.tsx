@@ -46,7 +46,6 @@ import {
 
 import {
   checkDuplicateDispatchAction,
-  searchCarrierNameSuggestionsAction,
   searchContactNameSuggestionsAction,
   searchDestinationSuggestionsAction,
   searchOriginSuggestionsAction,
@@ -188,16 +187,6 @@ export function DispatchForm({
             onChange={(v) => form.setValue("contact_name", v)}
             fetchSuggestions={searchContactNameSuggestionsAction}
             placeholder="담당자명"
-          />
-        </FormItem>
-
-        <FormItem>
-          <FormLabel>사업자정보</FormLabel>
-          <FreeTextCombobox
-            value={form.watch("carrier_name")}
-            onChange={(v) => form.setValue("carrier_name", v)}
-            fetchSuggestions={searchCarrierNameSuggestionsAction}
-            placeholder="사업자정보 (직접 입력 가능)"
           />
         </FormItem>
 

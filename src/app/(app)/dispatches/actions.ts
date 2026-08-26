@@ -88,34 +88,6 @@ export async function searchContactNameSuggestionsAction(
   ).slice(0, 10)
 }
 
-/** 사업자정보(운수사) 최근 입력값 자동완성 */
-export async function searchCarrierNameSuggestionsAction(
-  query: string
-): Promise<string[]> {
-  const trimmed = query.trim()
-  const supabase = await createClient()
-  let request = supabase
-    .from("dispatches")
-    .select("carrier_name")
-    .is("deleted_at", null)
-    .not("carrier_name", "is", null)
-    .order("dispatch_date", { ascending: false })
-    .limit(50)
-
-  if (trimmed) {
-    request = request.ilike("carrier_name", `%${trimmed}%`)
-  }
-
-  const { data, error } = await request
-  if (error) {
-    throw new Error(`최근 입력값 조회 실패: ${error.message}`)
-  }
-
-  return Array.from(
-    new Set(data.map((row) => row.carrier_name).filter((v): v is string => !!v))
-  ).slice(0, 10)
-}
-
 /** 4.3.6 중복 입력 감지: 운송일자+거래처+상차지+하차지+차량번호 동일 건 존재 여부 */
 export async function checkDuplicateDispatchAction(input: {
   dispatchDate: string
@@ -173,7 +145,6 @@ export async function createDispatchAction(
     p_plate_no_snapshot: values.plate_no_snapshot || null,
     p_driver_name_snapshot: values.driver_name_snapshot || null,
     p_driver_phone_snapshot: values.driver_phone_snapshot || null,
-    p_carrier_name: values.carrier_name || null,
     p_contact_name: values.contact_name || null,
     p_memo: values.memo || null,
     // 미선택("")은 DB가 빈 문자열을 허용하지 않으므로 null로 정규화한다.
@@ -234,7 +205,6 @@ export async function updateDispatchAction(
     p_plate_no_snapshot: values.plate_no_snapshot || null,
     p_driver_name_snapshot: values.driver_name_snapshot || null,
     p_driver_phone_snapshot: values.driver_phone_snapshot || null,
-    p_carrier_name: values.carrier_name || null,
     p_contact_name: values.contact_name || null,
     p_memo: values.memo || null,
     // 미선택("")은 DB가 빈 문자열을 허용하지 않으므로 null로 정규화한다.

@@ -49,7 +49,6 @@ export const dispatchFormSchema = z.object({
   plate_no_snapshot: z.string().trim(),
   driver_name_snapshot: z.string().trim(),
   driver_phone_snapshot: z.string().trim(),
-  carrier_name: z.string().trim(),
   /**
    * 운임(선택 입력) — 기사/차량에게 지급할 금액.
    * 미입력은 pallet_count/weight_ton과 동일하게 null로 표현한다(위 주석 참고).
@@ -77,7 +76,6 @@ export const dispatchFormDefaults: DispatchFormValues = {
   plate_no_snapshot: "",
   driver_name_snapshot: "",
   driver_phone_snapshot: "",
-  carrier_name: "",
   freight_amount: null,
   fee_amount: 0,
   memo: "",

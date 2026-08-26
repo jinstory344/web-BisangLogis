@@ -56,7 +56,6 @@ export default async function DispatchDetailPage({
         <Field label="운송일자" value={dispatch.dispatch_date} />
         <Field label="거래처" value={clientName} />
         <Field label="담당자" value={dispatch.contact_name ?? "-"} />
-        <Field label="사업자정보" value={dispatch.carrier_name ?? "-"} />
         <Field label="구간" value={`${dispatch.origin} → ${dispatch.destination}`} />
         <Field label="하차일" value={DROPOFF_TYPE_LABELS[dispatch.dropoff_type]} />
         <Field

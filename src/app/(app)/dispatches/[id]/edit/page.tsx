@@ -49,7 +49,6 @@ export default async function EditDispatchPage({
     plate_no_snapshot: dispatch.plate_no_snapshot ?? "",
     driver_name_snapshot: dispatch.driver_name_snapshot ?? "",
     driver_phone_snapshot: dispatch.driver_phone_snapshot ?? "",
-    carrier_name: dispatch.carrier_name ?? "",
     freight_amount: dispatch.freight_amount,
     fee_amount: dispatch.fee_amount,
     memo: dispatch.memo ?? "",

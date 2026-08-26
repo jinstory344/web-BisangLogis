@@ -75,7 +75,6 @@ export type DispatchRow = BaseColumns & {
   plate_no_snapshot: string | null
   driver_name_snapshot: string | null
   driver_phone_snapshot: string | null
-  carrier_name: string | null
   dispatcher_name: string | null
   /** 운임 — 배차 완료 후 기사/차량에게 지급할 금액. 부가세 분리 계산 대상이 아니다. */
   freight_amount: number | null
@@ -237,7 +236,6 @@ export type Database = {
           p_plate_no_snapshot: string | null
           p_driver_name_snapshot: string | null
           p_driver_phone_snapshot: string | null
-          p_carrier_name: string | null
           p_contact_name: string | null
           p_memo?: string | null
           p_cargo_box_type?: CargoBoxType | null
@@ -261,7 +259,6 @@ export type Database = {
           p_plate_no_snapshot: string | null
           p_driver_name_snapshot: string | null
           p_driver_phone_snapshot: string | null
-          p_carrier_name: string | null
           p_contact_name: string | null
           p_memo?: string | null
           p_cargo_box_type?: CargoBoxType | null

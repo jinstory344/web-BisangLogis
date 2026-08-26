@@ -91,7 +91,6 @@ export function DispatchList({
               <TableHead>날짜</TableHead>
               <TableHead>거래처</TableHead>
               <TableHead>담당자</TableHead>
-              <TableHead>사업자</TableHead>
               <TableHead>경로</TableHead>
               <TableHead className="text-right">파렛</TableHead>
               <TableHead className="text-right">중량</TableHead>
@@ -110,7 +109,6 @@ export function DispatchList({
                   {d.client_id ? clientNameMap[d.client_id] ?? "-" : "-"}
                 </TableCell>
                 <TableCell>{d.contact_name ?? "-"}</TableCell>
-                <TableCell>{d.carrier_name ?? "-"}</TableCell>
                 <TableCell>
                   {d.origin} → {d.destination}
                 </TableCell>
