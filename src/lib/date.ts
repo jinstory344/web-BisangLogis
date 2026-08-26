@@ -32,6 +32,15 @@ export function formatShortDate(dateStr: string): string {
   return dateStr.slice(2)
 }
 
+const WEEKDAY_LABELS = ["일", "월", "화", "수", "목", "금", "토"]
+
+/** yyyy-MM-dd -> yy-MM-dd 요일 표기 (예: 2026-08-26 -> 26-08-26 수요일) */
+export function formatDateWithWeekday(dateStr: string): string {
+  const [year, month, day] = dateStr.split("-").map(Number)
+  const weekday = WEEKDAY_LABELS[new Date(Date.UTC(year, month - 1, day)).getUTCDay()]
+  return `${formatShortDate(dateStr)} ${weekday}요일`
+}
+
 /** 7.3 기간 빠른 선택: 지난 달 (서울 기준) */
 export function getPreviousMonthRangeInSeoul(): DateRange {
   const today = getTodayInSeoul()

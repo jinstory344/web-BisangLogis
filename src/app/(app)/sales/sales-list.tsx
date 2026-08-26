@@ -36,7 +36,7 @@ import {
 } from "@/components/ui/table"
 import { PaymentBadge } from "@/components/dispatches/payment-badge"
 import { PAYMENT_METHOD_LABELS } from "@/lib/constants/payment-method"
-import { formatShortDate, getTodayInSeoul } from "@/lib/date"
+import { formatDateWithWeekday, formatShortDate, getTodayInSeoul } from "@/lib/date"
 import { formatKRW } from "@/lib/money"
 import { formatPhoneNumber } from "@/lib/phone"
 import type { SaleRow } from "@/lib/supabase/database.types"
@@ -226,7 +226,7 @@ export function SalesList({
                     }
                   />
                 </TableCell>
-                <TableCell>{s.sale_date}</TableCell>
+                <TableCell>{formatDateWithWeekday(s.sale_date)}</TableCell>
                 <TableCell>
                   {s.origin} → {s.destination}
                 </TableCell>
@@ -305,7 +305,7 @@ export function SalesList({
                 />
                 <div>
                   <p className="inline-block rounded bg-muted px-1.5 py-0.5 text-sm text-muted-foreground italic">
-                    {s.sale_date}
+                    {formatDateWithWeekday(s.sale_date)}
                   </p>
                   <p className="font-medium">
                     {s.origin} → {s.destination}
