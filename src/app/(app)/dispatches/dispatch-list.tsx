@@ -132,6 +132,9 @@ export function DispatchList({
                 <TableCell className="text-right">
                   <div className="flex justify-end gap-2">
                     <Button variant="outline" size="sm" asChild>
+                      <Link href={`/dispatches/${d.id}`}>상세</Link>
+                    </Button>
+                    <Button variant="outline" size="sm" asChild>
                       <Link href={`/dispatches/${d.id}/edit`}>수정</Link>
                     </Button>
                     <Button
@@ -193,6 +196,9 @@ export function DispatchList({
               </div>
             </div>
             <div className="mt-2 flex justify-end gap-2">
+              <Button variant="outline" size="sm" asChild>
+                <Link href={`/dispatches/${d.id}`}>상세</Link>
+              </Button>
               <Button variant="outline" size="sm" asChild>
                 <Link href={`/dispatches/${d.id}/edit`}>수정</Link>
               </Button>
