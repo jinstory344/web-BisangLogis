@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, useTransition } from "react"
+import { useEffect, useRef, useState, useTransition } from "react"
 
 import {
   searchVehiclesAction,
@@ -67,7 +67,15 @@ export function VehicleCombobox({
     return () => clearTimeout(timeout)
   }, [inputValue])
 
+  // 마운트 직후에는 아직 검색 결과(items)가 도착하기 전이라 "일치하는
+  // 차량 없음"으로 오판해 기존 스냅샷 값(이름·연락처)을 지워버린다. 수정
+  // 화면처럼 기존 값이 이미 채워진 채로 열릴 때 이 첫 실행만 건너뛴다.
+  const isFirstRun = useRef(true)
   useEffect(() => {
+    if (isFirstRun.current) {
+      isFirstRun.current = false
+      return
+    }
     const matched = items.find((item) => item.plate_no === inputValue) ?? null
     onVehicleSelected(matched)
     // eslint-disable-next-line react-hooks/exhaustive-deps
