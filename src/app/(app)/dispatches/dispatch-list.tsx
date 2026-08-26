@@ -24,6 +24,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { formatDateWithWeekday } from "@/lib/date"
 import { formatKRW } from "@/lib/money"
 import { formatPhoneNumber } from "@/lib/phone"
 import type { DispatchRow } from "@/lib/supabase/database.types"
@@ -104,7 +105,7 @@ export function DispatchList({
           <TableBody>
             {dispatches.map((d) => (
               <TableRow key={d.id}>
-                <TableCell>{d.dispatch_date}</TableCell>
+                <TableCell>{formatDateWithWeekday(d.dispatch_date)}</TableCell>
                 <TableCell>
                   {d.client_id ? clientNameMap[d.client_id] ?? "-" : "-"}
                 </TableCell>
@@ -133,7 +134,7 @@ export function DispatchList({
                 <TableCell className="text-right">
                   <div className="flex justify-end gap-2">
                     <Button variant="outline" size="sm" asChild>
-                      <Link href={`/dispatches/${d.id}`}>상세</Link>
+                      <Link href={`/dispatches/${d.id}/edit`}>수정</Link>
                     </Button>
                     <Button
                       variant="outline"
@@ -160,7 +161,7 @@ export function DispatchList({
             <div className="flex items-start justify-between gap-2">
               <div>
                 <p className="inline-block rounded bg-muted px-1.5 py-0.5 text-sm text-muted-foreground italic">
-                  {d.dispatch_date}
+                  {formatDateWithWeekday(d.dispatch_date)}
                 </p>
                 <p className="font-bold">
                   {d.origin} → {d.destination}
@@ -195,7 +196,7 @@ export function DispatchList({
             </div>
             <div className="mt-2 flex justify-end gap-2">
               <Button variant="outline" size="sm" asChild>
-                <Link href={`/dispatches/${d.id}`}>상세</Link>
+                <Link href={`/dispatches/${d.id}/edit`}>수정</Link>
               </Button>
               <Button
                 variant="outline"
