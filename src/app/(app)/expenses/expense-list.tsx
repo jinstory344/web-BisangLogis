@@ -2,7 +2,8 @@
 
 import Link from "next/link"
 import { usePathname, useSearchParams } from "next/navigation"
-import { useState, useTransition } from "react"
+import { ChevronDown, ChevronRight } from "lucide-react"
+import { Fragment, useMemo, useState, useTransition } from "react"
 import { toast } from "sonner"
 
 import {
@@ -25,6 +26,11 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { EXPENSE_PAYMENT_METHOD_LABELS } from "@/lib/constants/payment-method"
+import {
+  formatDateWithWeekday,
+  formatMonthDay,
+  getWeekOfMonth,
+} from "@/lib/date"
 import { formatKRW } from "@/lib/money"
 import type { ExpenseRow } from "@/lib/supabase/database.types"
 
@@ -41,6 +47,38 @@ interface ExpenseListProps {
   totalPages: number
 }
 
+interface WeekGroup {
+  key: string
+  label: string
+  rows: ExpenseRow[]
+  total: number
+}
+
+/** expense_date 내림차순으로 정렬된 목록을 "M월 N주차" 단위로 묶는다 */
+function groupExpensesByWeek(expenses: ExpenseRow[]): WeekGroup[] {
+  const groups: WeekGroup[] = []
+  const indexByKey = new Map<string, number>()
+
+  for (const expense of expenses) {
+    const [year, month] = expense.expense_date.split("-")
+    const week = getWeekOfMonth(expense.expense_date)
+    const key = `${year}-${month}-${week}`
+
+    let idx = indexByKey.get(key)
+    if (idx === undefined) {
+      idx = groups.length
+      indexByKey.set(key, idx)
+      groups.push({ key, label: `${Number(month)}월 ${week}주차`, rows: [], total: 0 })
+    }
+
+    const group = groups[idx]
+    group.rows.push(expense)
+    group.total += expense.amount
+  }
+
+  return groups
+}
+
 export function ExpenseList({
   expenses,
   summary,
@@ -51,6 +89,21 @@ export function ExpenseList({
   const searchParams = useSearchParams()
   const [deleteTarget, setDeleteTarget] = useState<ExpenseRow | null>(null)
   const [isPending, startTransition] = useTransition()
+
+  const weekGroups = useMemo(() => groupExpensesByWeek(expenses), [expenses])
+  // 가장 최근 주차만 펼친 채로 시작하고 나머지는 클릭해서 펼쳐보게 한다.
+  const [expandedWeeks, setExpandedWeeks] = useState<Set<string>>(
+    () => new Set(weekGroups.slice(0, 1).map((g) => g.key))
+  )
+
+  function toggleWeek(key: string) {
+    setExpandedWeeks((prev) => {
+      const next = new Set(prev)
+      if (next.has(key)) next.delete(key)
+      else next.add(key)
+      return next
+    })
+  }
 
   function pageHref(nextPage: number) {
     const params = new URLSearchParams(searchParams.toString())
@@ -98,38 +151,75 @@ export function ExpenseList({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {expenses.map((expense) => (
-              <TableRow key={expense.id}>
-                <TableCell>{expense.expense_date}</TableCell>
-                <TableCell>{expense.category_major}</TableCell>
-                <TableCell>{expense.category_minor}</TableCell>
-                <TableCell className="text-right">
-                  {formatKRW(expense.amount)}
-                </TableCell>
-                <TableCell>
-                  {expense.payment_method
-                    ? EXPENSE_PAYMENT_METHOD_LABELS[expense.payment_method]
-                    : "-"}
-                </TableCell>
-                <TableCell className="max-w-40 truncate">
-                  {expense.memo ?? "-"}
-                </TableCell>
-                <TableCell className="text-right">
-                  <div className="flex justify-end gap-2">
-                    <Button variant="outline" size="sm" asChild>
-                      <Link href={`/expenses/${expense.id}/edit`}>수정</Link>
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setDeleteTarget(expense)}
-                    >
-                      삭제
-                    </Button>
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))}
+            {weekGroups.map((group) => {
+              const isExpanded = expandedWeeks.has(group.key)
+              return (
+                <Fragment key={group.key}>
+                  <TableRow
+                    className="cursor-pointer bg-muted/40 hover:bg-muted"
+                    onClick={() => toggleWeek(group.key)}
+                  >
+                    <TableCell colSpan={7}>
+                      <div className="flex items-center justify-between gap-4">
+                        <span className="flex items-center gap-1.5 font-medium">
+                          {isExpanded ? (
+                            <ChevronDown className="size-4" />
+                          ) : (
+                            <ChevronRight className="size-4" />
+                          )}
+                          {group.label}
+                          <span className="font-normal text-muted-foreground">
+                            {formatMonthDay(group.rows[group.rows.length - 1].expense_date)}
+                            ~{formatMonthDay(group.rows[0].expense_date)} · {group.rows.length}건
+                          </span>
+                        </span>
+                        <span className="text-muted-foreground">
+                          합계 {formatKRW(group.total)}
+                        </span>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                  {isExpanded
+                    ? group.rows.map((expense) => (
+                        <TableRow key={expense.id}>
+                          <TableCell>
+                            {formatDateWithWeekday(expense.expense_date)}
+                          </TableCell>
+                          <TableCell>{expense.category_major}</TableCell>
+                          <TableCell>{expense.category_minor}</TableCell>
+                          <TableCell className="text-right">
+                            {formatKRW(expense.amount)}
+                          </TableCell>
+                          <TableCell>
+                            {expense.payment_method
+                              ? EXPENSE_PAYMENT_METHOD_LABELS[expense.payment_method]
+                              : "-"}
+                          </TableCell>
+                          <TableCell className="max-w-40 truncate">
+                            {expense.memo ?? "-"}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex justify-end gap-2">
+                              <Button variant="outline" size="sm" asChild>
+                                <Link href={`/expenses/${expense.id}/edit`}>
+                                  수정
+                                </Link>
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setDeleteTarget(expense)}
+                              >
+                                삭제
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    : null}
+                </Fragment>
+              )
+            })}
           </TableBody>
         </Table>
         <div className="border-t bg-muted/30 p-3 text-sm">
@@ -150,36 +240,71 @@ export function ExpenseList({
       </div>
 
       {/* 모바일 카드 리스트 */}
-      <div className="flex flex-col gap-2 md:hidden">
-        {expenses.map((expense) => (
-          <div key={expense.id} className="rounded-md border p-3">
-            <div className="flex items-start justify-between gap-2">
-              <div>
-                <p className="text-sm text-muted-foreground">
-                  {expense.expense_date}
-                </p>
-                <p className="font-medium">
-                  {expense.category_major} · {expense.category_minor}
-                </p>
-              </div>
-              <span className="font-medium">{formatKRW(expense.amount)}</span>
+      <div className="flex flex-col gap-3 md:hidden">
+        {weekGroups.map((group) => {
+          const isExpanded = expandedWeeks.has(group.key)
+          return (
+            <div key={group.key} className="flex flex-col gap-2">
+              <button
+                type="button"
+                className="flex items-center justify-between gap-2 rounded-md border bg-muted/40 p-3 text-left"
+                onClick={() => toggleWeek(group.key)}
+              >
+                <span className="flex items-center gap-1.5 font-medium">
+                  {isExpanded ? (
+                    <ChevronDown className="size-4" />
+                  ) : (
+                    <ChevronRight className="size-4" />
+                  )}
+                  {group.label}
+                  <span className="text-sm font-normal text-muted-foreground">
+                    {formatMonthDay(group.rows[group.rows.length - 1].expense_date)}
+                    ~{formatMonthDay(group.rows[0].expense_date)} · {group.rows.length}건
+                  </span>
+                </span>
+                <span className="text-sm text-muted-foreground">
+                  {formatKRW(group.total)}
+                </span>
+              </button>
+
+              {isExpanded
+                ? group.rows.map((expense) => (
+                    <div key={expense.id} className="rounded-md border p-3">
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <p className="text-sm text-muted-foreground">
+                            {formatDateWithWeekday(expense.expense_date)}
+                          </p>
+                          <p className="font-medium">
+                            {expense.category_major} · {expense.category_minor}
+                          </p>
+                        </div>
+                        <span className="font-medium">
+                          {formatKRW(expense.amount)}
+                        </span>
+                      </div>
+                      <div className="mt-2 flex items-center justify-end">
+                        <div className="flex gap-2">
+                          <Button variant="outline" size="sm" asChild>
+                            <Link href={`/expenses/${expense.id}/edit`}>
+                              수정
+                            </Link>
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setDeleteTarget(expense)}
+                          >
+                            삭제
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                : null}
             </div>
-            <div className="mt-2 flex items-center justify-end">
-              <div className="flex gap-2">
-                <Button variant="outline" size="sm" asChild>
-                  <Link href={`/expenses/${expense.id}/edit`}>수정</Link>
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setDeleteTarget(expense)}
-                >
-                  삭제
-                </Button>
-              </div>
-            </div>
-          </div>
-        ))}
+          )
+        })}
         <div className="rounded-md border bg-muted/30 p-3 text-sm">
           <div className="flex justify-between font-medium">
             <span>{summary.count}건</span>

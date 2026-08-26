@@ -119,6 +119,7 @@ export default async function ExpensesPage({
             </p>
           ) : (
             <ExpenseList
+              key={`${from}-${to}-${categoryMajor}-${categoryMinor}-${page}`}
               expenses={(data ?? []) as ExpenseRow[]}
               summary={summary}
               page={page}
