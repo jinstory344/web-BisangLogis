@@ -1,10 +1,10 @@
 import type { CargoBoxType } from "@/lib/supabase/database.types"
 
 export const CARGO_BOX_TYPE_LABELS: Record<CargoBoxType, string> = {
+  REFRIGERATED: "냉동탑",
+  WING: "냉장윙",
+  BOX: "탑",
   CARGO: "카고",
-  BOX: "탑차",
-  WING: "윙바디",
-  REFRIGERATED: "냉동",
   OTHER: "기타",
 }
 

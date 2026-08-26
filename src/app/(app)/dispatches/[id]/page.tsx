@@ -59,7 +59,7 @@ export default async function DispatchDetailPage({
         <Field label="구간" value={`${dispatch.origin} → ${dispatch.destination}`} />
         <Field label="하차일" value={DROPOFF_TYPE_LABELS[dispatch.dropoff_type]} />
         <Field
-          label="적재함 종류"
+          label="차종 선택"
           value={
             dispatch.cargo_box_type
               ? CARGO_BOX_TYPE_LABELS[dispatch.cargo_box_type]

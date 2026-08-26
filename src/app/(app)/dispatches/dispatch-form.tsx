@@ -258,7 +258,7 @@ export function DispatchForm({
           name="cargo_box_type"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>적재함 종류</FormLabel>
+              <FormLabel>차종 선택</FormLabel>
               {/* Radix Select은 SelectItem에 빈 문자열을 허용하지 않으므로
                   "선택 안 함"은 센티넬 값으로 표현하고 폼 상태에는 ""로 저장한다. */}
               <Select
