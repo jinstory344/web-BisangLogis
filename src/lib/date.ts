@@ -41,6 +41,21 @@ export function formatDateWithWeekday(dateStr: string): string {
   return `${formatShortDate(dateStr)} ${weekday}요일`
 }
 
+/** yyyy-MM-dd -> "M/D" 축약 표기 (예: 2026-08-06 -> 8/6) */
+export function formatMonthDay(dateStr: string): string {
+  const [, month, day] = dateStr.split("-").map(Number)
+  return `${month}/${day}`
+}
+
+/**
+ * 월 내 주차: 1~7일=1주차, 8~14일=2주차 … 29~31일=5주차 (달력상 요일 정렬이
+ * 아닌 날짜 블록 기준이라 매달 최대 5주차로 고정된다).
+ */
+export function getWeekOfMonth(dateStr: string): number {
+  const day = Number(dateStr.split("-")[2])
+  return Math.ceil(day / 7)
+}
+
 /** 7.3 기간 빠른 선택: 지난 달 (서울 기준) */
 export function getPreviousMonthRangeInSeoul(): DateRange {
   const today = getTodayInSeoul()

@@ -138,6 +138,7 @@ export default async function SalesPage({
       ) : (
         <div className="mt-4">
           <SalesList
+            key={`${from}-${to}-${sourceMajor}-${paymentStatus}-${paymentMethod}-${page}`}
             sales={(data ?? []) as SaleRow[]}
             summary={summary}
             page={page}
