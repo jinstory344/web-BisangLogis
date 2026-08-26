@@ -20,6 +20,7 @@ import {
   Table,
   TableBody,
   TableCell,
+  TableFooter,
   TableHead,
   TableHeader,
   TableRow,
@@ -35,15 +36,23 @@ interface DispatchListProps {
   dispatches: DispatchRow[]
   clientNameMap: Record<string, string>
   totalCount: number
+  summary: {
+    freightAmount: number
+    feeAmount: number
+  }
   page: number
   totalPages: number
 }
 
-/** 배차(차량 섭외) 목록 — 금액은 다루지 않는다. 실제 수익은 매출 페이지 담당. */
+/**
+ * 배차(차량 섭외) 목록. 실제 수익은 매출 페이지 담당이며, 여기 운임/수수료는
+ * 기사에게 지급하는 비용·중개 수수료 기록일 뿐 매출과 자동 연결되지 않는다.
+ */
 export function DispatchList({
   dispatches,
   clientNameMap,
   totalCount,
+  summary,
   page,
   totalPages,
 }: DispatchListProps) {
@@ -149,10 +158,26 @@ export function DispatchList({
               </TableRow>
             ))}
           </TableBody>
+          <TableFooter>
+            <TableRow>
+              <TableCell>{totalCount}건</TableCell>
+              <TableCell />
+              <TableCell />
+              <TableCell />
+              <TableCell className="text-right" />
+              <TableCell className="text-right" />
+              <TableCell />
+              <TableCell />
+              <TableCell className="text-right">
+                {formatKRW(summary.freightAmount)}
+              </TableCell>
+              <TableCell className="text-right">
+                {formatKRW(summary.feeAmount)}
+              </TableCell>
+              <TableCell className="text-right" />
+            </TableRow>
+          </TableFooter>
         </Table>
-        <div className="border-t bg-muted/30 p-3 text-sm font-medium">
-          <span>{totalCount}건</span>
-        </div>
       </div>
 
       {/* 모바일 카드 리스트 */}
@@ -213,7 +238,13 @@ export function DispatchList({
           </div>
         ))}
         <div className="rounded-md border bg-muted/30 p-3 text-sm">
-          <span>{totalCount}건</span>
+          <div className="flex justify-between">
+            <span>{totalCount}건</span>
+            <span className="text-base">운임 {formatKRW(summary.freightAmount)}</span>
+          </div>
+          <div className="mt-1 flex justify-end text-muted-foreground">
+            <span>수수료 {formatKRW(summary.feeAmount)}</span>
+          </div>
         </div>
       </div>
 
