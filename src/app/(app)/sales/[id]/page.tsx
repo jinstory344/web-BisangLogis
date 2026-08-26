@@ -1,5 +1,7 @@
+import Link from "next/link"
 import { notFound } from "next/navigation"
 
+import { Button } from "@/components/ui/button"
 import { PaymentBadge } from "@/components/dispatches/payment-badge"
 import { PAYMENT_METHOD_LABELS } from "@/lib/constants/payment-method"
 import { formatKRW } from "@/lib/money"
@@ -39,7 +41,12 @@ export default async function SaleDetailPage({
     <div className="p-4 md:p-6">
       <div className="flex items-center justify-between gap-4">
         <h1 className="text-2xl font-semibold">매출 상세</h1>
-        <SaleDetailActions id={sale.id} paymentStatus={sale.payment_status} />
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" asChild>
+            <Link href="/sales">리스트</Link>
+          </Button>
+          <SaleDetailActions id={sale.id} paymentStatus={sale.payment_status} />
+        </div>
       </div>
 
       <div className="mt-4 flex items-center gap-2">
