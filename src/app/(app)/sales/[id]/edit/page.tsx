@@ -34,7 +34,6 @@ export default async function EditSalePage({
     source_major: sale.source_major ?? "",
     source_minor: sale.source_minor ?? "",
     source_note: sale.source_note ?? "",
-    carrier_name: sale.carrier_name ?? "",
     billing_entity_name: sale.billing_entity_name ?? "",
     order_contact_phone: sale.order_contact_phone ?? "",
     memo: sale.memo ?? "",

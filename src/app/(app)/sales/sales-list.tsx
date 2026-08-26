@@ -266,8 +266,7 @@ export function SalesList({
               <TableHead>날짜</TableHead>
               <TableHead>구간</TableHead>
               <TableHead>출처</TableHead>
-              <TableHead>사업자</TableHead>
-              <TableHead>계산서발행</TableHead>
+              <TableHead>계산서정보</TableHead>
               <TableHead className="text-right">공급가액</TableHead>
               <TableHead className="text-right">세액</TableHead>
               <TableHead className="text-right">합계금액</TableHead>
@@ -286,7 +285,7 @@ export function SalesList({
                     className="cursor-pointer bg-muted/40 hover:bg-muted"
                     onClick={() => toggleWeek(group.key)}
                   >
-                    <TableCell colSpan={13}>
+                    <TableCell colSpan={12}>
                       <div className="flex items-center justify-between gap-4">
                         <span className="flex items-center gap-1.5 font-medium">
                           {isExpanded ? (
@@ -325,7 +324,6 @@ export function SalesList({
                             {s.source_major ?? "-"}
                             {s.source_minor ? ` / ${s.source_minor}` : ""}
                           </TableCell>
-                          <TableCell>{s.carrier_name ?? "-"}</TableCell>
                           <TableCell>{s.billing_entity_name ?? "-"}</TableCell>
                           <TableCell className="text-right">
                             {formatKRW(s.supply_amount)}

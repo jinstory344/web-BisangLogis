@@ -101,8 +101,7 @@ export type SaleRow = BaseColumns & {
   source_major: string | null
   source_minor: string | null
   source_note: string | null
-  carrier_name: string | null
-  /** 계산서발행할사업자 — 직접 운송 건에서 운임을 지급하고 계산서를 받을 상대 상호명(FK 아님). */
+  /** 계산서정보 — 직접 운송 건에서 운임을 지급하고 계산서를 받을 상대 상호명(FK 아님). */
   billing_entity_name: string | null
   /** 오더자 전화번호 — source_minor(오더자)와 짝을 이루는 연락처. */
   order_contact_phone: string | null
@@ -280,7 +279,6 @@ export type Database = {
           p_source_major: string | null
           p_source_minor: string | null
           p_source_note: string | null
-          p_carrier_name: string | null
           p_memo?: string | null
           p_billing_entity_name?: string | null
           p_order_contact_phone?: string | null
@@ -299,7 +297,6 @@ export type Database = {
           p_source_major: string | null
           p_source_minor: string | null
           p_source_note: string | null
-          p_carrier_name: string | null
           p_memo?: string | null
           p_billing_entity_name?: string | null
           p_order_contact_phone?: string | null

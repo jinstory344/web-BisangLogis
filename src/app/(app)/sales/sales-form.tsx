@@ -46,7 +46,6 @@ import { saleFormSchema, type SaleFormValues } from "@/lib/validations/sales"
 import {
   checkDuplicateSaleAction,
   searchBillingEntityNameSuggestionsAction,
-  searchCarrierNameSuggestionsAction,
   searchDestinationSuggestionsAction,
   searchOriginSuggestionsAction,
   type SaleActionState,
@@ -374,22 +373,12 @@ export function SalesForm({
         />
 
         <FormItem>
-          <FormLabel>사업자정보</FormLabel>
-          <FreeTextCombobox
-            value={form.watch("carrier_name")}
-            onChange={(v) => form.setValue("carrier_name", v)}
-            fetchSuggestions={searchCarrierNameSuggestionsAction}
-            placeholder="사업자정보 (직접 입력 가능)"
-          />
-        </FormItem>
-
-        <FormItem>
-          <FormLabel>계산서발행할사업자</FormLabel>
+          <FormLabel>계산서정보</FormLabel>
           <FreeTextCombobox
             value={form.watch("billing_entity_name")}
             onChange={(v) => form.setValue("billing_entity_name", v)}
             fetchSuggestions={searchBillingEntityNameSuggestionsAction}
-            placeholder="계산서발행할사업자 (직접 입력 가능)"
+            placeholder="계산서정보 (직접 입력 가능)"
           />
         </FormItem>
 

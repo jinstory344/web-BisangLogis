@@ -64,35 +64,7 @@ export async function searchDestinationSuggestionsAction(
   return Array.from(new Set(data.map((row) => row.destination))).slice(0, 10)
 }
 
-/** 사업자정보(운수사) 최근 입력값 자동완성 (sales 기준) */
-export async function searchCarrierNameSuggestionsAction(
-  query: string
-): Promise<string[]> {
-  const trimmed = query.trim()
-  const supabase = await createClient()
-  let request = supabase
-    .from("sales")
-    .select("carrier_name")
-    .is("deleted_at", null)
-    .not("carrier_name", "is", null)
-    .order("sale_date", { ascending: false })
-    .limit(50)
-
-  if (trimmed) {
-    request = request.ilike("carrier_name", `%${trimmed}%`)
-  }
-
-  const { data, error } = await request
-  if (error) {
-    throw new Error(`최근 입력값 조회 실패: ${error.message}`)
-  }
-
-  return Array.from(
-    new Set(data.map((row) => row.carrier_name).filter((v): v is string => !!v))
-  ).slice(0, 10)
-}
-
-/** 계산서발행할사업자 최근 입력값 자동완성 (sales 기준) */
+/** 계산서정보 최근 입력값 자동완성 (sales 기준) */
 export async function searchBillingEntityNameSuggestionsAction(
   query: string
 ): Promise<string[]> {
@@ -178,7 +150,6 @@ export async function createSaleAction(
     p_source_major: values.source_major || null,
     p_source_minor: values.source_minor || null,
     p_source_note: values.source_note || null,
-    p_carrier_name: values.carrier_name || null,
     p_memo: values.memo || null,
     p_billing_entity_name: values.billing_entity_name || null,
     p_order_contact_phone: values.order_contact_phone || null,
@@ -219,7 +190,6 @@ export async function updateSaleAction(
     p_source_major: values.source_major || null,
     p_source_minor: values.source_minor || null,
     p_source_note: values.source_note || null,
-    p_carrier_name: values.carrier_name || null,
     p_memo: values.memo || null,
     p_billing_entity_name: values.billing_entity_name || null,
     p_order_contact_phone: values.order_contact_phone || null,

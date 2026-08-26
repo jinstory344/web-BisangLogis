@@ -26,11 +26,10 @@ export const saleFormSchema = z.object({
   source_major: z.string().trim(),
   source_minor: z.string().trim(),
   source_note: z.string().trim(),
-  carrier_name: z.string().trim(),
   /**
-   * 계산서발행할사업자 / 오더자 전화번호 (선택 입력).
-   * DB는 nullable이지만 폼 상태는 빈 문자열로 다루고(carrier_name 등 다른 선택
-   * 텍스트 필드와 동일), 서버 액션에서 `|| null`로 정규화해 RPC에 넘긴다.
+   * 계산서정보 / 오더자 전화번호 (선택 입력).
+   * DB는 nullable이지만 폼 상태는 빈 문자열로 다루고, 서버 액션에서 `|| null`로
+   * 정규화해 RPC에 넘긴다.
    */
   billing_entity_name: z.string().trim(),
   order_contact_phone: z.string().trim(),
@@ -49,7 +48,6 @@ export const saleFormDefaults: SaleFormValues = {
   source_major: "",
   source_minor: "",
   source_note: "",
-  carrier_name: "",
   billing_entity_name: "",
   order_contact_phone: "",
   memo: "",
