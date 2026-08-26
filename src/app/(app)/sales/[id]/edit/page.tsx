@@ -1,5 +1,7 @@
+import Link from "next/link"
 import { notFound } from "next/navigation"
 
+import { Button } from "@/components/ui/button"
 import { createClient } from "@/lib/supabase/server"
 import type { SaleFormValues } from "@/lib/validations/sales"
 
@@ -41,7 +43,12 @@ export default async function EditSalePage({
 
   return (
     <div className="p-4 md:p-6">
-      <h1 className="text-2xl font-semibold">매출 수정</h1>
+      <div className="flex items-center justify-between gap-4">
+        <h1 className="text-2xl font-semibold">매출 수정</h1>
+        <Button variant="outline" size="sm" asChild>
+          <Link href="/sales">리스트</Link>
+        </Button>
+      </div>
       <div className="mt-4 max-w-lg">
         <SalesForm
           action={updateSaleAction.bind(null, id)}

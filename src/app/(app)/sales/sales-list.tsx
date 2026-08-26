@@ -361,6 +361,9 @@ export function SalesList({
                               <Button variant="outline" size="sm" asChild>
                                 <Link href={`/sales/${s.id}`}>상세</Link>
                               </Button>
+                              <Button variant="outline" size="sm" asChild>
+                                <Link href={`/sales/${s.id}/edit`}>수정</Link>
+                              </Button>
                               <Button
                                 variant="destructive"
                                 size="sm"
@@ -470,6 +473,9 @@ export function SalesList({
                           ) : null}
                           <Button variant="outline" size="sm" asChild>
                             <Link href={`/sales/${s.id}`}>상세</Link>
+                          </Button>
+                          <Button variant="outline" size="sm" asChild>
+                            <Link href={`/sales/${s.id}/edit`}>수정</Link>
                           </Button>
                           <Button
                             variant="destructive"
