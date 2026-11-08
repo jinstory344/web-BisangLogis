@@ -47,3 +47,6 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 .supabase-access-token.local
+
+# 실데이터 백업(JSON) — 절대 커밋하지 않는다
+/backups/
