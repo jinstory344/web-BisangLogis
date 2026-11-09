@@ -66,6 +66,7 @@ export function QuickEntrySheet() {
   const [visibleCount, setVisibleCount] = useState(QUICK_LIST_PAGE_SIZE)
   // 빠르게 여닫을 때 늦게 도착한 이전 응답이 최신 상태를 덮어쓰지 않도록 요청 번호를 둔다.
   const requestIdRef = useRef(0)
+  const contentRef = useRef<HTMLDivElement>(null)
 
   function load() {
     const requestId = ++requestIdRef.current
@@ -132,8 +133,16 @@ export function QuickEntrySheet() {
         </button>
       </SheetTrigger>
       <SheetContent
+        ref={contentRef}
         side="bottom"
         className="max-h-[85svh] gap-3 overflow-y-auto pb-8"
+        // 시트를 열 때 라이브러리가 링크를 건너뛰고 처음 만나는 입력칸(검색창)에 포커스를 주면
+        // 폰에서 키보드가 바로 올라온다. 검색창을 직접 눌렀을 때만 키보드가 뜨도록 자동 포커스를
+        // 막고, 포커스는 시트 자체에 둔다(시트 안에서 키보드 이동·포커스 가둠은 그대로 동작).
+        onOpenAutoFocus={(event) => {
+          event.preventDefault()
+          contentRef.current?.focus({ preventScroll: true })
+        }}
       >
         <SheetHeader className="pb-0">
           <SheetTitle>빠른 등록</SheetTitle>
