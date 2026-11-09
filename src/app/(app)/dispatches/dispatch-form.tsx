@@ -6,6 +6,11 @@ import { useForm } from "react-hook-form"
 
 import type { ClientSearchResult } from "@/app/(app)/clients/actions"
 import { ClientCombobox } from "@/components/clients/client-combobox"
+import { AmountInput } from "@/components/form/amount-input"
+import { ChoiceChips } from "@/components/form/choice-chips"
+import { DateQuickPicker } from "@/components/form/date-quick-picker"
+import { FormSubmitBar, touchFormProps } from "@/components/form/form-submit-bar"
+import { RecentRouteChips } from "@/components/form/recent-route-chips"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -16,7 +21,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { Button } from "@/components/ui/button"
 import {
   Form,
   FormControl,
@@ -27,19 +31,14 @@ import {
 } from "@/components/ui/form"
 import { FreeTextCombobox } from "@/components/common/free-text-combobox"
 import { Input } from "@/components/ui/input"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { VehicleCombobox } from "@/components/vehicles/vehicle-combobox"
 import { CARGO_BOX_TYPE_OPTIONS } from "@/lib/constants/cargo-box-type"
 import { DROPOFF_TYPE_OPTIONS } from "@/lib/constants/dropoff-type"
 import { getTodayInSeoul } from "@/lib/date"
+import type { RecentRoute } from "@/lib/quick-entry"
 import {
+  buildDispatchFormData,
   dispatchFormSchema,
   type DispatchFormValues,
 } from "@/lib/validations/dispatch"
@@ -52,9 +51,6 @@ import {
   type DispatchActionState,
 } from "./actions"
 
-/** 적재함 종류 "선택 안 함"을 나타내는 Select 전용 센티넬 값(폼 상태에는 ""로 저장). */
-const CARGO_BOX_TYPE_NONE = "__NONE__"
-
 interface DispatchFormProps {
   action: (
     prevState: DispatchActionState,
@@ -63,18 +59,8 @@ interface DispatchFormProps {
   defaultValues: DispatchFormValues
   defaultClient: ClientSearchResult | null
   submitLabel: string
-}
-
-function buildFormData(values: DispatchFormValues): FormData {
-  const fd = new FormData()
-  Object.entries(values).forEach(([key, value]) => {
-    // null/undefined(미입력)는 아예 전송하지 않는다 — String(null)이 "null"이라는
-    // 문자열로 직렬화되어 서버에서 NaN이 되는 것을 막는다.
-    // 서버의 coerceDispatchFormData가 "전송되지 않음"을 null로 되돌린다.
-    if (value === undefined || value === null) return
-    fd.set(key, String(value))
-  })
-  return fd
+  /** 새 등록·복사 등록 화면에서만 넘긴다. 없으면(수정 화면) 최근 구간 칩을 그리지 않는다. */
+  recentRoutes?: RecentRoute[]
 }
 
 export function DispatchForm({
@@ -82,6 +68,7 @@ export function DispatchForm({
   defaultValues,
   defaultClient,
   submitLabel,
+  recentRoutes,
 }: DispatchFormProps) {
   const [state, formAction, isPending] = useActionState(action, {
     error: null,
@@ -100,8 +87,22 @@ export function DispatchForm({
     },
   })
 
+  const origin = form.watch("origin")
+  const destination = form.watch("destination")
+
+  function applyRecentRoute(route: RecentRoute) {
+    form.setValue("origin", route.origin, {
+      shouldValidate: true,
+      shouldDirty: true,
+    })
+    form.setValue("destination", route.destination, {
+      shouldValidate: true,
+      shouldDirty: true,
+    })
+  }
+
   async function onSubmit(values: DispatchFormValues) {
-    const fd = buildFormData(values)
+    const fd = buildDispatchFormData(values)
 
     setIsCheckingDuplicate(true)
     try {
@@ -139,10 +140,7 @@ export function DispatchForm({
 
   return (
     <Form {...form}>
-      <form
-        onSubmit={form.handleSubmit(onSubmit)}
-        className="flex flex-col gap-4 pb-24 md:pb-0"
-      >
+      <form onSubmit={form.handleSubmit(onSubmit)} {...touchFormProps}>
         <FormField
           control={form.control}
           name="dispatch_date"
@@ -150,7 +148,11 @@ export function DispatchForm({
             <FormItem>
               <FormLabel>운송일자 *</FormLabel>
               <FormControl>
-                <Input {...field} type="date" />
+                <DateQuickPicker
+                  value={field.value}
+                  onChange={field.onChange}
+                  aria-label="운송일자"
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -193,7 +195,7 @@ export function DispatchForm({
         <FormItem>
           <FormLabel>상차지 *</FormLabel>
           <FreeTextCombobox
-            value={form.watch("origin")}
+            value={origin}
             onChange={(v) =>
               form.setValue("origin", v, { shouldValidate: true })
             }
@@ -210,7 +212,7 @@ export function DispatchForm({
         <FormItem>
           <FormLabel>하차지 *</FormLabel>
           <FreeTextCombobox
-            value={form.watch("destination")}
+            value={destination}
             onChange={(v) =>
               form.setValue("destination", v, { shouldValidate: true })
             }
@@ -224,26 +226,29 @@ export function DispatchForm({
           ) : null}
         </FormItem>
 
+        {recentRoutes ? (
+          <RecentRouteChips
+            routes={recentRoutes}
+            origin={origin}
+            destination={destination}
+            onSelect={applyRecentRoute}
+          />
+        ) : null}
+
         <FormField
           control={form.control}
           name="dropoff_type"
           render={({ field }) => (
             <FormItem>
               <FormLabel>하차일</FormLabel>
-              <Select value={field.value} onValueChange={field.onChange}>
-                <FormControl>
-                  <SelectTrigger className="w-full">
-                    <SelectValue />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {DROPOFF_TYPE_OPTIONS.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <FormControl>
+                <ChoiceChips
+                  aria-label="하차일"
+                  options={DROPOFF_TYPE_OPTIONS}
+                  value={field.value}
+                  onChange={field.onChange}
+                />
+              </FormControl>
               <FormMessage />
             </FormItem>
           )}
@@ -259,28 +264,17 @@ export function DispatchForm({
           render={({ field }) => (
             <FormItem>
               <FormLabel>차종 선택</FormLabel>
-              {/* Radix Select은 SelectItem에 빈 문자열을 허용하지 않으므로
-                  "선택 안 함"은 센티넬 값으로 표현하고 폼 상태에는 ""로 저장한다. */}
-              <Select
-                value={field.value || CARGO_BOX_TYPE_NONE}
-                onValueChange={(value) =>
-                  field.onChange(value === CARGO_BOX_TYPE_NONE ? "" : value)
-                }
-              >
-                <FormControl>
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="선택 안 함" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  <SelectItem value={CARGO_BOX_TYPE_NONE}>선택 안 함</SelectItem>
-                  {CARGO_BOX_TYPE_OPTIONS.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              {/* 선택 칩을 다시 누르면 해제 = "선택 안 함". 폼 상태의 미선택은 기존 규칙대로
+                  ""이고, 서버 액션이 `|| null`로 정규화해 RPC에 넘긴다. */}
+              <FormControl>
+                <ChoiceChips
+                  aria-label="차종 선택"
+                  allowDeselect
+                  options={CARGO_BOX_TYPE_OPTIONS}
+                  value={field.value}
+                  onChange={field.onChange}
+                />
+              </FormControl>
               <FormMessage />
             </FormItem>
           )}
@@ -409,16 +403,13 @@ export function DispatchForm({
                 <FormControl>
                   {/* 미입력은 null로 둬야 "값 없음"과 0이 구분되고, 수정 폼에서
                       지웠을 때 RHF가 defaultValues로 되돌리지 않는다. */}
-                  <Input
-                    type="number"
-                    min={0}
-                    value={field.value ?? ""}
-                    onChange={(e) => {
-                      const next = e.target.valueAsNumber
-                      field.onChange(
-                        e.target.value === "" || Number.isNaN(next) ? null : next
-                      )
-                    }}
+                  <AmountInput
+                    nullable
+                    ref={field.ref}
+                    name={field.name}
+                    onBlur={field.onBlur}
+                    value={field.value}
+                    onChange={field.onChange}
                   />
                 </FormControl>
                 <FormMessage />
@@ -433,15 +424,13 @@ export function DispatchForm({
                 <FormLabel>수수료</FormLabel>
                 <FormControl>
                   {/* 기본값 0을 빈 칸으로 보여줘야 앞자리 0이 남는 입력 버그를 피한다. */}
-                  <Input
-                    type="number"
-                    min={0}
-                    value={field.value === 0 ? "" : field.value}
-                    onChange={(e) => {
-                      const next =
-                        e.target.value === "" ? 0 : e.target.valueAsNumber
-                      field.onChange(Number.isNaN(next) ? 0 : next)
-                    }}
+                  <AmountInput
+                    ref={field.ref}
+                    name={field.name}
+                    onBlur={field.onBlur}
+                    value={field.value}
+                    onChange={field.onChange}
+                    placeholder="0"
                   />
                 </FormControl>
                 <FormMessage />
@@ -456,19 +445,13 @@ export function DispatchForm({
           </p>
         ) : null}
 
-        <div className="fixed inset-x-0 bottom-16 border-t bg-background p-3 md:static md:bottom-auto md:border-0 md:p-0">
-          <Button
-            type="submit"
-            className="w-full md:w-auto"
-            disabled={isPending || isCheckingDuplicate}
-          >
-            {isPending
-              ? "저장 중..."
-              : isCheckingDuplicate
-                ? "중복 확인 중..."
-                : submitLabel}
-          </Button>
-        </div>
+        <FormSubmitBar disabled={isPending || isCheckingDuplicate}>
+          {isPending
+            ? "저장 중..."
+            : isCheckingDuplicate
+              ? "중복 확인 중..."
+              : submitLabel}
+        </FormSubmitBar>
       </form>
 
       <AlertDialog

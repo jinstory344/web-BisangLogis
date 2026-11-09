@@ -48,6 +48,31 @@ export function formatMonthDay(dateStr: string): string {
 }
 
 /**
+ * yyyy-MM-dd에 일수를 더한 yyyy-MM-dd를 돌려준다 (음수면 과거).
+ * 달력 날짜끼리의 연산이라 타임존과 무관하도록 UTC 기준으로 계산한다.
+ * 예: addDaysToDate("2026-03-01", -1) -> "2026-02-28"
+ */
+export function addDaysToDate(dateStr: string, days: number): string {
+  const [year, month, day] = dateStr.split("-").map(Number)
+  return new Date(Date.UTC(year, month - 1, day + days))
+    .toISOString()
+    .slice(0, 10)
+}
+
+/**
+ * 날짜 선택 칩 라벨: 오늘과 같은 해면 "M/D(요일)", 다른 해면 "yy/M/D(요일)".
+ * 예: ("2026-11-05", "2026-11-08") -> "11/5(목)", ("2025-12-31", "2026-01-02") -> "25/12/31(수)"
+ */
+export function formatDateChipLabel(dateStr: string, today: string): string {
+  const [year, month, day] = dateStr.split("-").map(Number)
+  const weekday = WEEKDAY_LABELS[new Date(Date.UTC(year, month - 1, day)).getUTCDay()]
+  const monthDay = `${month}/${day}(${weekday})`
+  return dateStr.slice(0, 4) === today.slice(0, 4)
+    ? monthDay
+    : `${dateStr.slice(2, 4)}/${monthDay}`
+}
+
+/**
  * 월 내 주차: 1~7일=1주차, 8~14일=2주차 … 29~31일=5주차 (달력상 요일 정렬이
  * 아닌 날짜 블록 기준이라 매달 최대 5주차로 고정된다).
  */

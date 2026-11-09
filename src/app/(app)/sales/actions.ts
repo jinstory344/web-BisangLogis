@@ -4,6 +4,12 @@ import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
 
 import { recordAuditLog } from "@/lib/audit/log"
+import {
+  pickRecentRoutes,
+  RECENT_ROUTE_LIMIT,
+  RECENT_ROUTE_SCAN_SIZE,
+  type RecentRoute,
+} from "@/lib/quick-entry"
 import { softDelete } from "@/lib/soft-delete/soft-delete"
 import { createClient } from "@/lib/supabase/server"
 import { coerceSaleFormData, saleFormSchema } from "@/lib/validations/sales"
@@ -94,6 +100,26 @@ export async function searchBillingEntityNameSuggestionsAction(
         .filter((v): v is string => !!v)
     )
   ).slice(0, 10)
+}
+
+/**
+ * 새 등록·복사 등록 화면의 "최근 구간" 칩: 최근 등록한(created_at 최신순) 매출에서
+ * 서로 다른 상차지 → 하차지 조합을 최대 5개 돌려준다. 삭제된 건은 제외한다.
+ */
+export async function getRecentSaleRoutesAction(): Promise<RecentRoute[]> {
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from("sales")
+    .select("origin, destination")
+    .is("deleted_at", null)
+    .order("created_at", { ascending: false })
+    .limit(RECENT_ROUTE_SCAN_SIZE)
+
+  if (error) {
+    throw new Error(`최근 구간 조회 실패: ${error.message}`)
+  }
+
+  return pickRecentRoutes(data, RECENT_ROUTE_LIMIT)
 }
 
 /** 4.3.6 중복 입력 감지: 매출일자+상차지+하차지+공급가액 동일 건 존재 여부 */

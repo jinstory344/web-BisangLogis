@@ -1,6 +1,7 @@
 import { z } from "zod"
 
 import { amountSchema } from "@/lib/money"
+import type { SaleRow } from "@/lib/supabase/database.types"
 
 /**
  * 4.3.5 매출 등록 폼 입력 검증.
@@ -51,6 +52,53 @@ export const saleFormDefaults: SaleFormValues = {
   billing_entity_name: "",
   order_contact_phone: "",
   memo: "",
+}
+
+/**
+ * 저장된 매출 행 → 폼 값 (수정 화면·복사 등록 공용).
+ * DB의 nullable text는 폼 상태에서 빈 문자열로 다룬다 (서버 액션이 다시 `|| null`로 정규화).
+ */
+export function saleRowToFormValues(row: SaleRow): SaleFormValues {
+  return {
+    sale_date: row.sale_date,
+    origin: row.origin,
+    destination: row.destination,
+    supply_amount: row.supply_amount,
+    is_vat_exempt: row.is_vat_exempt,
+    payment_method: row.payment_method,
+    source_major: row.source_major ?? "",
+    source_minor: row.source_minor ?? "",
+    source_note: row.source_note ?? "",
+    billing_entity_name: row.billing_entity_name ?? "",
+    order_contact_phone: row.order_contact_phone ?? "",
+    memo: row.memo ?? "",
+  }
+}
+
+/**
+ * 이전 건 복사 등록(/sales/new?copy=id)의 기본값: 폼의 모든 필드를 그대로 가져오고
+ * 매출일자만 오늘(서울 기준, 호출 쪽에서 getTodayInSeoul()로 넘김)로 바꾼다.
+ * 부가세·합계는 폼 값이 아니므로 복사하지 않는다 — 저장 시 RPC가 공급가액으로 다시 계산한다.
+ */
+export function buildSaleCopyDefaults(
+  row: SaleRow,
+  today: string
+): SaleFormValues {
+  return { ...saleRowToFormValues(row), sale_date: today }
+}
+
+/**
+ * 매출 폼 값 → 서버 액션(createSaleAction/updateSaleAction)에 넘길 FormData.
+ * 서버에서는 coerceSaleFormData가 이 문자열들을 다시 숫자/불리언으로 되돌린다.
+ * (폼 컴포넌트에서 그대로 옮겨 온 함수 — 폼과 테스트가 같은 함수를 쓰도록 export)
+ */
+export function buildSaleFormData(values: SaleFormValues): FormData {
+  const fd = new FormData()
+  Object.entries(values).forEach(([key, value]) => {
+    if (value === undefined) return
+    fd.set(key, String(value))
+  })
+  return fd
 }
 
 /** FormData(문자열)를 서버에서 파싱하기 직전에 숫자/불리언으로 변환한다. */

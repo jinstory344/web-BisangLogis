@@ -128,3 +128,26 @@
     @apply font-sans;
   }
 }
+
+/*
+ * 매출·배차·지출 등록/수정 폼 전용 모바일 터치 크기(44px).
+ * ui/* 기본 높이(h-8)는 목록 필터·다이얼로그 등에서 그대로 써야 하므로 전역으로 바꾸지 않고,
+ * <form data-touch-form>(components/form/form-submit-bar.tsx의 touchFormProps) 안에서,
+ * md(48rem) 미만일 때만 덮어쓴다 — md 이상은 기존 크기 그대로.
+ * @layer 밖(unlayered) 규칙이라 Tailwind 유틸리티(h-8, data-[size=default]:h-8)보다 우선한다.
+ * 콤보박스 목록 팝업은 body로 포털되어 폼 밖이므로 영향을 받지 않는다.
+ * FormControl(Slot)로 감싼 입력칸·선택은 data-slot이 "form-control"로 덮어써지므로 함께 잡는다.
+ */
+@media (width < 48rem) {
+  [data-touch-form] input[data-slot="input"],
+  [data-touch-form] input[data-slot="form-control"]:not([type="checkbox"], [type="radio"]),
+  [data-touch-form] [data-slot="select-trigger"],
+  [data-touch-form] button[data-slot="form-control"][role="combobox"],
+  [data-touch-form] [data-slot="input-group"] {
+    height: 2.75rem;
+  }
+
+  [data-touch-form] [data-slot="input-group"] input[data-slot="input-group-control"] {
+    height: 100%;
+  }
+}

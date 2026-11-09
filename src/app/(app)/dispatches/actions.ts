@@ -3,6 +3,12 @@
 import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
 
+import {
+  pickRecentRoutes,
+  RECENT_ROUTE_LIMIT,
+  RECENT_ROUTE_SCAN_SIZE,
+  type RecentRoute,
+} from "@/lib/quick-entry"
 import { softDelete } from "@/lib/soft-delete/soft-delete"
 import { createClient } from "@/lib/supabase/server"
 import {
@@ -86,6 +92,26 @@ export async function searchContactNameSuggestionsAction(
   return Array.from(
     new Set(data.map((row) => row.contact_name).filter((v): v is string => !!v))
   ).slice(0, 10)
+}
+
+/**
+ * 새 등록·복사 등록 화면의 "최근 구간" 칩: 최근 등록한(created_at 최신순) 배차에서
+ * 서로 다른 상차지 → 하차지 조합을 최대 5개 돌려준다. 삭제된 건은 제외한다.
+ */
+export async function getRecentDispatchRoutesAction(): Promise<RecentRoute[]> {
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from("dispatches")
+    .select("origin, destination")
+    .is("deleted_at", null)
+    .order("created_at", { ascending: false })
+    .limit(RECENT_ROUTE_SCAN_SIZE)
+
+  if (error) {
+    throw new Error(`최근 구간 조회 실패: ${error.message}`)
+  }
+
+  return pickRecentRoutes(data, RECENT_ROUTE_LIMIT)
 }
 
 /** 4.3.6 중복 입력 감지: 운송일자+거래처+상차지+하차지+차량번호 동일 건 존재 여부 */

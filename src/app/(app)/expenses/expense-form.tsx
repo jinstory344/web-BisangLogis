@@ -4,7 +4,10 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { startTransition, useActionState, useEffect, useState } from "react"
 import { useForm } from "react-hook-form"
 
-import { Button } from "@/components/ui/button"
+import { AmountInput } from "@/components/form/amount-input"
+import { ChoiceChips, toChoiceOptions } from "@/components/form/choice-chips"
+import { DateQuickPicker } from "@/components/form/date-quick-picker"
+import { FormSubmitBar, touchFormProps } from "@/components/form/form-submit-bar"
 import {
   Form,
   FormControl,
@@ -21,7 +24,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
 import { EXPENSE_PAYMENT_METHOD_OPTIONS } from "@/lib/constants/payment-method"
 import {
@@ -31,11 +33,16 @@ import {
 } from "@/lib/constants/expense-categories"
 import { getTodayInSeoul } from "@/lib/date"
 import {
+  buildExpenseFormData,
   expenseFormSchema,
   type ExpenseFormValues,
 } from "@/lib/validations/expense"
 
 import type { ExpenseActionState } from "./actions"
+
+const CATEGORY_MAJOR_CHOICES = toChoiceOptions(EXPENSE_CATEGORY_MAJORS)
+/** 소분류 칩 중 이 값을 고르면 아래에 직접 입력칸이 열리고, 입력한 텍스트가 소분류로 저장된다. */
+const CUSTOM_MINOR = "기타"
 
 interface ExpenseFormProps {
   action: (
@@ -44,15 +51,6 @@ interface ExpenseFormProps {
   ) => Promise<ExpenseActionState>
   defaultValues: ExpenseFormValues
   submitLabel: string
-}
-
-function buildFormData(values: ExpenseFormValues): FormData {
-  const fd = new FormData()
-  Object.entries(values).forEach(([key, value]) => {
-    if (value === undefined) return
-    fd.set(key, String(value))
-  })
-  return fd
 }
 
 export function ExpenseForm({
@@ -72,7 +70,7 @@ export function ExpenseForm({
   })
 
   const categoryMajor = form.watch("category_major")
-  const minorOptions = getMinorCategories(categoryMajor)
+  const minorChoices = toChoiceOptions(getMinorCategories(categoryMajor))
   const [isCustomMinor, setIsCustomMinor] = useState(() => {
     const initialMinor = defaultValues.category_minor
     const initialMinors = getMinorCategories(defaultValues.category_major)
@@ -90,16 +88,13 @@ export function ExpenseForm({
 
   function onSubmit(values: ExpenseFormValues) {
     startTransition(() => {
-      formAction(buildFormData(values))
+      formAction(buildExpenseFormData(values))
     })
   }
 
   return (
     <Form {...form}>
-      <form
-        onSubmit={form.handleSubmit(onSubmit)}
-        className="flex flex-col gap-4 pb-24 md:pb-0"
-      >
+      <form onSubmit={form.handleSubmit(onSubmit)} {...touchFormProps}>
         <FormField
           control={form.control}
           name="expense_date"
@@ -107,14 +102,20 @@ export function ExpenseForm({
             <FormItem>
               <FormLabel>지출일자 *</FormLabel>
               <FormControl>
-                <Input {...field} type="date" />
+                <DateQuickPicker
+                  value={field.value}
+                  onChange={field.onChange}
+                  aria-label="지출일자"
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
 
-        <div className="grid grid-cols-3 gap-4">
+        {/* 모바일은 한 줄에 하나씩, 데스크톱은 기존처럼 금액·결제방법·할부 한 줄
+            (결제방법 칩이 줄바꿈되지 않도록 가운데 열은 내용 너비). */}
+        <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]">
           <FormField
             control={form.control}
             name="amount"
@@ -122,15 +123,14 @@ export function ExpenseForm({
               <FormItem>
                 <FormLabel>금액 *</FormLabel>
                 <FormControl>
-                  <Input
-                    type="number"
-                    min={0}
-                    value={field.value === 0 ? "" : field.value}
-                    onChange={(e) => {
-                      const next =
-                        e.target.value === "" ? 0 : e.target.valueAsNumber
-                      field.onChange(Number.isNaN(next) ? 0 : next)
-                    }}
+                  {/* 기본값 0을 빈 칸으로 보여줘야 앞자리 0이 남는 입력 버그를 피한다. */}
+                  <AmountInput
+                    ref={field.ref}
+                    name={field.name}
+                    onBlur={field.onBlur}
+                    value={field.value}
+                    onChange={field.onChange}
+                    placeholder="0"
                   />
                 </FormControl>
                 <FormMessage />
@@ -143,15 +143,15 @@ export function ExpenseForm({
             render={({ field }) => (
               <FormItem>
                 <FormLabel>결제방법</FormLabel>
-                <Tabs value={field.value} onValueChange={field.onChange}>
-                  <TabsList className="w-full">
-                    {EXPENSE_PAYMENT_METHOD_OPTIONS.map((option) => (
-                      <TabsTrigger key={option.value} value={option.value}>
-                        {option.label}
-                      </TabsTrigger>
-                    ))}
-                  </TabsList>
-                </Tabs>
+                <FormControl>
+                  <ChoiceChips
+                    aria-label="결제방법"
+                    options={EXPENSE_PAYMENT_METHOD_OPTIONS}
+                    value={field.value}
+                    onChange={field.onChange}
+                    className="md:flex-nowrap"
+                  />
+                </FormControl>
                 <FormMessage />
               </FormItem>
             )}
@@ -189,27 +189,22 @@ export function ExpenseForm({
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        {/* 소분류 칩은 대분류에 따라 바뀌고 개수가 많아(최대 9개) 데스크톱에서도 위아래로 둔다. */}
+        <div className="grid gap-4">
           <FormField
             control={form.control}
             name="category_major"
             render={({ field }) => (
               <FormItem>
                 <FormLabel>대분류 *</FormLabel>
-                <Select value={field.value} onValueChange={field.onChange}>
-                  <FormControl>
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="대분류 선택" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {EXPENSE_CATEGORY_MAJORS.map((major) => (
-                      <SelectItem key={major} value={major}>
-                        {major}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <FormControl>
+                  <ChoiceChips
+                    aria-label="대분류"
+                    options={CATEGORY_MAJOR_CHOICES}
+                    value={field.value}
+                    onChange={field.onChange}
+                  />
+                </FormControl>
                 <FormMessage />
               </FormItem>
             )}
@@ -220,32 +215,28 @@ export function ExpenseForm({
             render={({ field }) => (
               <FormItem>
                 <FormLabel>소분류 *</FormLabel>
-                <Select
-                  value={isCustomMinor ? "기타" : field.value}
-                  onValueChange={(v) => {
-                    if (v === "기타") {
-                      setIsCustomMinor(true)
-                      field.onChange("")
-                    } else {
-                      setIsCustomMinor(false)
-                      field.onChange(v)
-                    }
-                  }}
-                  disabled={!categoryMajor}
-                >
+                {categoryMajor ? (
                   <FormControl>
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="소분류 선택" />
-                    </SelectTrigger>
+                    <ChoiceChips
+                      aria-label="소분류"
+                      options={minorChoices}
+                      value={isCustomMinor ? CUSTOM_MINOR : field.value}
+                      onChange={(v) => {
+                        if (v === CUSTOM_MINOR) {
+                          setIsCustomMinor(true)
+                          field.onChange("")
+                        } else {
+                          setIsCustomMinor(false)
+                          field.onChange(v)
+                        }
+                      }}
+                    />
                   </FormControl>
-                  <SelectContent>
-                    {minorOptions.map((minor) => (
-                      <SelectItem key={minor} value={minor}>
-                        {minor}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    대분류를 먼저 선택하세요
+                  </p>
+                )}
                 {isCustomMinor ? (
                   <Input
                     placeholder="소분류 직접 입력"
@@ -279,15 +270,9 @@ export function ExpenseForm({
           </p>
         ) : null}
 
-        <div className="fixed inset-x-0 bottom-16 border-t bg-background p-3 md:static md:bottom-auto md:border-0 md:p-0">
-          <Button
-            type="submit"
-            className="w-full md:w-auto"
-            disabled={isPending}
-          >
-            {isPending ? "저장 중..." : submitLabel}
-          </Button>
-        </div>
+        <FormSubmitBar disabled={isPending}>
+          {isPending ? "저장 중..." : submitLabel}
+        </FormSubmitBar>
       </form>
     </Form>
   )

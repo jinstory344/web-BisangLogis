@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation"
 
 import { createClient } from "@/lib/supabase/server"
-import type { DispatchFormValues } from "@/lib/validations/dispatch"
+import { dispatchRowToFormValues } from "@/lib/validations/dispatch"
 
 import { updateDispatchAction } from "../../actions"
 import { DispatchForm } from "../../dispatch-form"
@@ -34,25 +34,7 @@ export default async function EditDispatchPage({
     clientName = client?.name ?? ""
   }
 
-  const defaultValues: DispatchFormValues = {
-    dispatch_date: dispatch.dispatch_date,
-    client_id: dispatch.client_id ?? "",
-    client_name: clientName,
-    contact_name: dispatch.contact_name ?? "",
-    origin: dispatch.origin,
-    destination: dispatch.destination,
-    dropoff_type: dispatch.dropoff_type,
-    cargo_box_type: dispatch.cargo_box_type ?? "",
-    pallet_count: dispatch.pallet_count,
-    weight_ton: dispatch.weight_ton,
-    vehicle_id: dispatch.vehicle_id ?? "",
-    plate_no_snapshot: dispatch.plate_no_snapshot ?? "",
-    driver_name_snapshot: dispatch.driver_name_snapshot ?? "",
-    driver_phone_snapshot: dispatch.driver_phone_snapshot ?? "",
-    freight_amount: dispatch.freight_amount,
-    fee_amount: dispatch.fee_amount,
-    memo: dispatch.memo ?? "",
-  }
+  const defaultValues = dispatchRowToFormValues(dispatch, clientName)
 
   return (
     <div className="p-4 md:p-6">

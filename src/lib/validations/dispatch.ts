@@ -1,6 +1,7 @@
 import { z } from "zod"
 
 import { amountSchema } from "@/lib/money"
+import type { DispatchRow } from "@/lib/supabase/database.types"
 
 /**
  * 4.3.5 배차 등록 폼 입력 검증.
@@ -79,6 +80,78 @@ export const dispatchFormDefaults: DispatchFormValues = {
   freight_amount: null,
   fee_amount: 0,
   memo: "",
+}
+
+/**
+ * 저장된 배차 행 → 폼 값 (수정 화면·복사 등록 공용).
+ * 선택 숫자 필드(운임·파렛·중량)는 null을 그대로 유지한다 — undefined로 바꾸면 RHF가
+ * defaultValues로 되돌리는 문제가 다시 생긴다(위 pallet_count 주석 참고).
+ *
+ * @param clientName 거래처명 (dispatches에는 이름이 없어 clients에서 따로 조회해 넘긴다)
+ */
+export function dispatchRowToFormValues(
+  row: DispatchRow,
+  clientName: string
+): DispatchFormValues {
+  return {
+    dispatch_date: row.dispatch_date,
+    client_id: row.client_id ?? "",
+    client_name: clientName,
+    contact_name: row.contact_name ?? "",
+    origin: row.origin,
+    destination: row.destination,
+    dropoff_type: row.dropoff_type,
+    cargo_box_type: row.cargo_box_type ?? "",
+    pallet_count: row.pallet_count,
+    weight_ton: row.weight_ton,
+    vehicle_id: row.vehicle_id ?? "",
+    plate_no_snapshot: row.plate_no_snapshot ?? "",
+    driver_name_snapshot: row.driver_name_snapshot ?? "",
+    driver_phone_snapshot: row.driver_phone_snapshot ?? "",
+    freight_amount: row.freight_amount,
+    fee_amount: row.fee_amount,
+    memo: row.memo ?? "",
+  }
+}
+
+/**
+ * 이전 건 복사 등록(/dispatches/new?copy=id)의 기본값: 수정 화면과 같은 모든 필드
+ * (거래처·담당자·구간·하차일·차종·파렛/중량·차량 스냅샷·운임/수수료·비고)를 가져오고
+ * 운송일자만 오늘로 바꾼다.
+ *
+ * @param clientName 복사할 거래처의 이름. 거래처가 삭제됐거나 없으면 null —
+ *   삭제된 거래처로 새 배차가 만들어지지 않도록 거래처를 비운다.
+ * @param isVehicleActive 원본의 vehicle_id가 아직 삭제되지 않은 등록 차량인지.
+ *   false면 vehicle_id만 비우고 차량번호·기사명·연락처 스냅샷은 그대로 둔다.
+ */
+export function buildDispatchCopyDefaults(
+  row: DispatchRow,
+  options: { today: string; clientName: string | null; isVehicleActive: boolean }
+): DispatchFormValues {
+  const values = dispatchRowToFormValues(row, options.clientName ?? "")
+  return {
+    ...values,
+    dispatch_date: options.today,
+    client_id: options.clientName === null ? "" : values.client_id,
+    vehicle_id: options.isVehicleActive ? values.vehicle_id : "",
+  }
+}
+
+/**
+ * 배차 폼 값 → 서버 액션(createDispatchAction/updateDispatchAction)에 넘길 FormData.
+ * 서버에서는 coerceDispatchFormData가 이 문자열들을 다시 숫자/불리언으로 되돌린다.
+ * (폼 컴포넌트에서 그대로 옮겨 온 함수 — 폼과 테스트가 같은 함수를 쓰도록 export)
+ */
+export function buildDispatchFormData(values: DispatchFormValues): FormData {
+  const fd = new FormData()
+  Object.entries(values).forEach(([key, value]) => {
+    // null/undefined(미입력)는 아예 전송하지 않는다 — String(null)이 "null"이라는
+    // 문자열로 직렬화되어 서버에서 NaN이 되는 것을 막는다.
+    // 서버의 coerceDispatchFormData가 "전송되지 않음"을 null로 되돌린다.
+    if (value === undefined || value === null) return
+    fd.set(key, String(value))
+  })
+  return fd
 }
 
 /** FormData(문자열)를 서버에서 파싱하기 직전에 숫자/불리언으로 변환한다. */

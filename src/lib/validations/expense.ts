@@ -2,6 +2,7 @@ import { z } from "zod"
 
 import { isValidCategoryPair } from "@/lib/constants/expense-categories"
 import { amountSchema } from "@/lib/money"
+import type { ExpenseRow } from "@/lib/supabase/database.types"
 
 /**
  * 4.2 지출 등록 폼 검증.
@@ -38,6 +39,56 @@ export const expenseFormDefaults: ExpenseFormValues = {
   vendor: "",
   has_tax_invoice: false,
   memo: "",
+}
+
+/** 저장된 지출 행 → 폼 값 (수정 화면). */
+export function expenseRowToFormValues(row: ExpenseRow): ExpenseFormValues {
+  return {
+    expense_date: row.expense_date,
+    category_major: row.category_major,
+    category_minor: row.category_minor,
+    amount: row.amount,
+    payment_method: row.payment_method ?? "CARD",
+    installment_months: row.installment_months ?? undefined,
+    vendor: row.vendor ?? "",
+    has_tax_invoice: row.has_tax_invoice,
+    memo: row.memo ?? "",
+  }
+}
+
+/**
+ * 이전 건 복사 등록(/expenses/new?copy=id)의 기본값: 분류(대·소)·금액·결제방법·할부·비고만
+ * 가져오고 지출일자는 오늘로 바꾼다. 폼에 보이지 않는 거래처(vendor)·증빙 수취 여부는
+ * 복사하지 않고 새 등록 기본값을 쓴다 — 화면에서 확인할 수 없는 값이 조용히 따라오지 않도록.
+ */
+export function buildExpenseCopyDefaults(
+  row: ExpenseRow,
+  today: string
+): ExpenseFormValues {
+  return {
+    ...expenseFormDefaults,
+    expense_date: today,
+    category_major: row.category_major,
+    category_minor: row.category_minor,
+    amount: row.amount,
+    payment_method: row.payment_method ?? "CARD",
+    installment_months: row.installment_months ?? undefined,
+    memo: row.memo ?? "",
+  }
+}
+
+/**
+ * 지출 폼 값 → 서버 액션(createExpenseAction/updateExpenseAction)에 넘길 FormData.
+ * 서버에서는 coerceExpenseFormData가 이 문자열들을 다시 숫자/불리언으로 되돌린다.
+ * (폼 컴포넌트에서 그대로 옮겨 온 함수 — 폼과 테스트가 같은 함수를 쓰도록 export)
+ */
+export function buildExpenseFormData(values: ExpenseFormValues): FormData {
+  const fd = new FormData()
+  Object.entries(values).forEach(([key, value]) => {
+    if (value === undefined) return
+    fd.set(key, String(value))
+  })
+  return fd
 }
 
 /** FormData(문자열)를 서버에서 파싱하기 직전에 숫자/불리언으로 변환한다. */

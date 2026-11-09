@@ -3,7 +3,7 @@ import { notFound } from "next/navigation"
 
 import { Button } from "@/components/ui/button"
 import { createClient } from "@/lib/supabase/server"
-import type { SaleFormValues } from "@/lib/validations/sales"
+import { saleRowToFormValues } from "@/lib/validations/sales"
 
 import { updateSaleAction } from "../../actions"
 import { SalesForm } from "../../sales-form"
@@ -26,20 +26,7 @@ export default async function EditSalePage({
     notFound()
   }
 
-  const defaultValues: SaleFormValues = {
-    sale_date: sale.sale_date,
-    origin: sale.origin,
-    destination: sale.destination,
-    supply_amount: sale.supply_amount,
-    is_vat_exempt: sale.is_vat_exempt,
-    payment_method: sale.payment_method,
-    source_major: sale.source_major ?? "",
-    source_minor: sale.source_minor ?? "",
-    source_note: sale.source_note ?? "",
-    billing_entity_name: sale.billing_entity_name ?? "",
-    order_contact_phone: sale.order_contact_phone ?? "",
-    memo: sale.memo ?? "",
-  }
+  const defaultValues = saleRowToFormValues(sale)
 
   return (
     <div className="p-4 md:p-6">

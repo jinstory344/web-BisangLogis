@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest"
 
 import {
+  addDaysToDate,
+  formatDateChipLabel,
   getCurrentMonthRangeInSeoul,
   getPreviousMonthRangeInSeoul,
   getTodayInSeoul,
@@ -28,5 +30,29 @@ describe("getCurrentMonthRangeInSeoul / getPreviousMonthRangeInSeoul", () => {
     const nextDayStr = nextDay.toISOString().slice(0, 10)
 
     expect(nextDayStr).toBe(current.from)
+  })
+})
+
+describe("addDaysToDate", () => {
+  it("어제/내일을 계산한다", () => {
+    expect(addDaysToDate("2026-11-08", -1)).toBe("2026-11-07")
+    expect(addDaysToDate("2026-11-08", 1)).toBe("2026-11-09")
+  })
+
+  it("월·연 경계와 윤년을 넘는다", () => {
+    expect(addDaysToDate("2026-03-01", -1)).toBe("2026-02-28")
+    expect(addDaysToDate("2028-03-01", -1)).toBe("2028-02-29")
+    expect(addDaysToDate("2026-01-01", -1)).toBe("2025-12-31")
+  })
+})
+
+describe("formatDateChipLabel", () => {
+  it("같은 해면 M/D(요일)", () => {
+    expect(formatDateChipLabel("2026-11-05", "2026-11-08")).toBe("11/5(목)")
+    expect(formatDateChipLabel("2026-01-01", "2026-11-08")).toBe("1/1(목)")
+  })
+
+  it("다른 해면 yy/M/D(요일)", () => {
+    expect(formatDateChipLabel("2025-12-31", "2026-01-02")).toBe("25/12/31(수)")
   })
 })

@@ -67,30 +67,44 @@ export function VehicleCombobox({
     return () => clearTimeout(timeout)
   }, [inputValue])
 
-  // 마운트 직후에는 아직 검색 결과(items)가 도착하기 전이라 "일치하는
-  // 차량 없음"으로 오판해 기존 스냅샷 값(이름·연락처)을 지워버린다. 수정
-  // 화면처럼 기존 값이 이미 채워진 채로 열릴 때 이 첫 실행만 건너뛴다.
-  const isFirstRun = useRef(true)
+  // 등록 차량 일치 여부로 기사명·연락처·vehicle_id를 자동 채움/비움하는 것은 사용자가
+  // 차량번호를 직접 입력하거나 목록에서 고른 뒤에만 한다.
+  // 수정·복사 화면처럼 기존 스냅샷이 채워진 채로 열릴 때, 마운트 직후(개발 모드 StrictMode의
+  // 이펙트 이중 실행 포함)나 첫 검색 결과가 도착한 시점에 "일치하는 등록 차량 없음"으로
+  // 판단해 스냅샷을 지우거나(직접 입력했던 미등록 번호) 마스터 값으로 덮어쓰지 않기 위함이다.
+  // (예전의 "마운트 첫 실행만 건너뛰기"는 검색 결과 도착 후의 두 번째 실행을 막지 못했다.)
+  const hasUserEditedRef = useRef(false)
   useEffect(() => {
-    if (isFirstRun.current) {
-      isFirstRun.current = false
-      return
-    }
+    if (!hasUserEditedRef.current) return
     const matched = items.find((item) => item.plate_no === inputValue) ?? null
     onVehicleSelected(matched)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [items, inputValue])
 
   function handleTextChange(text: string) {
+    // 라이브러리가 포커스 이동 등으로 같은 값을 다시 알려주는 경우는 사용자 입력으로 보지 않는다.
+    if (text !== inputValue) hasUserEditedRef.current = true
     setInputValue(text)
     onPlateNoChange(text)
+  }
+
+  function handleSelect(next: string | null) {
+    const text = next ?? ""
+    hasUserEditedRef.current = true
+    // 이미 입력된 번호와 같은 차량을 목록에서 다시 고르면 inputValue가 그대로라 위 이펙트가
+    // 돌지 않으므로, 기사 정보를 여기서 직접 다시 채운다.
+    if (text === inputValue) {
+      const matched = items.find((item) => item.plate_no === text)
+      if (matched) onVehicleSelected(matched)
+    }
+    handleTextChange(text)
   }
 
   return (
     <Combobox<string>
       items={items.map((item) => item.plate_no)}
       value={inputValue || null}
-      onValueChange={(next) => handleTextChange(next ?? "")}
+      onValueChange={handleSelect}
       inputValue={inputValue}
       onInputValueChange={handleTextChange}
       itemToStringLabel={(item) => item ?? ""}

@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation"
 
 import { createClient } from "@/lib/supabase/server"
-import type { ExpenseFormValues } from "@/lib/validations/expense"
+import { expenseRowToFormValues } from "@/lib/validations/expense"
 
 import { updateExpenseAction } from "../../actions"
 import { ExpenseForm } from "../../expense-form"
@@ -24,17 +24,7 @@ export default async function EditExpensePage({
     notFound()
   }
 
-  const defaultValues: ExpenseFormValues = {
-    expense_date: expense.expense_date,
-    category_major: expense.category_major,
-    category_minor: expense.category_minor,
-    amount: expense.amount,
-    payment_method: expense.payment_method ?? "CARD",
-    installment_months: expense.installment_months ?? undefined,
-    vendor: expense.vendor ?? "",
-    has_tax_invoice: expense.has_tax_invoice,
-    memo: expense.memo ?? "",
-  }
+  const defaultValues = expenseRowToFormValues(expense)
 
   return (
     <div className="p-4 md:p-6">
