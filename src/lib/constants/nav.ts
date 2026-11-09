@@ -46,8 +46,8 @@ export const secondaryNavItems: NavItem[] = [
 /** 모바일 빠른 등록 시트의 큰 버튼 */
 export const quickCreateNavItems: NavItem[] = [
   { label: "매출 등록", href: "/sales/new", icon: TrendingUp },
-  { label: "배차 등록", href: "/dispatches/new", icon: Truck },
   { label: "지출 등록", href: "/expenses/new", icon: Wallet },
+  { label: "배차 등록", href: "/dispatches/new", icon: Truck },
 ]
 
 /** 데스크톱 사이드바 전용 — 구분선으로 나뉘는 메뉴 그룹 */

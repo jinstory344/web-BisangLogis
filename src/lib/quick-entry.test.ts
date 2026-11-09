@@ -2,13 +2,18 @@ import { describe, expect, it } from "vitest"
 
 import {
   getCopyHref,
-  mergeRecentCopyEntries,
+  matchesQuery,
   parseCopyId,
+  pickFrequentCandidates,
   pickRecentRoutes,
+  searchCandidates,
+  toDispatchCandidate,
   toDispatchCopyEntry,
+  toExpenseCandidate,
   toExpenseCopyEntry,
+  toSaleCandidate,
   toSaleCopyEntry,
-  type RecentCopyEntry,
+  type CopyCandidate,
 } from "./quick-entry"
 
 describe("pickRecentRoutes (최근 구간 칩)", () => {
@@ -62,6 +67,44 @@ describe("pickRecentRoutes (최근 구간 칩)", () => {
     expect(pickRecentRoutes(rows, 3)).toHaveLength(3)
   })
 })
+
+const SALE_ROW = {
+  id: "s1",
+  created_at: "2026-11-08T03:00:00.000000+00:00",
+  sale_date: "2026-11-08",
+  origin: "서울",
+  destination: "부산",
+  supply_amount: 100000,
+  source_major: "카카오톡",
+  source_minor: "이양규",
+  source_note: null,
+  billing_entity_name: "하나운수",
+  memo: "냉동",
+}
+const DISPATCH_ROW = {
+  id: "d1",
+  created_at: "2026-11-08T05:00:00.000000+00:00",
+  dispatch_date: "2026-11-07",
+  origin: "인천",
+  destination: "대전",
+  freight_amount: null,
+  client_id: "c1",
+  contact_name: "이준호",
+  plate_no_snapshot: "서울86바7754",
+  driver_name_snapshot: "김진승",
+  memo: null,
+}
+const EXPENSE_ROW = {
+  id: "e1",
+  created_at: "2026-11-08T04:00:00.000000+00:00",
+  expense_date: "2026-11-06",
+  category_major: "차량",
+  category_minor: "유류",
+  amount: 50000,
+  payment_method: "CARD" as const,
+  vendor: null,
+  memo: null,
+}
 
 describe("최근 건 복사 목록", () => {
   const sale = toSaleCopyEntry({
@@ -122,31 +165,37 @@ describe("최근 건 복사 목록", () => {
     expect(JSON.stringify(entry)).not.toContain("010-0000-0000")
   })
 
-  it("세 종류를 created_at 최신순으로 합쳐 최대 5건만 남긴다", () => {
-    const older: RecentCopyEntry[] = Array.from({ length: 5 }, (_, i) =>
-      toSaleCopyEntry({
+  it("세 종류를 created_at 최신순으로 합쳐 limit개만 남긴다 (검색어가 비면 최근 건)", () => {
+    const older: CopyCandidate[] = Array.from({ length: 5 }, (_, i) =>
+      toSaleCandidate({
+        ...SALE_ROW,
         id: `old${i}`,
         created_at: `2026-11-0${i + 1}T00:00:00+00:00`,
-        sale_date: "2026-11-01",
-        origin: "a",
-        destination: "b",
-        supply_amount: 1,
       })
     )
 
-    const merged = mergeRecentCopyEntries([[sale, ...older], [dispatch], [expense]])
+    const { entries, total } = searchCandidates(
+      [
+        toSaleCandidate(SALE_ROW),
+        ...older,
+        toDispatchCandidate(DISPATCH_ROW, null),
+        toExpenseCandidate(EXPENSE_ROW),
+      ],
+      { limit: 5 }
+    )
 
-    expect(merged.map((entry) => entry.id)).toEqual([
+    expect(entries.map((entry) => entry.id)).toEqual([
       "d1",
       "e1",
       "s1",
       "old4",
       "old3",
     ])
+    expect(total).toBe(8)
   })
 
-  it("항목이 없으면 빈 배열", () => {
-    expect(mergeRecentCopyEntries([[], [], []])).toEqual([])
+  it("항목이 없으면 빈 결과", () => {
+    expect(searchCandidates([], { limit: 5 })).toEqual({ entries: [], total: 0 })
   })
 
   it("복사 링크는 /{종류}/new?copy={id}", () => {
@@ -174,5 +223,221 @@ describe("parseCopyId (?copy= 검증)", () => {
     expect(parseCopyId("123")).toBeNull()
     expect(parseCopyId(`${id}' or 1=1`)).toBeNull()
     expect(parseCopyId([])).toBeNull()
+  })
+})
+
+describe("후보(CopyCandidate) 만들기", () => {
+  it("검색 문자열에는 종류·구간·거래처·출처·차량·기사·메모·금액이 들어가고 전화번호는 없다", () => {
+    const sale = toSaleCandidate({
+      ...SALE_ROW,
+      // 실수로 select("*")를 넘겨도 오더자 전화번호가 검색 대상·결과에 새지 않아야 한다.
+      ...({ order_contact_phone: "010-5208-5896" } as object),
+    } as Parameters<typeof toSaleCandidate>[0])
+    const dispatch = toDispatchCandidate(
+      {
+        ...DISPATCH_ROW,
+        ...({ driver_phone_snapshot: "010-2746-0344" } as object),
+      } as Parameters<typeof toDispatchCandidate>[0],
+      "아토무역"
+    )
+
+    expect(sale.search).toContain("매출")
+    expect(sale.search).toContain("카카오톡")
+    expect(sale.search).toContain("이양규")
+    expect(sale.search).toContain("하나운수")
+    expect(sale.search).toContain("100000")
+    expect(sale.search).toContain("100,000")
+    expect(dispatch.search).toContain("배차")
+    expect(dispatch.search).toContain("아토무역")
+    expect(dispatch.search).toContain("서울86바7754")
+    expect(dispatch.search).toContain("김진승")
+    expect(JSON.stringify([sale, dispatch])).not.toMatch(/010-?\d{4}-?\d{4}/)
+  })
+
+  it("배차 거래처가 없거나 모르면 이름 없이 만든다", () => {
+    const dispatch = toDispatchCandidate(
+      { ...DISPATCH_ROW, client_id: null },
+      null
+    )
+    expect(dispatch.search).not.toContain("null")
+    expect(dispatch.group).toBe(JSON.stringify(["dispatches", "", "인천", "대전"]))
+  })
+})
+
+describe("matchesQuery (검색어 일치)", () => {
+  const search = toSaleCandidate(SALE_ROW).search
+
+  it("빈 검색어는 전부 일치한다", () => {
+    expect(matchesQuery(search, "")).toBe(true)
+    expect(matchesQuery(search, "   ")).toBe(true)
+  })
+
+  it("공백으로 나눈 낱말이 모두 들어 있어야 일치한다 (순서 무관)", () => {
+    expect(matchesQuery(search, "서울")).toBe(true)
+    expect(matchesQuery(search, "서울 부산")).toBe(true)
+    expect(matchesQuery(search, "부산 서울")).toBe(true)
+    expect(matchesQuery(search, "서울 대구")).toBe(false)
+  })
+
+  it("대소문자와 앞뒤 공백을 무시하고 일부만 써도 일치한다", () => {
+    const withLatin = toExpenseCandidate({
+      ...EXPENSE_ROW,
+      memo: "GS칼텍스 주유",
+    }).search
+    expect(matchesQuery(withLatin, "  gs칼텍스 ")).toBe(true)
+    expect(matchesQuery(withLatin, "칼텍")).toBe(true)
+  })
+
+  it("금액은 쉼표 유무와 상관없이 찾을 수 있다", () => {
+    expect(matchesQuery(search, "100000")).toBe(true)
+    expect(matchesQuery(search, "100,000")).toBe(true)
+    expect(matchesQuery(search, "999")).toBe(false)
+  })
+
+  it("종류 이름으로도 좁힐 수 있다", () => {
+    expect(matchesQuery(search, "매출 서울")).toBe(true)
+    expect(matchesQuery(search, "지출 서울")).toBe(false)
+  })
+})
+
+describe("searchCandidates (종류 필터·검색·더 보기)", () => {
+  const candidates = [
+    toSaleCandidate(SALE_ROW),
+    toSaleCandidate({
+      ...SALE_ROW,
+      id: "s2",
+      created_at: "2026-11-09T03:00:00+00:00",
+      origin: "광주",
+      destination: "목포",
+    }),
+    toDispatchCandidate(DISPATCH_ROW, "아토무역"),
+    toExpenseCandidate(EXPENSE_ROW),
+  ]
+
+  it("검색어에 맞는 건만 최신순으로 돌려주고 total은 limit 적용 전 개수다", () => {
+    // "서울"은 매출 s1의 출발지와 배차 d1의 차량번호(서울86바7754) 둘 다에 일치한다
+    const result = searchCandidates(candidates, { query: "서울", limit: 1 })
+    expect(result.entries.map((entry) => entry.id)).toEqual(["d1"])
+    expect(result.total).toBe(2)
+
+    const all = searchCandidates(candidates, { limit: 2 })
+    expect(all.entries.map((entry) => entry.id)).toEqual(["s2", "d1"])
+    expect(all.total).toBe(4)
+  })
+
+  it("종류 필터를 걸면 그 종류만 남는다", () => {
+    const sales = searchCandidates(candidates, { kind: "sales", limit: 10 })
+    expect(sales.entries.map((entry) => entry.id)).toEqual(["s2", "s1"])
+
+    const expenses = searchCandidates(candidates, { kind: "expenses", limit: 10 })
+    expect(expenses.entries.map((entry) => entry.id)).toEqual(["e1"])
+  })
+
+  it("거래처 이름·차량번호·기사명으로 배차를 찾는다", () => {
+    expect(
+      searchCandidates(candidates, { query: "아토무역", limit: 10 }).entries.map(
+        (entry) => entry.id
+      )
+    ).toEqual(["d1"])
+    expect(
+      searchCandidates(candidates, { query: "86바7754", limit: 10 }).total
+    ).toBe(1)
+    expect(searchCandidates(candidates, { query: "김진승", limit: 10 }).total).toBe(1)
+  })
+
+  it("일치하는 건이 없으면 빈 결과", () => {
+    expect(
+      searchCandidates(candidates, { query: "없는검색어", limit: 10 })
+    ).toEqual({ entries: [], total: 0 })
+  })
+
+  it("limit이 0이면 항목은 비지만 total은 유지한다", () => {
+    expect(searchCandidates(candidates, { limit: 0 })).toEqual({
+      entries: [],
+      total: 4,
+    })
+  })
+})
+
+describe("pickFrequentCandidates (자주 쓰는 건)", () => {
+  const sale = (id: string, createdAt: string, route: [string, string], minor = "이양규") =>
+    toSaleCandidate({
+      ...SALE_ROW,
+      id,
+      created_at: createdAt,
+      origin: route[0],
+      destination: route[1],
+      source_minor: minor,
+    })
+  const expense = (id: string, createdAt: string, minor: string, amount: number) =>
+    toExpenseCandidate({
+      ...EXPENSE_ROW,
+      id,
+      created_at: createdAt,
+      category_minor: minor,
+      amount,
+    })
+
+  it("같은 유형을 2번 이상 등록한 것만 횟수 많은 순으로, 대표는 가장 최근 건이다", () => {
+    const candidates = [
+      sale("a1", "2026-11-01T00:00:00+00:00", ["서울", "부산"]),
+      sale("a2", "2026-11-05T00:00:00+00:00", ["서울", "부산"]),
+      sale("a3", "2026-11-03T00:00:00+00:00", ["서울", "부산"]),
+      sale("b1", "2026-11-02T00:00:00+00:00", ["광주", "목포"]),
+      sale("b2", "2026-11-09T00:00:00+00:00", ["광주", "목포"]),
+      sale("c1", "2026-11-08T00:00:00+00:00", ["대구", "구미"]), // 1번뿐이라 제외
+    ]
+
+    const frequent = pickFrequentCandidates(candidates)
+    expect(frequent.map((entry) => [entry.id, entry.count])).toEqual([
+      ["a2", 3],
+      ["b2", 2],
+    ])
+  })
+
+  it("횟수가 같으면 더 최근에 쓴 유형이 먼저 나온다", () => {
+    const candidates = [
+      sale("a1", "2026-11-01T00:00:00+00:00", ["서울", "부산"]),
+      sale("a2", "2026-11-02T00:00:00+00:00", ["서울", "부산"]),
+      sale("b1", "2026-11-03T00:00:00+00:00", ["광주", "목포"]),
+      sale("b2", "2026-11-04T00:00:00+00:00", ["광주", "목포"]),
+    ]
+    expect(pickFrequentCandidates(candidates).map((entry) => entry.id)).toEqual([
+      "b2",
+      "a2",
+    ])
+  })
+
+  it("출처 소분류가 다르면 같은 구간이어도 다른 유형으로 센다", () => {
+    const candidates = [
+      sale("a1", "2026-11-01T00:00:00+00:00", ["서울", "부산"], "이양규"),
+      sale("a2", "2026-11-02T00:00:00+00:00", ["서울", "부산"], "김철수"),
+    ]
+    expect(pickFrequentCandidates(candidates)).toEqual([])
+  })
+
+  it("지출은 분류가 같으면 금액이 달라도 같은 유형이고, 대표 건의 금액을 보여준다", () => {
+    const candidates = [
+      expense("e1", "2026-11-01T00:00:00+00:00", "유류", 40000),
+      expense("e2", "2026-11-04T00:00:00+00:00", "유류", 52000),
+      expense("e3", "2026-11-03T00:00:00+00:00", "정비", 30000),
+    ]
+    const frequent = pickFrequentCandidates(candidates)
+    expect(frequent).toHaveLength(1)
+    expect(frequent[0]).toMatchObject({ id: "e2", count: 2, amount: 52000 })
+  })
+
+  it("종류 필터, limit, minCount를 지킨다", () => {
+    const candidates = [
+      sale("a1", "2026-11-01T00:00:00+00:00", ["서울", "부산"]),
+      sale("a2", "2026-11-02T00:00:00+00:00", ["서울", "부산"]),
+      expense("e1", "2026-11-01T00:00:00+00:00", "유류", 40000),
+      expense("e2", "2026-11-02T00:00:00+00:00", "유류", 40000),
+    ]
+    expect(
+      pickFrequentCandidates(candidates, { kind: "expenses" }).map((e) => e.id)
+    ).toEqual(["e2"])
+    expect(pickFrequentCandidates(candidates, { limit: 1 })).toHaveLength(1)
+    expect(pickFrequentCandidates(candidates, { minCount: 3 })).toEqual([])
   })
 })
