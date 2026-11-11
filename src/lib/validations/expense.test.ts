@@ -125,3 +125,41 @@ describe("buildExpenseFormData (폼 → 서버 액션 직렬화)", () => {
     expect(fd.get("amount")).toBe("50000")
   })
 })
+
+describe("할부는 카드일 때만 저장된다 (coerceExpenseFormData)", () => {
+  const withInstallment = (payment_method: "CARD" | "TRANSFER" | "CASH") =>
+    submittedEntries({
+      ...expenseFormDefaults,
+      expense_date: "2026-11-01",
+      category_major: "차량",
+      category_minor: "유류",
+      amount: 50000,
+      payment_method,
+      installment_months: 3,
+    })
+
+  it("카드면 고른 할부 개월 수를 숫자로 그대로 둔다", () => {
+    const parsed = expenseFormSchema.parse(
+      coerceExpenseFormData(withInstallment("CARD"))
+    )
+    expect(parsed.installment_months).toBe(3)
+  })
+
+  it("계좌이체·현금이면 폼에서 숨겨진 값이나 위조된 값이 와도 할부를 지운다", () => {
+    for (const method of ["TRANSFER", "CASH"] as const) {
+      const parsed = expenseFormSchema.parse(
+        coerceExpenseFormData(withInstallment(method))
+      )
+      expect(parsed.installment_months).toBeUndefined()
+    }
+  })
+
+  it("결제방법이 아예 안 와도 할부는 저장하지 않는다 (검증은 결제방법 누락으로 실패)", () => {
+    const entries = withInstallment("CARD")
+    delete entries.payment_method
+    expect(coerceExpenseFormData(entries).installment_months).toBeUndefined()
+    expect(
+      expenseFormSchema.safeParse(coerceExpenseFormData(entries)).success
+    ).toBe(false)
+  })
+})

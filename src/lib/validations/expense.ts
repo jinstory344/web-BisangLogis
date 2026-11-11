@@ -98,8 +98,12 @@ export function coerceExpenseFormData(
   return {
     ...raw,
     amount: Number(raw.amount),
+    // 할부는 카드로 결제했을 때만 의미가 있다. 폼에서 숨겨진 값이나 위조된 값이 따라와도
+    // 카드가 아니면 저장하지 않는다.
     installment_months:
-      raw.installment_months === "" || raw.installment_months === undefined
+      raw.payment_method !== "CARD" ||
+      raw.installment_months === "" ||
+      raw.installment_months === undefined
         ? undefined
         : Number(raw.installment_months),
     has_tax_invoice: raw.has_tax_invoice === "true",

@@ -33,8 +33,11 @@ function paymentSummary(expense: ExpenseRow): string {
   const method = expense.payment_method
     ? EXPENSE_PAYMENT_METHOD_LABELS[expense.payment_method]
     : ""
+  // 할부는 카드일 때만 표시한다 (카드가 아닌데 값이 남아 있는 옛 데이터는 숨긴다).
   const installment =
-    expense.installment_months && expense.installment_months > 1
+    expense.payment_method === "CARD" &&
+    expense.installment_months &&
+    expense.installment_months > 1
       ? `${expense.installment_months}개월 할부`
       : ""
   return [method, installment].filter(Boolean).join(" · ")

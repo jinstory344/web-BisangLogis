@@ -70,6 +70,7 @@ export function ExpenseForm({
   })
 
   const categoryMajor = form.watch("category_major")
+  const paymentMethod = form.watch("payment_method")
   const minorChoices = toChoiceOptions(getMinorCategories(categoryMajor))
   const [isCustomMinor, setIsCustomMinor] = useState(() => {
     const initialMinor = defaultValues.category_minor
@@ -148,7 +149,13 @@ export function ExpenseForm({
                     aria-label="결제방법"
                     options={EXPENSE_PAYMENT_METHOD_OPTIONS}
                     value={field.value}
-                    onChange={field.onChange}
+                    onChange={(method) => {
+                      field.onChange(method)
+                      // 카드가 아니면 할부 칸이 사라지므로 이미 고른 할부도 지운다.
+                      if (method !== "CARD") {
+                        form.setValue("installment_months", undefined)
+                      }
+                    }}
                     className="md:flex-nowrap"
                   />
                 </FormControl>
@@ -156,37 +163,40 @@ export function ExpenseForm({
               </FormItem>
             )}
           />
-          <FormField
-            control={form.control}
-            name="installment_months"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>할부</FormLabel>
-                <Select
-                  value={field.value ? String(field.value) : ""}
-                  onValueChange={(v) =>
-                    field.onChange(v ? Number(v) : undefined)
-                  }
-                >
-                  <FormControl>
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="할부 선택" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {Array.from({ length: 12 }, (_, i) => i + 1).map(
-                      (month) => (
-                        <SelectItem key={month} value={String(month)}>
-                          {month}개월
-                        </SelectItem>
-                      )
-                    )}
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+          {/* 할부는 결제방법이 카드일 때만 보인다. */}
+          {paymentMethod === "CARD" ? (
+            <FormField
+              control={form.control}
+              name="installment_months"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>할부</FormLabel>
+                  <Select
+                    value={field.value ? String(field.value) : ""}
+                    onValueChange={(v) =>
+                      field.onChange(v ? Number(v) : undefined)
+                    }
+                  >
+                    <FormControl>
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="할부 선택" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {Array.from({ length: 12 }, (_, i) => i + 1).map(
+                        (month) => (
+                          <SelectItem key={month} value={String(month)}>
+                            {month}개월
+                          </SelectItem>
+                        )
+                      )}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          ) : null}
         </div>
 
         {/* 소분류 칩은 대분류에 따라 바뀌고 개수가 많아(최대 9개) 데스크톱에서도 위아래로 둔다. */}
