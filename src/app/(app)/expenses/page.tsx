@@ -137,7 +137,7 @@ export default async function ExpensesPage({
         </TabsContent>
 
         <TabsContent value="summary">
-          <ExpenseSummary />
+          <ExpenseSummary from={from} />
         </TabsContent>
       </Tabs>
     </div>

@@ -1,24 +1,15 @@
+import { SummaryMonthNav } from "@/components/list/summary-month-nav"
 import { EXPENSE_CATEGORIES } from "@/lib/constants/expense-categories"
-import {
-  getCurrentMonthRangeInSeoul,
-  getPreviousMonthRangeInSeoul,
-} from "@/lib/date"
+import { formatYearMonth, getMonthRange, shiftMonthRange } from "@/lib/date"
 import { formatKRW } from "@/lib/money"
+import { formatChangeRate } from "@/lib/summary"
 import { createClient } from "@/lib/supabase/server"
 
-function formatChangeRate(current: number, previous: number): string {
-  if (previous === 0) {
-    return current === 0 ? "전월과 동일" : "전월 지출 없음"
-  }
-  const rate = Math.round(((current - previous) / previous) * 100)
-  if (rate === 0) return "전월과 동일"
-  return rate > 0 ? `전월 대비 +${rate}%` : `전월 대비 ${rate}%`
-}
-
-export async function ExpenseSummary() {
+/** 지출 월간 집계 탭: 목록 탭에서 보고 있는 달(from이 속한 달)을 집계한다. */
+export async function ExpenseSummary({ from }: { from: string }) {
   const supabase = await createClient()
-  const current = getCurrentMonthRangeInSeoul()
-  const previous = getPreviousMonthRangeInSeoul()
+  const current = getMonthRange(from)
+  const previous = shiftMonthRange(from, -1)
 
   const [{ data: currentRows, error: currentError }, { data: previousRows }] =
     await Promise.all([
@@ -70,8 +61,12 @@ export async function ExpenseSummary() {
 
   return (
     <div className="flex flex-col gap-4">
+      <SummaryMonthNav from={current.from} to={current.to} />
+
       <div className="rounded-md border p-4">
-        <p className="text-sm text-muted-foreground">이번 달 지출 합계</p>
+        <p className="text-sm text-muted-foreground">
+          {formatYearMonth(current.from)} 지출 합계
+        </p>
         <p className="text-2xl font-semibold">{formatKRW(grandTotal)}</p>
         <p className="text-sm text-muted-foreground">
           {formatChangeRate(grandTotal, previousTotal)} (지난 달{" "}

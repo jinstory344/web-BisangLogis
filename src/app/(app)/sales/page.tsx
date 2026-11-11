@@ -2,6 +2,7 @@ import Link from "next/link"
 import { Plus } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { getCurrentMonthRangeInSeoul } from "@/lib/date"
 import { createClient } from "@/lib/supabase/server"
 import type { PaymentMethod, PaymentStatus, SaleRow } from "@/lib/supabase/database.types"
@@ -11,6 +12,7 @@ import { pickStatusTotals, summarizeByPaymentStatus } from "@/lib/sales-list"
 import { SalesFilters } from "./sales-filters"
 import { SalesList } from "./sales-list"
 import { SalesMobileControls } from "./sales-mobile-controls"
+import { SalesSummary } from "./sales-summary"
 
 const PAGE_SIZE = 50
 
@@ -109,48 +111,59 @@ export default async function SalesPage({
         </Button>
       </div>
 
-      {reconciliationMismatch ? (
-        <div className="mt-4 rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
-          검산 경고: 개별 건 합계와 표시된 합계가 일치하지 않습니다. 새로고침
-          후에도 반복되면 관리자에게 문의하세요.
-        </div>
-      ) : null}
+      <Tabs defaultValue="list" className="mt-4">
+        <TabsList>
+          <TabsTrigger value="list">목록</TabsTrigger>
+          <TabsTrigger value="summary">월간 집계</TabsTrigger>
+        </TabsList>
 
-      <div className="mt-4 hidden md:block">
-        <SalesFilters
-          from={from}
-          to={to}
-          sourceMajor={sourceMajor}
-          paymentStatus={paymentStatus}
-          paymentMethod={paymentMethod}
-        />
-      </div>
-      <div className="mt-3 md:hidden">
-        <SalesMobileControls
-          from={from}
-          to={to}
-          sourceMajor={sourceMajor}
-          paymentStatus={paymentStatus}
-          paymentMethod={paymentMethod}
-          summary={statusSummary}
-        />
-      </div>
+        <TabsContent value="list" className="flex flex-col gap-4">
+          {reconciliationMismatch ? (
+            <div className="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
+              검산 경고: 개별 건 합계와 표시된 합계가 일치하지 않습니다. 새로고침
+              후에도 반복되면 관리자에게 문의하세요.
+            </div>
+          ) : null}
 
-      {error ? (
-        <p className="mt-6 text-sm text-destructive">
-          매출 목록을 불러오지 못했습니다: {error.message}
-        </p>
-      ) : (
-        <div className="mt-4">
-          <SalesList
-            key={`${from}-${to}-${sourceMajor}-${paymentStatus}-${paymentMethod}-${page}`}
-            sales={(data ?? []) as SaleRow[]}
-            summary={summary}
-            page={page}
-            totalPages={totalPages}
-          />
-        </div>
-      )}
+          <div className="hidden md:block">
+            <SalesFilters
+              from={from}
+              to={to}
+              sourceMajor={sourceMajor}
+              paymentStatus={paymentStatus}
+              paymentMethod={paymentMethod}
+            />
+          </div>
+          <div className="md:hidden">
+            <SalesMobileControls
+              from={from}
+              to={to}
+              sourceMajor={sourceMajor}
+              paymentStatus={paymentStatus}
+              paymentMethod={paymentMethod}
+              summary={statusSummary}
+            />
+          </div>
+
+          {error ? (
+            <p className="text-sm text-destructive">
+              매출 목록을 불러오지 못했습니다: {error.message}
+            </p>
+          ) : (
+            <SalesList
+              key={`${from}-${to}-${sourceMajor}-${paymentStatus}-${paymentMethod}-${page}`}
+              sales={(data ?? []) as SaleRow[]}
+              summary={summary}
+              page={page}
+              totalPages={totalPages}
+            />
+          )}
+        </TabsContent>
+
+        <TabsContent value="summary">
+          <SalesSummary from={from} />
+        </TabsContent>
+      </Tabs>
     </div>
   )
 }
