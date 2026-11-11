@@ -1,13 +1,16 @@
 import { SummaryMonthNav } from "@/components/list/summary-month-nav"
 import { formatYearMonth, getMonthRange, shiftMonthRange } from "@/lib/date"
-import { summarizeDispatchMonth } from "@/lib/dispatch-summary"
+import {
+  summarizeDispatchMonth,
+  UNSET_VEHICLE_LABEL,
+} from "@/lib/dispatch-summary"
 import { formatKRW } from "@/lib/money"
 import { formatChangeRate, percentOf } from "@/lib/summary"
 import { createClient } from "@/lib/supabase/server"
 
 /**
  * 배차 월간 집계 탭: 목록 탭에서 보고 있는 달(from이 속한 달)의 배차를
- * 건수 · 운임 · 수수료 합계, 전월 대비, 거래처별, 기사별로 보여 준다.
+ * 건수 · 운임 · 수수료 합계, 전월 대비, 거래처별, 차량별(기사 이름 + 차량번호)로 보여 준다.
  * 운임·수수료는 기사에게 지급하는 비용과 중개 수수료 기록이라 매출과 합치지 않는다.
  */
 export async function DispatchSummary({ from }: { from: string }) {
@@ -19,7 +22,9 @@ export async function DispatchSummary({ from }: { from: string }) {
     await Promise.all([
       supabase
         .from("dispatches")
-        .select("client_id, driver_name_snapshot, freight_amount, fee_amount")
+        .select(
+          "client_id, plate_no_snapshot, driver_name_snapshot, freight_amount, fee_amount"
+        )
         .is("deleted_at", null)
         .gte("dispatch_date", month.from)
         .lte("dispatch_date", month.to),
@@ -97,14 +102,16 @@ export async function DispatchSummary({ from }: { from: string }) {
             ))}
           </SummaryGroup>
 
-          <SummaryGroup title="기사별">
-            {summary.byDriver.map((driver) => (
+          <SummaryGroup title="차량별">
+            {summary.byVehicle.map((vehicle) => (
               <SummaryRow
-                key={driver.driver}
-                name={driver.driver}
-                count={driver.count}
-                freightAmount={driver.freightAmount}
-                feeAmount={driver.feeAmount}
+                key={`${vehicle.plate}|${vehicle.driver}`}
+                // 기사 이름 뒤에 차량번호를 붙인다 (이름이 없으면 차량번호만, 둘 다 없으면 "차량 미정").
+                name={vehicle.driver || vehicle.plate || UNSET_VEHICLE_LABEL}
+                detail={vehicle.driver ? vehicle.plate : ""}
+                count={vehicle.count}
+                freightAmount={vehicle.freightAmount}
+                feeAmount={vehicle.feeAmount}
                 totalFreight={summary.freightAmount}
               />
             ))}
@@ -134,12 +141,15 @@ function SummaryGroup({
 
 function SummaryRow({
   name,
+  detail = "",
   count,
   freightAmount,
   feeAmount,
   totalFreight,
 }: {
   name: string
+  /** 이름 뒤에 작게 붙이는 보조 글자 (차량별의 차량번호) */
+  detail?: string
   count: number
   freightAmount: number
   feeAmount: number
@@ -148,7 +158,13 @@ function SummaryRow({
   return (
     <div className="flex items-start justify-between gap-3 border-b p-3 last:border-0">
       <span className="min-w-0 font-medium">
-        {name}{" "}
+        {name}
+        {detail ? (
+          <span className="text-sm font-normal text-muted-foreground">
+            {" "}
+            {detail}
+          </span>
+        ) : null}{" "}
         <span className="text-sm font-normal text-muted-foreground">{count}건</span>
       </span>
       <span className="shrink-0 text-right tabular-nums">
