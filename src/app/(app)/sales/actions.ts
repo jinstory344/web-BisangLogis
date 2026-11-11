@@ -13,6 +13,7 @@ import {
   RECENT_ROUTE_SCAN_SIZE,
   type RecentRoute,
 } from "@/lib/quick-entry"
+import { cancelPaidPatch, markPaidPatch } from "@/lib/sales-payment"
 import { softDelete } from "@/lib/soft-delete/soft-delete"
 import { createClient } from "@/lib/supabase/server"
 import {
@@ -308,7 +309,7 @@ export async function markSalePaidAction(
 
   const { error } = await supabase
     .from("sales")
-    .update({ payment_status: "PAID", paid_at: paidAt })
+    .update(markPaidPatch(paidAt))
     .eq("id", id)
 
   if (error) {
@@ -320,7 +321,46 @@ export async function markSalePaidAction(
     recordId: id,
     action: "UPDATE",
     beforeData: before,
-    afterData: { ...before, payment_status: "PAID", paid_at: paidAt },
+    afterData: { ...before, ...markPaidPatch(paidAt) },
+  })
+
+  revalidatePath("/sales")
+  revalidatePath(`/sales/${id}`)
+}
+
+/** 입금 취소: 실수로 입금 처리했을 때 미입금으로 되돌리고 입금일을 지운다 */
+export async function cancelSalePaidAction(id: string): Promise<void> {
+  const supabase = await createClient()
+
+  const { data: before, error: fetchError } = await supabase
+    .from("sales")
+    .select("*")
+    .eq("id", id)
+    .is("deleted_at", null)
+    .single()
+
+  if (fetchError || !before) {
+    throw new Error("대상 매출을 찾을 수 없습니다")
+  }
+  if (before.payment_status !== "PAID") {
+    throw new Error("입금완료 상태가 아니라서 취소할 수 없습니다")
+  }
+
+  const { error } = await supabase
+    .from("sales")
+    .update(cancelPaidPatch())
+    .eq("id", id)
+
+  if (error) {
+    throw new Error(`입금 취소 실패: ${error.message}`)
+  }
+
+  await recordAuditLog(supabase, {
+    tableName: "sales",
+    recordId: id,
+    action: "UPDATE",
+    beforeData: before,
+    afterData: { ...before, ...cancelPaidPatch() },
   })
 
   revalidatePath("/sales")

@@ -51,6 +51,7 @@ import { SalesMobileList } from "./sales-mobile-list"
 import {
   bulkDeleteSalesAction,
   bulkMarkSalesPaidAction,
+  cancelSalePaidAction,
   deleteSaleAction,
   markSalePaidAction,
 } from "./actions"
@@ -123,6 +124,7 @@ export function SalesList({
   const [singlePayTarget, setSinglePayTarget] = useState<SaleRow | null>(null)
   const [singlePaidAt, setSinglePaidAt] = useState(getTodayInSeoul())
   const [deleteTarget, setDeleteTarget] = useState<SaleRow | null>(null)
+  const [cancelPayTarget, setCancelPayTarget] = useState<SaleRow | null>(null)
   const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState(false)
   const [isPending, startTransition] = useTransition()
 
@@ -191,6 +193,21 @@ export function SalesList({
         toast.error(err instanceof Error ? err.message : "입금 처리 실패")
       } finally {
         setSinglePayTarget(null)
+      }
+    })
+  }
+
+  function handleCancelPayConfirm() {
+    if (!cancelPayTarget) return
+    const target = cancelPayTarget
+    startTransition(async () => {
+      try {
+        await cancelSalePaidAction(target.id)
+        toast.success("입금을 취소했습니다")
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : "입금 취소 실패")
+      } finally {
+        setCancelPayTarget(null)
       }
     })
   }
@@ -364,7 +381,17 @@ export function SalesList({
                                 >
                                   입금 처리
                                 </Button>
-                              ) : null}
+                              ) : (
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  className="text-muted-foreground"
+                                  onClick={() => setCancelPayTarget(s)}
+                                >
+                                  입금 취소
+                                </Button>
+                              )}
                               <Button variant="outline" size="sm" asChild>
                                 <Link href={`/sales/${s.id}`}>상세</Link>
                               </Button>
@@ -408,6 +435,7 @@ export function SalesList({
             setSinglePaidAt(getTodayInSeoul())
             setSinglePayTarget(sale)
           }}
+          onCancelPaid={setCancelPayTarget}
           onDelete={setDeleteTarget}
         />
       </div>
@@ -487,6 +515,31 @@ export function SalesList({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog
+        open={cancelPayTarget !== null}
+        onOpenChange={(open) => !open && setCancelPayTarget(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>입금 처리를 취소할까요?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {cancelPayTarget
+                ? `${cancelPayTarget.origin} → ${cancelPayTarget.destination} 건이 미입금으로 돌아가고 입금일 기록이 지워집니다.`
+                : null}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>아니요</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleCancelPayConfirm}
+              disabled={isPending}
+            >
+              입금 취소
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <AlertDialog
         open={deleteTarget !== null}

@@ -28,7 +28,11 @@ import { Label } from "@/components/ui/label"
 import { getTodayInSeoul } from "@/lib/date"
 import type { PaymentStatus } from "@/lib/supabase/database.types"
 
-import { deleteSaleAction, markSalePaidAction } from "../actions"
+import {
+  cancelSalePaidAction,
+  deleteSaleAction,
+  markSalePaidAction,
+} from "../actions"
 
 export function SaleDetailActions({
   id,
@@ -41,7 +45,22 @@ export function SaleDetailActions({
   const [payDialogOpen, setPayDialogOpen] = useState(false)
   const [paidAt, setPaidAt] = useState(getTodayInSeoul())
   const [deleteOpen, setDeleteOpen] = useState(false)
+  const [cancelPayOpen, setCancelPayOpen] = useState(false)
   const [isPending, startTransition] = useTransition()
+
+  function handleCancelPayConfirm() {
+    startTransition(async () => {
+      try {
+        await cancelSalePaidAction(id)
+        toast.success("입금을 취소했습니다")
+        router.refresh()
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : "입금 취소 실패")
+      } finally {
+        setCancelPayOpen(false)
+      }
+    })
+  }
 
   function handlePayConfirm() {
     startTransition(async () => {
@@ -84,7 +103,17 @@ export function SaleDetailActions({
         >
           입금 처리
         </Button>
-      ) : null}
+      ) : (
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="text-muted-foreground"
+          onClick={() => setCancelPayOpen(true)}
+        >
+          입금 취소
+        </Button>
+      )}
       <Button variant="outline" size="sm" asChild>
         <Link href={`/sales/${id}/edit`}>수정</Link>
       </Button>
@@ -113,6 +142,26 @@ export function SaleDetailActions({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={cancelPayOpen} onOpenChange={setCancelPayOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>입금 처리를 취소할까요?</AlertDialogTitle>
+            <AlertDialogDescription>
+              미입금으로 돌아가고 입금일 기록이 지워집니다.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>아니요</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleCancelPayConfirm}
+              disabled={isPending}
+            >
+              입금 취소
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
         <AlertDialogContent>

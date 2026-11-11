@@ -32,6 +32,8 @@ interface SalesMobileListProps {
   onToggleSelected: (id: string, checked: boolean) => void
   onToggleAll: (checked: boolean) => void
   onPay: (sale: SaleRow) => void
+  /** 실수로 입금 처리했을 때 되돌린다 (작업 시트의 작은 "입금 취소") */
+  onCancelPaid: (sale: SaleRow) => void
   onDelete: (sale: SaleRow) => void
 }
 
@@ -68,6 +70,7 @@ export function SalesMobileList({
   onToggleSelected,
   onToggleAll,
   onPay,
+  onCancelPaid,
   onDelete,
 }: SalesMobileListProps) {
   const groups = useMemo(() => groupSalesByDay(sales), [sales])
@@ -202,6 +205,10 @@ export function SalesMobileList({
                 setIsSheetOpen(false)
                 onPay(sheetSale)
               }}
+              onCancelPaid={() => {
+                setIsSheetOpen(false)
+                onCancelPaid(sheetSale)
+              }}
               onDelete={() => {
                 setIsSheetOpen(false)
                 onDelete(sheetSale)
@@ -217,10 +224,12 @@ export function SalesMobileList({
 function SaleActionSheetBody({
   sale,
   onPay,
+  onCancelPaid,
   onDelete,
 }: {
   sale: SaleRow
   onPay: () => void
+  onCancelPaid: () => void
   onDelete: () => void
 }) {
   const phone = sale.order_contact_phone?.trim() ?? ""
@@ -262,10 +271,19 @@ function SaleActionSheetBody({
         <p className="text-sm text-muted-foreground">
           {PAYMENT_METHOD_LABELS[sale.payment_method]} ·{" "}
           {sale.payment_status === "PAID" ? (
-            <span className={cn("font-medium", PAID_TEXT_CLASS)}>
-              입금완료
-              {sale.paid_at ? ` (${formatMonthDay(sale.paid_at)})` : ""}
-            </span>
+            <>
+              <span className={cn("font-medium", PAID_TEXT_CLASS)}>
+                입금완료
+                {sale.paid_at ? ` (${formatMonthDay(sale.paid_at)})` : ""}
+              </span>{" "}
+              <button
+                type="button"
+                className="text-xs text-muted-foreground underline underline-offset-2"
+                onClick={onCancelPaid}
+              >
+                입금 취소
+              </button>
+            </>
           ) : (
             <span className="font-medium text-destructive">미입금</span>
           )}
