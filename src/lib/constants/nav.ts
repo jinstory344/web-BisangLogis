@@ -1,8 +1,8 @@
 import type { LucideIcon } from "lucide-react"
 import {
+  BookOpen,
   Car,
   FileSpreadsheet,
-  LayoutDashboard,
   Receipt,
   Settings,
   Trash2,
@@ -32,9 +32,9 @@ export const primaryNavItems: NavItem[] = [
 /** 하단 탭에서 ＋ 버튼이 들어갈 위치 (primaryNavItems의 앞 2개 뒤) */
 export const MOBILE_TAB_SPLIT_INDEX = 2
 
-/** 모바일 "더보기" 시트 메뉴 (대시보드는 하단 탭 대신 여기로) */
+/** 모바일 "더보기" 시트 메뉴 (장부는 하단 탭 대신 여기로) */
 export const secondaryNavItems: NavItem[] = [
-  { label: "대시보드", href: "/", icon: LayoutDashboard },
+  { label: "장부", href: "/", icon: BookOpen },
   { label: "거래처", href: "/clients", icon: Users },
   { label: "차량·기사", href: "/vehicles", icon: Car },
   { label: "계산서", href: "/tax-invoices", icon: Receipt },
@@ -52,7 +52,7 @@ export const quickCreateNavItems: NavItem[] = [
 
 /** 데스크톱 사이드바 전용 — 구분선으로 나뉘는 메뉴 그룹 */
 export const sidebarNavGroups: NavItem[][] = [
-  [{ label: "대시보드", href: "/", icon: LayoutDashboard }],
+  [{ label: "장부", href: "/", icon: BookOpen }],
   [
     { label: "매출", href: "/sales", icon: TrendingUp },
     { label: "지출", href: "/expenses", icon: Wallet },

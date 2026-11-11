@@ -1,10 +1,12 @@
+import type { ReactNode } from "react"
+
 import { getWeekdayLabel } from "@/lib/date"
 
 interface DayHeaderProps {
   /** yyyy-MM-dd */
   date: string
-  /** 그날 합계 (이미 "300,000원" 형태로 만든 글자) */
-  totalLabel: string
+  /** 그날 합계 (이미 "300,000원" 형태로 만든 글자, 색을 입힌 조각들도 가능) */
+  totalLabel: ReactNode
   /** 목록이 여러 달에 걸쳐 있으면 월도 함께 보여 준다. */
   showMonth?: boolean
 }

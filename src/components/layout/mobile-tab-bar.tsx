@@ -28,7 +28,7 @@ const TAB_CLASS_NAME =
 
 /**
  * 모바일 하단 탭: [매출] [지출] [＋ 빠른 등록] [배차] [더보기].
- * 대시보드와 나머지 메뉴는 "더보기" 시트에 있다. 데스크톱(md 이상)은 사이드바를 쓴다.
+ * 장부와 나머지 메뉴는 "더보기" 시트에 있다. 데스크톱(md 이상)은 사이드바를 쓴다.
  * 높이 h-16(64px)은 main의 pb-16, 폼 저장 바의 bottom-16과 맞춘 값이다.
  */
 export function MobileTabBar({ userEmail }: { userEmail: string | null }) {
@@ -67,7 +67,7 @@ export function MobileTabBar({ userEmail }: { userEmail: string | null }) {
           <SheetHeader>
             <SheetTitle>더보기</SheetTitle>
             <SheetDescription className="sr-only">
-              대시보드와 기타 메뉴
+              장부와 기타 메뉴
             </SheetDescription>
           </SheetHeader>
           <div className="grid grid-cols-3 gap-2 px-4">
