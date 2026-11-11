@@ -4,9 +4,13 @@ import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
 
 import {
+  pickRecentDispatchContacts,
   pickRecentRoutes,
+  RECENT_CONTACT_LIMIT,
+  RECENT_DISPATCH_CONTACT_SCAN_SIZE,
   RECENT_ROUTE_LIMIT,
   RECENT_ROUTE_SCAN_SIZE,
+  type RecentContact,
   type RecentRoute,
 } from "@/lib/quick-entry"
 import { softDelete } from "@/lib/soft-delete/soft-delete"
@@ -114,6 +118,32 @@ export async function getRecentDispatchRoutesAction(): Promise<RecentRoute[]> {
   return pickRecentRoutes(data, RECENT_ROUTE_LIMIT)
 }
 
+/**
+ * 배차 폼 "최근 담당자" 칩: 같은 거래처로 최근 등록한(created_at 최신순) 배차에서 서로 다른
+ * 담당자(이름+연락처)를 최대 5개 돌려준다. 삭제된 건은 제외한다.
+ * 담당자는 거래처마다, 건마다 달라서 폼에 자동으로 채우지 않고 칩으로만 제안한다.
+ */
+export async function getRecentDispatchContactsAction(
+  clientId: string
+): Promise<RecentContact[]> {
+  if (!clientId) return []
+
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from("dispatches")
+    .select("contact_name, contact_phone")
+    .eq("client_id", clientId)
+    .is("deleted_at", null)
+    .order("created_at", { ascending: false })
+    .limit(RECENT_DISPATCH_CONTACT_SCAN_SIZE)
+
+  if (error) {
+    throw new Error(`최근 담당자 조회 실패: ${error.message}`)
+  }
+
+  return pickRecentDispatchContacts(data, RECENT_CONTACT_LIMIT)
+}
+
 /** 4.3.6 중복 입력 감지: 운송일자+거래처+상차지+하차지+차량번호 동일 건 존재 여부 */
 export async function checkDuplicateDispatchAction(input: {
   dispatchDate: string
@@ -172,6 +202,7 @@ export async function createDispatchAction(
     p_driver_name_snapshot: values.driver_name_snapshot || null,
     p_driver_phone_snapshot: values.driver_phone_snapshot || null,
     p_contact_name: values.contact_name || null,
+    p_contact_phone: values.contact_phone || null,
     p_memo: values.memo || null,
     // 미선택("")은 DB가 빈 문자열을 허용하지 않으므로 null로 정규화한다.
     p_cargo_box_type: values.cargo_box_type || null,
@@ -232,6 +263,7 @@ export async function updateDispatchAction(
     p_driver_name_snapshot: values.driver_name_snapshot || null,
     p_driver_phone_snapshot: values.driver_phone_snapshot || null,
     p_contact_name: values.contact_name || null,
+    p_contact_phone: values.contact_phone || null,
     p_memo: values.memo || null,
     // 미선택("")은 DB가 빈 문자열을 허용하지 않으므로 null로 정규화한다.
     p_cargo_box_type: values.cargo_box_type || null,

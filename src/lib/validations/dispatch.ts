@@ -20,6 +20,8 @@ export const dispatchFormSchema = z.object({
   client_id: z.string().min(1, "거래처를 선택하세요"),
   client_name: z.string().min(1),
   contact_name: z.string().trim(),
+  /** 담당자 연락처(선택). 담당자가 건마다 달라 담당자명과 함께 건별로 적는다. */
+  contact_phone: z.string().trim(),
   origin: z.string().trim().min(1, "상차지를 입력하세요"),
   destination: z.string().trim().min(1, "하차지를 입력하세요"),
   dropoff_type: z.enum(["SAME_DAY", "NEXT_DAY"]),
@@ -67,6 +69,7 @@ export const dispatchFormDefaults: DispatchFormValues = {
   client_id: "",
   client_name: "",
   contact_name: "",
+  contact_phone: "",
   origin: "",
   destination: "",
   dropoff_type: "SAME_DAY",
@@ -98,6 +101,7 @@ export function dispatchRowToFormValues(
     client_id: row.client_id ?? "",
     client_name: clientName,
     contact_name: row.contact_name ?? "",
+    contact_phone: row.contact_phone ?? "",
     origin: row.origin,
     destination: row.destination,
     dropoff_type: row.dropoff_type,
@@ -116,7 +120,7 @@ export function dispatchRowToFormValues(
 
 /**
  * 이전 건 복사 등록(/dispatches/new?copy=id)의 기본값: 수정 화면과 같은 모든 필드
- * (거래처·담당자·구간·하차일·차종·파렛/중량·차량 스냅샷·운임/수수료·비고)를 가져오고
+ * (거래처·담당자·담당자 연락처·구간·하차일·차종·파렛/중량·차량 스냅샷·운임/수수료·비고)를 가져오고
  * 운송일자만 오늘로 바꾼다.
  *
  * @param clientName 복사할 거래처의 이름. 거래처가 삭제됐거나 없으면 null —
@@ -162,6 +166,7 @@ export function coerceDispatchFormData(
     ...raw,
     // 선택 필드가 아예 전송되지 않은 경우(구버전 클라이언트 등)도 "미선택"으로 취급한다.
     cargo_box_type: raw.cargo_box_type ?? "",
+    contact_phone: raw.contact_phone ?? "",
     // 미입력(빈 문자열이거나 아예 전송되지 않음)은 null로 정규화한다.
     // 폼의 buildFormData가 null/undefined 필드를 아예 전송하지 않으므로
     // 두 경우 모두 여기서 null이 된다.

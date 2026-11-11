@@ -56,6 +56,10 @@ export default async function DispatchDetailPage({
         <Field label="운송일자" value={dispatch.dispatch_date} />
         <Field label="거래처" value={clientName} />
         <Field label="담당자" value={dispatch.contact_name ?? "-"} />
+        <Field
+          label="담당자 연락처"
+          value={formatPhoneNumber(dispatch.contact_phone)}
+        />
         <Field label="구간" value={`${dispatch.origin} → ${dispatch.destination}`} />
         <Field label="하차일" value={DROPOFF_TYPE_LABELS[dispatch.dropoff_type]} />
         <Field
@@ -84,7 +88,10 @@ export default async function DispatchDetailPage({
               : "-"
           }
         />
-        <Field label="연락처" value={formatPhoneNumber(dispatch.driver_phone_snapshot)} />
+        <Field
+          label="기사 연락처"
+          value={formatPhoneNumber(dispatch.driver_phone_snapshot)}
+        />
         <Field
           label="운임"
           value={

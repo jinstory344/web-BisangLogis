@@ -69,6 +69,8 @@ export type DispatchRow = BaseColumns & {
   dispatch_date: string
   client_id: string | null
   contact_name: string | null
+  /** 담당자 연락처 — 담당자가 건마다 달라 건별로 적는다. */
+  contact_phone: string | null
   origin: string
   destination: string
   dropoff_type: DropoffType
@@ -250,6 +252,7 @@ export type Database = {
           p_freight_amount?: number | null
           /** null을 넘겨도 RPC 내부에서 coalesce(...,0) 처리된다. */
           p_fee_amount?: number | null
+          p_contact_phone?: string | null
         }
         Returns: string
       }
@@ -273,6 +276,7 @@ export type Database = {
           p_freight_amount?: number | null
           /** null을 넘겨도 RPC 내부에서 coalesce(...,0) 처리된다. */
           p_fee_amount?: number | null
+          p_contact_phone?: string | null
         }
         Returns: undefined
       }

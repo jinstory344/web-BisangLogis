@@ -10,6 +10,7 @@ import { AmountInput } from "@/components/form/amount-input"
 import { ChoiceChips } from "@/components/form/choice-chips"
 import { DateQuickPicker } from "@/components/form/date-quick-picker"
 import { FormSubmitBar, touchFormProps } from "@/components/form/form-submit-bar"
+import { RecentContactChips } from "@/components/form/recent-contact-chips"
 import { RecentRouteChips } from "@/components/form/recent-route-chips"
 import {
   AlertDialog,
@@ -36,7 +37,7 @@ import { VehicleCombobox } from "@/components/vehicles/vehicle-combobox"
 import { CARGO_BOX_TYPE_OPTIONS } from "@/lib/constants/cargo-box-type"
 import { DROPOFF_TYPE_OPTIONS } from "@/lib/constants/dropoff-type"
 import { getTodayInSeoul } from "@/lib/date"
-import type { RecentRoute } from "@/lib/quick-entry"
+import type { RecentContact, RecentRoute } from "@/lib/quick-entry"
 import {
   buildDispatchFormData,
   dispatchFormSchema,
@@ -50,6 +51,7 @@ import {
   searchOriginSuggestionsAction,
   type DispatchActionState,
 } from "./actions"
+import { useRecentDispatchContacts } from "./use-recent-dispatch-contacts"
 
 interface DispatchFormProps {
   action: (
@@ -89,6 +91,15 @@ export function DispatchForm({
 
   const origin = form.watch("origin")
   const destination = form.watch("destination")
+  const clientId = form.watch("client_id")
+  const contactName = form.watch("contact_name")
+  const contactPhone = form.watch("contact_phone")
+  const recentContacts = useRecentDispatchContacts(clientId)
+
+  function applyRecentContact(contact: RecentContact) {
+    form.setValue("contact_name", contact.name, { shouldDirty: true })
+    form.setValue("contact_phone", contact.phone, { shouldDirty: true })
+  }
 
   function applyRecentRoute(route: RecentRoute) {
     form.setValue("origin", route.origin, {
@@ -182,15 +193,38 @@ export function DispatchForm({
           ) : null}
         </FormItem>
 
+        {/* 담당자는 거래처마다, 건마다 달라서 자동으로 채우지 않고 같은 거래처의 최근 담당자를
+            칩으로만 제안한다. 칩을 누르면 이름과 연락처를 함께 채운다. */}
         <FormItem>
           <FormLabel>담당자</FormLabel>
           <FreeTextCombobox
-            value={form.watch("contact_name")}
+            value={contactName}
             onChange={(v) => form.setValue("contact_name", v)}
             fetchSuggestions={searchContactNameSuggestionsAction}
             placeholder="담당자명"
           />
         </FormItem>
+
+        <FormField
+          control={form.control}
+          name="contact_phone"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>담당자 연락처</FormLabel>
+              <FormControl>
+                <Input {...field} type="tel" placeholder="010-0000-0000" />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <RecentContactChips
+          label="최근 담당자"
+          contacts={recentContacts}
+          value={{ name: contactName, phone: contactPhone }}
+          onSelect={applyRecentContact}
+        />
 
         <FormItem>
           <FormLabel>상차지 *</FormLabel>

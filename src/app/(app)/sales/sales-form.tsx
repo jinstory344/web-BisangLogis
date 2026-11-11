@@ -499,10 +499,11 @@ export function SalesForm({
           )}
         />
         <RecentContactChips
-          contacts={recentContacts}
-          value={orderContactPhone}
+          // 매출은 소분류가 곧 오더자라 이름 없이 번호만 쓴다.
+          contacts={recentContacts.map((phone) => ({ name: "", phone }))}
+          value={{ name: "", phone: orderContactPhone }}
           onSelect={(contact) =>
-            form.setValue("order_contact_phone", contact, {
+            form.setValue("order_contact_phone", contact.phone, {
               shouldDirty: true,
             })
           }

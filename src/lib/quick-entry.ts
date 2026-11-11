@@ -106,6 +106,79 @@ export function pickRecentContacts(
 }
 
 /**
+ * 연락처 칩 한 개: 담당자명과 연락처 한 쌍. 매출은 소분류가 곧 오더자라 name이 빈 문자열이고,
+ * 배차는 거래처마다 담당자가 달라 이름과 연락처를 함께 보여 준다.
+ */
+export interface RecentContact {
+  name: string
+  phone: string
+}
+
+/** 최근 담당자를 고르기 위해 읽어올, 같은 거래처의 최근 배차 행 수 */
+export const RECENT_DISPATCH_CONTACT_SCAN_SIZE = 100
+
+function digitsOf(phone: string): string {
+  return phone.replace(/\D/g, "")
+}
+
+/**
+ * 폼에 입력된 담당자가 칩과 같은 사람인지 본다: 이름이 같고(앞뒤 공백 무시) 번호가 같을 때
+ * (숫자만 비교 — "010-1234-5678"과 "01012345678"은 같다). 둘 다 비어 있으면 같다고 보지 않는다.
+ */
+export function isSameContact(a: RecentContact, b: RecentContact): boolean {
+  const nameA = a.name.trim()
+  const nameB = b.name.trim()
+  const phoneA = digitsOf(a.phone)
+  const phoneB = digitsOf(b.phone)
+  if (!nameA && !phoneA) return false
+  return nameA === nameB && phoneA === phoneB
+}
+
+/**
+ * 최근 순(created_at 내림차순)으로 정렬된 같은 거래처의 배차 행에서 서로 다른 담당자(이름+연락처)를
+ * 앞에서부터 최대 limit개 고른다.
+ * - 이름과 번호가 모두 같으면 같은 담당자다 (번호는 숫자만 비교, 가장 최근 표기를 남긴다).
+ * - 연락처를 적기 전에 이름만 적어 둔 예전 건은, 같은 이름에 연락처가 있는 칩이 있으면 건너뛴다
+ *   (같은 사람의 칩이 둘로 갈라져 보이지 않게). 이름 없이 번호만 적은 건도 같은 번호의 이름 있는 칩이 있으면 건너뛴다.
+ * - 이름도 번호도 없는 행은 건너뛴다. 숫자가 없는 번호("-" 등)는 번호 없음으로 본다.
+ */
+export function pickRecentDispatchContacts(
+  rows: readonly { contact_name: string | null; contact_phone: string | null }[],
+  limit = RECENT_CONTACT_LIMIT
+): RecentContact[] {
+  const seen = new Set<string>()
+  const unique: RecentContact[] = []
+
+  for (const row of rows) {
+    const name = (row.contact_name ?? "").trim().normalize("NFC")
+    const rawPhone = (row.contact_phone ?? "").trim()
+    const phone = digitsOf(rawPhone) ? rawPhone : ""
+    if (!name && !phone) continue
+
+    const key = JSON.stringify([name, digitsOf(phone)])
+    if (seen.has(key)) continue
+
+    seen.add(key)
+    unique.push({ name, phone })
+  }
+
+  const namesWithPhone = new Set(
+    unique.filter((c) => c.name && c.phone).map((c) => c.name)
+  )
+  const phonesWithName = new Set(
+    unique.filter((c) => c.name && c.phone).map((c) => digitsOf(c.phone))
+  )
+
+  return unique
+    .filter((c) => {
+      if (c.name && !c.phone) return !namesWithPhone.has(c.name)
+      if (!c.name && c.phone) return !phonesWithName.has(digitsOf(c.phone))
+      return true
+    })
+    .slice(0, limit)
+}
+
+/**
  * 빠른 등록 시트의 "최근 건 복사" 한 줄.
  * 개인정보(오더자·기사 전화번호 등)는 담지 않는다 — 종류·날짜·구간/분류·금액만.
  */

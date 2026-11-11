@@ -115,6 +115,7 @@ const baseRow: DispatchRow = {
   dispatch_date: "2026-11-01",
   client_id: "11111111-1111-1111-1111-111111111111",
   contact_name: "박담당",
+  contact_phone: "010-3333-4444",
   origin: "서울",
   destination: "부산",
   dropoff_type: "NEXT_DAY",
@@ -164,6 +165,7 @@ describe("buildDispatchCopyDefaults (이전 건 복사)", () => {
       client_id: "11111111-1111-1111-1111-111111111111",
       client_name: "테스트 거래처",
       contact_name: "박담당",
+      contact_phone: "010-3333-4444",
       origin: "서울",
       destination: "부산",
       dropoff_type: "NEXT_DAY",
@@ -222,6 +224,51 @@ describe("buildDispatchCopyDefaults (이전 건 복사)", () => {
     expect(parsed.freight_amount).toBeNull()
     expect(parsed.cargo_box_type).toBe("")
     expect(parsed.fee_amount).toBe(30000)
+  })
+})
+
+describe("담당자 연락처(contact_phone)", () => {
+  it("기본값은 빈 문자열이고, 저장된 행의 값을 폼 값으로 가져온다 (null은 빈 문자열)", () => {
+    expect(dispatchFormDefaults.contact_phone).toBe("")
+    expect(dispatchRowToFormValues(baseRow, "거래처").contact_phone).toBe(
+      "010-3333-4444"
+    )
+    expect(
+      dispatchRowToFormValues({ ...baseRow, contact_phone: null }, "거래처")
+        .contact_phone
+    ).toBe("")
+  })
+
+  it("담당자 연락처와 기사 연락처는 서로 다른 필드로 따로 보존된다", () => {
+    const copied = buildDispatchCopyDefaults(baseRow, {
+      today: "2026-11-08",
+      clientName: "거래처",
+      isVehicleActive: true,
+    })
+    expect(copied.contact_phone).toBe("010-3333-4444")
+    expect(copied.driver_phone_snapshot).toBe("010-1111-2222")
+  })
+
+  it("폼 값 → FormData → 서버 파싱 후에도 그대로이고, 앞뒤 공백은 지운다", () => {
+    const parsed = dispatchFormSchema.parse(
+      coerceDispatchFormData(
+        submittedEntries({
+          ...validBase,
+          contact_name: "박담당",
+          contact_phone: "  010-3333-4444 ",
+        })
+      )
+    )
+    expect(parsed.contact_name).toBe("박담당")
+    expect(parsed.contact_phone).toBe("010-3333-4444")
+  })
+
+  it("contact_phone이 아예 안 와도(구버전 클라이언트) 빈 값으로 본다", () => {
+    const entries = submittedEntries({ ...validBase })
+    delete entries.contact_phone
+    expect(
+      dispatchFormSchema.parse(coerceDispatchFormData(entries)).contact_phone
+    ).toBe("")
   })
 })
 

@@ -5,7 +5,9 @@ import {
   matchesQuery,
   parseCopyId,
   pickFrequentCandidates,
+  isSameContact,
   pickRecentContacts,
+  pickRecentDispatchContacts,
   pickRecentRoutes,
   searchCandidates,
   toDispatchCandidate,
@@ -152,6 +154,136 @@ describe("pickRecentContacts (최근 연락처 칩)", () => {
       pickRecentContacts(rows(["010-1111-1111", "010-2222-2222"]), 1)
     ).toEqual(["010-1111-1111"])
     expect(pickRecentContacts([])).toEqual([])
+  })
+})
+
+describe("pickRecentDispatchContacts (배차 최근 담당자 칩)", () => {
+  const rows = (pairs: [string | null, string | null][]) =>
+    pairs.map(([contact_name, contact_phone]) => ({
+      contact_name,
+      contact_phone,
+    }))
+
+  it("최근 순서를 유지하며 서로 다른 담당자(이름+연락처)만 최대 5개 고른다", () => {
+    const result = pickRecentDispatchContacts(
+      rows([
+        ["박대유", "010-1111-1111"],
+        ["이재근", "010-2222-2222"],
+        ["박대유", "010-1111-1111"],
+        ["이준호", "010-3333-3333"],
+        ["최하나", "010-4444-4444"],
+        ["김둘", "010-5555-5555"],
+        ["정셋", "010-6666-6666"],
+      ])
+    )
+
+    expect(result.map((c) => c.name)).toEqual([
+      "박대유",
+      "이재근",
+      "이준호",
+      "최하나",
+      "김둘",
+    ])
+  })
+
+  it("이름이 같아도 번호가 다르면 다른 담당자다 (번호 표기만 다르면 같은 담당자)", () => {
+    expect(
+      pickRecentDispatchContacts(
+        rows([
+          ["박대유", "010-1111-1111"],
+          ["박대유", "01011111111"],
+          ["박대유", "010-9999-9999"],
+        ])
+      )
+    ).toEqual([
+      { name: "박대유", phone: "010-1111-1111" },
+      { name: "박대유", phone: "010-9999-9999" },
+    ])
+  })
+
+  it("연락처를 적기 전의 이름만 있는 예전 건은 같은 이름의 연락처 있는 칩이 있으면 건너뛴다", () => {
+    // 최근 건이 이름만이어도, 같은 이름에 연락처가 있는 건이 있으면 그 칩 하나만 남는다.
+    expect(
+      pickRecentDispatchContacts(
+        rows([
+          ["박대유", null],
+          ["이재근", null],
+          ["박대유", "010-1111-1111"],
+        ])
+      )
+    ).toEqual([
+      { name: "이재근", phone: "" },
+      { name: "박대유", phone: "010-1111-1111" },
+    ])
+  })
+
+  it("이름 없이 번호만 적은 건은 같은 번호의 이름 있는 칩이 있을 때만 건너뛴다", () => {
+    expect(
+      pickRecentDispatchContacts(
+        rows([
+          [null, "01011111111"],
+          ["박대유", "010-1111-1111"],
+          [null, "010-7777-7777"],
+        ])
+      )
+    ).toEqual([
+      { name: "박대유", phone: "010-1111-1111" },
+      { name: "", phone: "010-7777-7777" },
+    ])
+  })
+
+  it("이름도 번호도 없는 행과 숫자 없는 번호는 건너뛰고, 공백은 지운다", () => {
+    expect(
+      pickRecentDispatchContacts(
+        rows([
+          [null, null],
+          ["", "  "],
+          [" ", "-"],
+          ["  박대유 ", "-"],
+        ])
+      )
+    ).toEqual([{ name: "박대유", phone: "" }])
+  })
+
+  it("limit을 줄 수 있고, 행이 없으면 빈 배열이다", () => {
+    expect(
+      pickRecentDispatchContacts(
+        rows([
+          ["가", "010-1111-1111"],
+          ["나", "010-2222-2222"],
+        ]),
+        1
+      )
+    ).toEqual([{ name: "가", phone: "010-1111-1111" }])
+    expect(pickRecentDispatchContacts([])).toEqual([])
+  })
+})
+
+describe("isSameContact (칩 선택 상태)", () => {
+  it("이름과 번호(숫자만 비교)가 모두 같을 때만 같은 담당자다", () => {
+    const chip = { name: "박대유", phone: "010-1111-1111" }
+    expect(isSameContact(chip, { name: " 박대유 ", phone: "01011111111" })).toBe(
+      true
+    )
+    expect(isSameContact(chip, { name: "박대유", phone: "010-2222-2222" })).toBe(
+      false
+    )
+    expect(isSameContact(chip, { name: "이재근", phone: "010-1111-1111" })).toBe(
+      false
+    )
+    expect(isSameContact(chip, { name: "박대유", phone: "" })).toBe(false)
+  })
+
+  it("매출처럼 이름이 비어 있으면 번호만 비교하고, 둘 다 비면 같지 않다", () => {
+    expect(
+      isSameContact(
+        { name: "", phone: "010-1111-1111" },
+        { name: "", phone: "01011111111" }
+      )
+    ).toBe(true)
+    expect(
+      isSameContact({ name: "", phone: "" }, { name: "", phone: "" })
+    ).toBe(false)
   })
 })
 
