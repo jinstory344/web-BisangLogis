@@ -92,3 +92,39 @@ export function getPreviousMonthRangeInSeoul(): DateRange {
   const to = `${prevYear}-${String(prevMonth).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`
   return { from, to }
 }
+
+/** yyyy-MM-dd가 속한 달의 1일~말일 범위 (달력 날짜 연산이라 타임존과 무관) */
+export function getMonthRange(dateStr: string): DateRange {
+  const [year, month] = dateStr.split("-").map(Number)
+  const lastDay = new Date(Date.UTC(year, month, 0)).getUTCDate()
+  const prefix = `${year}-${String(month).padStart(2, "0")}`
+  return { from: `${prefix}-01`, to: `${prefix}-${String(lastDay).padStart(2, "0")}` }
+}
+
+/**
+ * yyyy-MM-dd가 속한 달에서 months개월 이동한 달의 1일~말일 범위 (음수면 과거).
+ * 예: shiftMonthRange("2026-01-15", -1) -> { from: "2025-12-01", to: "2025-12-31" }
+ */
+export function shiftMonthRange(dateStr: string, months: number): DateRange {
+  const [year, month] = dateStr.split("-").map(Number)
+  const shifted = new Date(Date.UTC(year, month - 1 + months, 1))
+  return getMonthRange(shifted.toISOString().slice(0, 10))
+}
+
+/** 기간이 정확히 한 달 전체(1일~말일)인지 */
+export function isFullMonthRange(range: DateRange): boolean {
+  const month = getMonthRange(range.from)
+  return range.from === month.from && range.to === month.to
+}
+
+/** yyyy-MM-dd -> "2026년 11월" */
+export function formatYearMonth(dateStr: string): string {
+  const [year, month] = dateStr.split("-").map(Number)
+  return `${year}년 ${month}월`
+}
+
+/** yyyy-MM-dd -> 요일 한 글자 ("월"~"일") */
+export function getWeekdayLabel(dateStr: string): string {
+  const [year, month, day] = dateStr.split("-").map(Number)
+  return WEEKDAY_LABELS[new Date(Date.UTC(year, month - 1, day)).getUTCDay()]
+}

@@ -3,9 +3,14 @@ import { describe, expect, it } from "vitest"
 import {
   addDaysToDate,
   formatDateChipLabel,
+  formatYearMonth,
   getCurrentMonthRangeInSeoul,
+  getMonthRange,
   getPreviousMonthRangeInSeoul,
   getTodayInSeoul,
+  getWeekdayLabel,
+  isFullMonthRange,
+  shiftMonthRange,
 } from "./date"
 
 describe("getTodayInSeoul", () => {
@@ -54,5 +59,56 @@ describe("formatDateChipLabel", () => {
 
   it("다른 해면 yy/M/D(요일)", () => {
     expect(formatDateChipLabel("2025-12-31", "2026-01-02")).toBe("25/12/31(수)")
+  })
+})
+
+describe("getMonthRange / shiftMonthRange / isFullMonthRange", () => {
+  it("해당 월의 1일~말일을 돌려준다 (윤년 2월 포함)", () => {
+    expect(getMonthRange("2026-11-12")).toEqual({
+      from: "2026-11-01",
+      to: "2026-11-30",
+    })
+    expect(getMonthRange("2026-02-10").to).toBe("2026-02-28")
+    expect(getMonthRange("2028-02-10").to).toBe("2028-02-29")
+    expect(getMonthRange("2026-12-31")).toEqual({
+      from: "2026-12-01",
+      to: "2026-12-31",
+    })
+  })
+
+  it("월을 앞뒤로 옮긴다 (연 경계 포함, 31일에서 짧은 달로 넘어가도 밀리지 않는다)", () => {
+    expect(shiftMonthRange("2026-11-12", -1)).toEqual({
+      from: "2026-10-01",
+      to: "2026-10-31",
+    })
+    expect(shiftMonthRange("2026-01-15", -1)).toEqual({
+      from: "2025-12-01",
+      to: "2025-12-31",
+    })
+    expect(shiftMonthRange("2026-12-05", 1)).toEqual({
+      from: "2027-01-01",
+      to: "2027-01-31",
+    })
+    expect(shiftMonthRange("2026-01-31", 1)).toEqual({
+      from: "2026-02-01",
+      to: "2026-02-28",
+    })
+    expect(shiftMonthRange("2026-03-31", -1).to).toBe("2026-02-28")
+  })
+
+  it("정확히 한 달 전체일 때만 월 범위로 본다", () => {
+    expect(isFullMonthRange({ from: "2026-11-01", to: "2026-11-30" })).toBe(true)
+    expect(isFullMonthRange({ from: "2026-11-01", to: "2026-11-20" })).toBe(false)
+    expect(isFullMonthRange({ from: "2026-11-02", to: "2026-11-30" })).toBe(false)
+    expect(isFullMonthRange({ from: "2026-10-01", to: "2026-11-30" })).toBe(false)
+  })
+})
+
+describe("formatYearMonth / getWeekdayLabel", () => {
+  it("년월 라벨과 요일 한 글자", () => {
+    expect(formatYearMonth("2026-11-01")).toBe("2026년 11월")
+    expect(getWeekdayLabel("2026-11-12")).toBe("목")
+    expect(getWeekdayLabel("2026-11-09")).toBe("월")
+    expect(getWeekdayLabel("2026-11-15")).toBe("일")
   })
 })

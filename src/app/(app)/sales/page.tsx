@@ -6,8 +6,11 @@ import { getCurrentMonthRangeInSeoul } from "@/lib/date"
 import { createClient } from "@/lib/supabase/server"
 import type { PaymentMethod, PaymentStatus, SaleRow } from "@/lib/supabase/database.types"
 
+import { pickStatusTotals, summarizeByPaymentStatus } from "@/lib/sales-list"
+
 import { SalesFilters } from "./sales-filters"
 import { SalesList } from "./sales-list"
+import { SalesMobileControls } from "./sales-mobile-controls"
 
 const PAGE_SIZE = 50
 
@@ -54,21 +57,16 @@ export default async function SalesPage({
   const rangeStart = (page - 1) * PAGE_SIZE
   const rangeEnd = rangeStart + PAGE_SIZE - 1
 
-  // 4.4 목록 하단 합계 행: 페이지가 아닌 필터 전체 기준 (건수/합계금액/공급가액)
+  // 4.4 목록 합계: 페이지가 아닌 필터 전체 기준. 입금여부 필터는 빼고 가져와서
+  // 모바일 상단의 전체/미입금/입금완료 건수·금액을 한 번에 만들고, 목록 합계는 그중 선택한 입금여부 몫이다.
   let summaryQuery = supabase
     .from("sales")
-    .select("total_amount, supply_amount")
+    .select("payment_status, total_amount, supply_amount")
     .is("deleted_at", null)
     .gte("sale_date", from)
     .lte("sale_date", to)
 
   if (sourceMajor) summaryQuery = summaryQuery.eq("source_major", sourceMajor)
-  if (paymentStatus) {
-    summaryQuery = summaryQuery.eq(
-      "payment_status",
-      paymentStatus as PaymentStatus
-    )
-  }
   if (paymentMethod) {
     summaryQuery = summaryQuery.eq(
       "payment_method",
@@ -81,18 +79,15 @@ export default async function SalesPage({
     { data, error, count },
     { data: summaryRows, error: summaryError },
   ] = await Promise.all([
-    baseQuery.order("sale_date", { ascending: false }).range(rangeStart, rangeEnd),
+    baseQuery
+      .order("sale_date", { ascending: false })
+      .order("created_at", { ascending: false })
+      .range(rangeStart, rangeEnd),
     summaryQuery,
   ])
 
-  const summary = (summaryRows ?? []).reduce(
-    (acc, row) => ({
-      count: acc.count + 1,
-      totalAmount: acc.totalAmount + row.total_amount,
-      supplyAmount: acc.supplyAmount + row.supply_amount,
-    }),
-    { count: 0, totalAmount: 0, supplyAmount: 0 }
-  )
+  const statusSummary = summarizeByPaymentStatus(summaryRows ?? [])
+  const summary = pickStatusTotals(statusSummary, paymentStatus)
 
   // 개별 건 합계 === 표시된 합계 검산 (4.3.8). 조회 자체가 실패한 경우는
   // 아래 별도 에러 메시지로 안내하므로 검산 배너 대상이 아니다.
@@ -121,13 +116,23 @@ export default async function SalesPage({
         </div>
       ) : null}
 
-      <div className="mt-4">
+      <div className="mt-4 hidden md:block">
         <SalesFilters
           from={from}
           to={to}
           sourceMajor={sourceMajor}
           paymentStatus={paymentStatus}
           paymentMethod={paymentMethod}
+        />
+      </div>
+      <div className="mt-3 md:hidden">
+        <SalesMobileControls
+          from={from}
+          to={to}
+          sourceMajor={sourceMajor}
+          paymentStatus={paymentStatus}
+          paymentMethod={paymentMethod}
+          summary={statusSummary}
         />
       </div>
 

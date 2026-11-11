@@ -45,9 +45,9 @@ import {
   getWeekOfMonth,
 } from "@/lib/date"
 import { formatKRW } from "@/lib/money"
-import { formatPhoneNumber } from "@/lib/phone"
 import type { SaleRow } from "@/lib/supabase/database.types"
 
+import { SalesMobileList } from "./sales-mobile-list"
 import {
   bulkDeleteSalesAction,
   bulkMarkSalesPaidAction,
@@ -116,6 +116,8 @@ export function SalesList({
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const [selected, setSelected] = useState<Set<string>>(new Set())
+  // 모바일 목록에서만 쓰는 "선택" 모드: 켜져 있을 때만 행에 체크박스가 나온다.
+  const [selectMode, setSelectMode] = useState(false)
   const [bulkPaidAt, setBulkPaidAt] = useState(getTodayInSeoul())
   const [bulkDialogOpen, setBulkDialogOpen] = useState(false)
   const [singlePayTarget, setSinglePayTarget] = useState<SaleRow | null>(null)
@@ -143,6 +145,11 @@ export function SalesList({
     const params = new URLSearchParams(searchParams.toString())
     params.set("page", String(nextPage))
     return `${pathname}?${params.toString()}`
+  }
+
+  function changeSelectMode(next: boolean) {
+    setSelectMode(next)
+    if (!next) setSelected(new Set())
   }
 
   function toggleAll(checked: boolean) {
@@ -229,7 +236,7 @@ export function SalesList({
   return (
     <>
       {selected.size > 0 ? (
-        <div className="mb-3 flex items-center gap-2 rounded-md border bg-muted/50 p-2">
+        <div className="sticky top-0 z-20 mb-3 flex items-center gap-2 rounded-md border bg-muted p-2">
           <span className="text-sm">{selected.size}건 선택됨</span>
           <Button
             type="button"
@@ -388,121 +395,21 @@ export function SalesList({
         </div>
       </div>
 
-      {/* 모바일 카드 리스트 */}
-      <div className="flex flex-col gap-3 md:hidden">
-        {weekGroups.map((group) => {
-          const isExpanded = expandedWeeks.has(group.key)
-          return (
-            <div key={group.key} className="flex flex-col gap-2">
-              <button
-                type="button"
-                className="flex items-center justify-between gap-2 rounded-md border bg-muted/40 p-3 text-left"
-                onClick={() => toggleWeek(group.key)}
-              >
-                <span className="flex items-center gap-1.5 font-medium">
-                  {isExpanded ? (
-                    <ChevronDown className="size-4" />
-                  ) : (
-                    <ChevronRight className="size-4" />
-                  )}
-                  {group.label}
-                  <span className="text-sm font-normal text-muted-foreground">
-                    {formatMonthDay(group.rows[group.rows.length - 1].sale_date)}
-                    ~{formatMonthDay(group.rows[0].sale_date)} · {group.rows.length}건
-                  </span>
-                </span>
-                <span className="text-sm text-muted-foreground">
-                  {formatKRW(group.totalAmount)}
-                </span>
-              </button>
-
-              {isExpanded
-                ? group.rows.map((s) => (
-                    <div key={s.id} className="rounded-md border p-3">
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="flex items-start gap-2">
-                          <Checkbox
-                            className="mt-1"
-                            checked={selected.has(s.id)}
-                            onCheckedChange={(checked) =>
-                              toggleOne(s.id, checked === true)
-                            }
-                          />
-                          <div>
-                            <p className="inline-block rounded bg-muted px-1.5 py-0.5 text-sm text-muted-foreground italic">
-                              {formatDateWithWeekday(s.sale_date)}
-                            </p>
-                            <p className="font-medium">
-                              {s.origin} → {s.destination}
-                            </p>
-                            <p className="text-sm text-muted-foreground">
-                              {s.source_major ?? "-"}
-                              {s.source_minor ? ` / ${s.source_minor}` : ""}
-                              {s.order_contact_phone
-                                ? ` ${formatPhoneNumber(s.order_contact_phone)}`
-                                : ""}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="flex flex-col items-end gap-1">
-                          <PaymentBadge status={s.payment_status} />
-                          {s.paid_at ? (
-                            <span className="text-xs text-muted-foreground">
-                              {formatShortDate(s.paid_at)}
-                            </span>
-                          ) : null}
-                        </div>
-                      </div>
-                      <div className="mt-2 flex items-center justify-between">
-                        <span className="text-right font-medium">
-                          {formatKRW(s.supply_amount)}
-                        </span>
-                        <div className="flex gap-2">
-                          {s.payment_status === "UNPAID" ? (
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              onClick={() => {
-                                setSinglePaidAt(getTodayInSeoul())
-                                setSinglePayTarget(s)
-                              }}
-                            >
-                              입금 처리
-                            </Button>
-                          ) : null}
-                          <Button variant="outline" size="sm" asChild>
-                            <Link href={`/sales/${s.id}`}>상세</Link>
-                          </Button>
-                          <Button variant="outline" size="sm" asChild>
-                            <Link href={`/sales/${s.id}/edit`}>수정</Link>
-                          </Button>
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            onClick={() => setDeleteTarget(s)}
-                          >
-                            삭제
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  ))
-                : null}
-            </div>
-          )
-        })}
-        <div className="rounded-md border bg-muted/30 p-3 text-sm">
-          <div className="flex justify-between">
-            <span>{summary.count}건</span>
-            <span className="text-base">
-              합계금액 {formatKRW(summary.totalAmount)}
-            </span>
-          </div>
-          <div className="mt-1 flex justify-end text-muted-foreground">
-            <span>공급가액 {formatKRW(summary.supplyAmount)}</span>
-          </div>
-        </div>
+      {/* 모바일: 날짜별 묶음 + 한 건당 두 줄 행 (요약은 페이지 상단 SalesMobileControls) */}
+      <div className="md:hidden">
+        <SalesMobileList
+          sales={sales}
+          selectMode={selectMode}
+          onSelectModeChange={changeSelectMode}
+          selected={selected}
+          onToggleSelected={toggleOne}
+          onToggleAll={toggleAll}
+          onPay={(sale) => {
+            setSinglePaidAt(getTodayInSeoul())
+            setSinglePayTarget(sale)
+          }}
+          onDelete={setDeleteTarget}
+        />
       </div>
 
       {totalPages > 1 ? (
