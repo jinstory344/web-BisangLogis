@@ -31,6 +31,7 @@ import {
   CLIENT_CATEGORY_LABELS,
   normalizeClientCategory,
 } from "@/lib/constants/client"
+import { formatPhoneNumber } from "@/lib/phone"
 import type { ClientRow } from "@/lib/supabase/database.types"
 
 import {
@@ -112,7 +113,7 @@ export function ClientList({ clients }: { clients: ClientRow[] }) {
                   <CategoryBadge client={client} />
                 </TableCell>
                 <TableCell>{client.contact_name ?? "-"}</TableCell>
-                <TableCell>{client.contact_phone ?? "-"}</TableCell>
+                <TableCell>{formatPhoneNumber(client.contact_phone)}</TableCell>
                 <TableCell>
                   <TaxInfoBadge status={getTaxInfoStatus(client)} />
                 </TableCell>
@@ -168,7 +169,8 @@ export function ClientList({ clients }: { clients: ClientRow[] }) {
               </div>
             </div>
             <div className="mt-2 text-sm text-muted-foreground">
-              담당자 {client.contact_name ?? "-"} · {client.contact_phone ?? "-"}
+              담당자 {client.contact_name ?? "-"} ·{" "}
+              {formatPhoneNumber(client.contact_phone)}
             </div>
           </div>
         ))}
