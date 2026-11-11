@@ -47,6 +47,22 @@ export function pickDisplayedSaleClients(
   return selected ? [...shown, selected] : shown
 }
 
+/**
+ * 소분류 칩으로 보여 줄 거래처: 내 거래처만 앞쪽 limit곳. 타 거래처는 칩에 나오지 않고
+ * "다른 거래처 찾기·등록"으로 찾는다. 다만 지금 선택된 거래처는 구분과 상관없이 항상 보인다
+ * (타 거래처가 연결된 매출을 수정하거나, 찾기로 타 거래처를 고른 직후에도 선택이 사라져 보이지 않게).
+ */
+export function pickChipClients(
+  ranked: readonly SaleClientChoice[],
+  selectedId: string,
+  limit = SALE_CLIENT_CHIP_LIMIT
+): SaleClientChoice[] {
+  const candidates = ranked.filter(
+    (choice) => choice.category === "MINE" || choice.id === selectedId
+  )
+  return pickDisplayedSaleClients(candidates, selectedId, limit)
+}
+
 /** 삭제되지 않은 매출 행들의 client_id를 거래처별 건수로 센다 (null은 건너뜀). */
 export function countSalesByClient(
   rows: readonly { client_id: string | null }[]

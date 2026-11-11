@@ -5,13 +5,18 @@ import {
   SALE_CLIENT_CHIP_LIMIT,
   countSalesByClient,
   nextBillingEntityName,
+  pickChipClients,
   pickDisplayedSaleClients,
   rankSaleClientChoices,
   type SaleClientChoice,
 } from "./sale-clients"
 
-function choice(id: string, name: string): SaleClientChoice {
-  return { id, name, category: "OTHER", taxStatus: getTaxInfoStatus({}) }
+function choice(
+  id: string,
+  name: string,
+  category: "MINE" | "OTHER" = "OTHER"
+): SaleClientChoice {
+  return { id, name, category, taxStatus: getTaxInfoStatus({}) }
 }
 
 describe("countSalesByClient", () => {
@@ -158,5 +163,43 @@ describe("nextBillingEntityName (거래처 선택 시 계산서정보 자동 입
         nextClientName: " 올기 ",
       })
     ).toBe("올기")
+  })
+})
+
+describe("pickChipClients (소분류 칩은 내 거래처만)", () => {
+  const ranked = [
+    choice("m1", "우영로지스", "MINE"),
+    choice("o1", "하나운수", "OTHER"),
+    choice("m2", "육대장", "MINE"),
+    choice("o2", "타업체", "OTHER"),
+  ]
+
+  it("타 거래처는 칩에 나오지 않고, 내 거래처는 정렬 순서를 지킨다", () => {
+    expect(pickChipClients(ranked, "").map((c) => c.name)).toEqual([
+      "우영로지스",
+      "육대장",
+    ])
+  })
+
+  it("선택된 거래처는 타 거래처여도 보인다 (선택이 사라져 보이지 않게)", () => {
+    const names = pickChipClients(ranked, "o1").map((c) => c.name)
+    expect(names).toEqual(["우영로지스", "하나운수", "육대장"])
+    expect(names).not.toContain("타업체")
+  })
+
+  it("내 거래처가 limit보다 많으면 앞쪽만 보이고, 선택된 타 거래처는 뒤에 덧붙는다", () => {
+    const many = [
+      ...Array.from({ length: 10 }, (_, i) => choice(`m${i}`, `내${i}`, "MINE")),
+      choice("o1", "하나운수", "OTHER"),
+    ]
+    expect(pickChipClients(many, "").length).toBe(SALE_CLIENT_CHIP_LIMIT)
+    const withSelected = pickChipClients(many, "o1")
+    expect(withSelected.length).toBe(SALE_CLIENT_CHIP_LIMIT + 1)
+    expect(withSelected[withSelected.length - 1].name).toBe("하나운수")
+  })
+
+  it("거래처가 없거나 전부 타 거래처면 빈 목록이다", () => {
+    expect(pickChipClients([], "")).toEqual([])
+    expect(pickChipClients([choice("o1", "하나운수", "OTHER")], "")).toEqual([])
   })
 })

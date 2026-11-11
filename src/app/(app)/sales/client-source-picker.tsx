@@ -8,10 +8,7 @@ import { ClientCombobox } from "@/components/clients/client-combobox"
 import { TaxInfoBadge } from "@/components/clients/tax-info-badge"
 import { ChoiceChips, chipVariants } from "@/components/form/choice-chips"
 import { getTaxInfoStatus } from "@/lib/client-tax-info"
-import {
-  pickDisplayedSaleClients,
-  type SaleClientChoice,
-} from "@/lib/sale-clients"
+import { pickChipClients, type SaleClientChoice } from "@/lib/sale-clients"
 import { cn } from "@/lib/utils"
 
 /** 거래처로 연결되지 않은(예전에 이름만 적은) 소분류를 선택된 칩으로 보여 주기 위한 값 */
@@ -35,8 +32,8 @@ interface ClientSourcePickerProps {
 
 /**
  * 매출 폼 출처 "거래처"의 소분류: 거래처 페이지에 등록된 명단에서 고른다.
- * 자주 쓰는 거래처는 칩으로 바로 누르고, 그 밖에는 "다른 거래처 찾기"로 검색하거나
- * 없으면 이름만으로 바로 등록한다(구분은 타 거래처). 고른 거래처의 세금계산서 정보가
+ * 칩에는 내 거래처만 나오고(많이 쓴 순), 타 거래처나 칩에 안 보이는 거래처는 "다른 거래처 찾기"로
+ * 검색하거나 없으면 이름만으로 바로 등록한다(구분은 타 거래처). 고른 거래처의 세금계산서 정보가
  * 비어 있으면 알려 주고 거래처 수정 화면으로 가는 링크를 준다.
  */
 export function ClientSourcePicker({
@@ -52,7 +49,7 @@ export function ClientSourcePicker({
     ...choices,
     ...created.filter((c) => !choices.some((known) => known.id === c.id)),
   ]
-  const displayed = pickDisplayedSaleClients(allChoices, clientId)
+  const displayed = pickChipClients(allChoices, clientId)
   const selected = allChoices.find((choice) => choice.id === clientId)
   const unlinkedName = !clientId ? sourceMinor.trim() : ""
 
