@@ -2,6 +2,7 @@ import Link from "next/link"
 import { Plus } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { getCurrentMonthRangeInSeoul } from "@/lib/date"
 import { createClient } from "@/lib/supabase/server"
 import type { DispatchRow } from "@/lib/supabase/database.types"
@@ -15,6 +16,7 @@ import {
 import { DispatchFilters } from "./dispatch-filters"
 import { DispatchList } from "./dispatch-list"
 import { DispatchMobileControls } from "./dispatch-mobile-controls"
+import { DispatchSummary } from "./dispatch-summary"
 
 const PAGE_SIZE = 50
 
@@ -113,41 +115,52 @@ export default async function DispatchesPage({
         </Button>
       </div>
 
-      <div className="mt-4 hidden md:block">
-        <DispatchFilters
-          from={from}
-          to={to}
-          clientId={clientId}
-          clientName={clientName}
-        />
-      </div>
-      <div className="mt-3 md:hidden">
-        <DispatchMobileControls
-          from={from}
-          to={to}
-          clientId={clientId}
-          clientName={clientName}
-          summary={rangeSummary}
-          clientNames={clientNameMap}
-        />
-      </div>
+      <Tabs defaultValue="list" className="mt-4">
+        <TabsList>
+          <TabsTrigger value="list">목록</TabsTrigger>
+          <TabsTrigger value="summary">월간 집계</TabsTrigger>
+        </TabsList>
 
-      {error ? (
-        <p className="mt-6 text-sm text-destructive">
-          배차 목록을 불러오지 못했습니다: {error.message}
-        </p>
-      ) : (
-        <div className="mt-4">
-          <DispatchList
-            dispatches={(data ?? []) as DispatchRow[]}
-            clientNameMap={clientNameMap}
-            totalCount={count ?? 0}
-            summary={summary}
-            page={page}
-            totalPages={totalPages}
-          />
-        </div>
-      )}
+        <TabsContent value="list" className="flex flex-col gap-4">
+          <div className="hidden md:block">
+            <DispatchFilters
+              from={from}
+              to={to}
+              clientId={clientId}
+              clientName={clientName}
+            />
+          </div>
+          <div className="md:hidden">
+            <DispatchMobileControls
+              from={from}
+              to={to}
+              clientId={clientId}
+              clientName={clientName}
+              summary={rangeSummary}
+              clientNames={clientNameMap}
+            />
+          </div>
+
+          {error ? (
+            <p className="text-sm text-destructive">
+              배차 목록을 불러오지 못했습니다: {error.message}
+            </p>
+          ) : (
+            <DispatchList
+              dispatches={(data ?? []) as DispatchRow[]}
+              clientNameMap={clientNameMap}
+              totalCount={count ?? 0}
+              summary={summary}
+              page={page}
+              totalPages={totalPages}
+            />
+          )}
+        </TabsContent>
+
+        <TabsContent value="summary">
+          <DispatchSummary from={from} />
+        </TabsContent>
+      </Tabs>
     </div>
   )
 }
