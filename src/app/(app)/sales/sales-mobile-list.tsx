@@ -52,8 +52,9 @@ function PaidLabel({ sale }: { sale: SaleRow }) {
 
 /**
  * 모바일 매출 목록: 날짜별 묶음 + 한 건당 두 줄 행.
- * 행을 누르면 작업 시트(상세·수정·복사·삭제)가 열리고, 자주 쓰는 "입금 처리"만은
- * 미입금 행에 버튼으로 바로 보인다. 여러 건 선택은 "선택" 모드에서만 체크박스가 나온다.
+ * 행에는 버튼이 없다. 미입금은 작은 글자로만 표시하고, 행을 누르면 열리는 작업 시트에서
+ * 입금 처리·상세·수정·복사·삭제를 한다(목록에서 큰 버튼을 잘못 누르는 일을 막기 위해).
+ * 여러 건 선택은 "선택" 모드에서만 체크박스가 나온다.
  */
 export function SalesMobileList({
   sales,
@@ -149,7 +150,7 @@ export function SalesMobileList({
                   isSelected && "bg-muted/60"
                 )}
               >
-                {/* 행 전체가 눌리는 영역. 안쪽 글자는 클릭을 통과시키고, 입금 처리 버튼만 따로 눌린다. */}
+                {/* 행 전체가 눌리는 영역(누르면 작업 시트). 안쪽 글자는 클릭을 그대로 통과시킨다. */}
                 <button
                   type="button"
                   aria-label={`${sale.origin}에서 ${sale.destination}, ${formatKRW(sale.supply_amount)}`}
@@ -185,23 +186,16 @@ export function SalesMobileList({
                   </p>
                 </div>
 
-                <div className="pointer-events-none flex shrink-0 flex-col items-end gap-1.5">
-                  <span className="pointer-events-none font-semibold tabular-nums">
+                <div className="pointer-events-none flex shrink-0 flex-col items-end gap-0.5">
+                  <span className="font-semibold tabular-nums">
                     {formatKRW(sale.supply_amount)}
                   </span>
                   {sale.payment_status === "PAID" ? (
-                    <span className="pointer-events-none">
-                      <PaidLabel sale={sale} />
+                    <PaidLabel sale={sale} />
+                  ) : (
+                    <span className="text-xs font-medium text-destructive">
+                      미입금
                     </span>
-                  ) : selectMode ? null : (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="pointer-events-auto relative h-8 border-destructive/40 bg-destructive/5 px-2.5 text-[13px] text-destructive hover:bg-destructive/10 hover:text-destructive"
-                      onClick={() => onPay(sale)}
-                    >
-                      입금 처리
-                    </Button>
                   )}
                 </div>
               </div>
