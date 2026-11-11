@@ -5,7 +5,10 @@ import { redirect } from "next/navigation"
 
 import { recordAuditLog } from "@/lib/audit/log"
 import {
+  pickRecentContacts,
   pickRecentRoutes,
+  RECENT_CONTACT_LIMIT,
+  RECENT_CONTACT_SCAN_SIZE,
   RECENT_ROUTE_LIMIT,
   RECENT_ROUTE_SCAN_SIZE,
   type RecentRoute,
@@ -120,6 +123,42 @@ export async function getRecentSaleRoutesAction(): Promise<RecentRoute[]> {
   }
 
   return pickRecentRoutes(data, RECENT_ROUTE_LIMIT)
+}
+
+/**
+ * 매출 폼 "최근 연락처" 칩: 같은 출처(대분류+소분류)로 등록한 최근 매출에서
+ * 서로 다른 연락처를 최대 5개 돌려준다. 삭제된 건은 제외하고, 소분류가 비어 있으면 빈 목록이다.
+ * 대분류가 비어 있으면 대분류 없이 저장된 건끼리만 맞춘다.
+ * 같은 거래처라도 건마다 담당자가 달라서, 연락처를 자동으로 채우지 않고 칩으로만 제안한다.
+ */
+export async function getRecentSaleContactsAction(input: {
+  sourceMajor: string
+  sourceMinor: string
+}): Promise<string[]> {
+  const sourceMinor = input.sourceMinor.trim()
+  if (!sourceMinor) return []
+
+  const sourceMajor = input.sourceMajor.trim()
+  const supabase = await createClient()
+  let request = supabase
+    .from("sales")
+    .select("order_contact_phone")
+    .is("deleted_at", null)
+    .not("order_contact_phone", "is", null)
+    .eq("source_minor", sourceMinor)
+    .order("created_at", { ascending: false })
+    .limit(RECENT_CONTACT_SCAN_SIZE)
+
+  request = sourceMajor
+    ? request.eq("source_major", sourceMajor)
+    : request.is("source_major", null)
+
+  const { data, error } = await request
+  if (error) {
+    throw new Error(`최근 연락처 조회 실패: ${error.message}`)
+  }
+
+  return pickRecentContacts(data, RECENT_CONTACT_LIMIT)
 }
 
 /** 4.3.6 중복 입력 감지: 매출일자+상차지+하차지+공급가액 동일 건 존재 여부 */

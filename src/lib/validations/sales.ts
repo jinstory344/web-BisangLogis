@@ -1,6 +1,6 @@
 import { z } from "zod"
 
-import { amountSchema } from "@/lib/money"
+import { amountSchema, isVatExemptForPayment } from "@/lib/money"
 import type { SaleRow } from "@/lib/supabase/database.types"
 
 /**
@@ -22,6 +22,11 @@ export const saleFormSchema = z.object({
   origin: z.string().trim().min(1, "상차지를 입력하세요"),
   destination: z.string().trim().min(1, "하차지를 입력하세요"),
   supply_amount: amountSchema,
+  /**
+   * 세액 없음 여부. 폼에서 입력받지 않고 지불방법에서 파생한다
+   * (isVatExemptForPayment: 세금계산서만 세액 있음). 서버(coerceSaleFormData)가
+   * 전송된 값과 상관없이 다시 계산하므로 이 값은 RPC 인자와 화면 미리보기 용도다.
+   */
   is_vat_exempt: z.boolean(),
   payment_method: z.enum(["TAX_INVOICE", "TRANSFER", "CASH"]),
   source_major: z.string().trim(),
@@ -64,7 +69,9 @@ export function saleRowToFormValues(row: SaleRow): SaleFormValues {
     origin: row.origin,
     destination: row.destination,
     supply_amount: row.supply_amount,
-    is_vat_exempt: row.is_vat_exempt,
+    // 저장된 is_vat_exempt가 아니라 지불방법 규칙을 따른다 — 수정·복사 화면의 세액 미리보기가
+    // 저장 시 서버가 계산할 값과 항상 같아야 한다.
+    is_vat_exempt: isVatExemptForPayment(row.payment_method),
     payment_method: row.payment_method,
     source_major: row.source_major ?? "",
     source_minor: row.source_minor ?? "",
@@ -98,6 +105,8 @@ export function buildSaleFormData(values: SaleFormValues): FormData {
     if (value === undefined) return
     fd.set(key, String(value))
   })
+  // 폼 상태가 어긋나 있어도 항상 지불방법 규칙대로 보낸다 (서버도 다시 계산한다).
+  fd.set("is_vat_exempt", String(isVatExemptForPayment(values.payment_method)))
   return fd
 }
 
@@ -108,7 +117,8 @@ export function coerceSaleFormData(
   return {
     ...raw,
     supply_amount: Number(raw.supply_amount),
-    is_vat_exempt: raw.is_vat_exempt === "true",
+    // 세액 없음 여부는 클라이언트가 보낸 값을 믿지 않고 지불방법으로 서버에서 정한다.
+    is_vat_exempt: isVatExemptForPayment(String(raw.payment_method ?? "")),
     // 선택 필드가 아예 전송되지 않은 경우(구버전 클라이언트 등)도 "미입력"으로 취급한다.
     billing_entity_name: raw.billing_entity_name ?? "",
     order_contact_phone: raw.order_contact_phone ?? "",

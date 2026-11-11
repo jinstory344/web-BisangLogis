@@ -77,7 +77,8 @@ describe("buildSaleCopyDefaults (이전 건 복사)", () => {
       origin: "서울",
       destination: "부산",
       supply_amount: 100000,
-      is_vat_exempt: false,
+      // 저장된 값(false)이 아니라 지불방법(계좌이체 → 세액 없음)에서 다시 정해진다.
+      is_vat_exempt: true,
       payment_method: "TRANSFER",
       source_major: "거래처",
       source_minor: "조은물류",
@@ -113,6 +114,92 @@ describe("buildSaleCopyDefaults (이전 건 복사)", () => {
       coerceSaleFormData(submittedEntries(copied))
     )
     expect(parsed.success).toBe(true)
+  })
+})
+
+describe("세액 규칙: 지불방법이 세금계산서일 때만 세액 있음 (현금 체크박스 없음)", () => {
+  const methods = ["TAX_INVOICE", "TRANSFER", "CASH"] as const
+  const expectedExempt = { TAX_INVOICE: false, TRANSFER: true, CASH: true }
+
+  it("수정·복사 화면 값은 저장된 is_vat_exempt가 아니라 지불방법에서 정해진다", () => {
+    for (const method of methods) {
+      for (const stored of [true, false]) {
+        const values = saleRowToFormValues({
+          ...baseRow,
+          payment_method: method,
+          is_vat_exempt: stored,
+        })
+        expect(values.is_vat_exempt).toBe(expectedExempt[method])
+      }
+    }
+  })
+
+  it("폼 상태의 is_vat_exempt가 어긋나 있어도 FormData는 지불방법 기준으로 보낸다", () => {
+    for (const method of methods) {
+      for (const stale of [true, false]) {
+        const fd = buildSaleFormData({
+          ...saleRowToFormValues(baseRow),
+          payment_method: method,
+          is_vat_exempt: stale,
+        })
+        expect(fd.get("is_vat_exempt")).toBe(String(expectedExempt[method]))
+      }
+    }
+  })
+
+  it("서버는 클라이언트가 보낸 is_vat_exempt를 믿지 않고 지불방법으로 다시 정한다", () => {
+    for (const method of methods) {
+      for (const posted of ["true", "false", "", "1", "yes"]) {
+        const coerced = coerceSaleFormData({
+          ...submittedEntries(saleRowToFormValues(baseRow)),
+          payment_method: method,
+          is_vat_exempt: posted,
+        })
+        expect(coerced.is_vat_exempt).toBe(expectedExempt[method])
+      }
+    }
+  })
+
+  it("is_vat_exempt를 아예 안 보내거나 위조해도 세액은 지불방법대로다 (세금계산서 건을 면세로 위조 불가)", () => {
+    const entries = submittedEntries({
+      ...saleRowToFormValues(baseRow),
+      payment_method: "TAX_INVOICE",
+    })
+    delete entries.is_vat_exempt
+    expect(
+      saleFormSchema.parse(coerceSaleFormData(entries)).is_vat_exempt
+    ).toBe(false)
+
+    const forged = saleFormSchema.parse(
+      coerceSaleFormData({ ...entries, is_vat_exempt: "true" })
+    )
+    expect(forged.is_vat_exempt).toBe(false)
+  })
+
+  it("알 수 없는 지불방법은 검증에서 거부된다", () => {
+    const parsed = saleFormSchema.safeParse(
+      coerceSaleFormData({
+        ...submittedEntries(saleRowToFormValues(baseRow)),
+        payment_method: "BOGUS",
+      })
+    )
+    expect(parsed.success).toBe(false)
+  })
+
+  it("저장까지의 흐름: 폼 값 → FormData → 서버 파싱 결과가 지불방법별 RPC 인자와 같다", () => {
+    for (const method of methods) {
+      const parsed = saleFormSchema.parse(
+        coerceSaleFormData(
+          submittedEntries({
+            ...saleRowToFormValues(baseRow),
+            payment_method: method,
+            supply_amount: 550000,
+          })
+        )
+      )
+      expect(parsed.payment_method).toBe(method)
+      expect(parsed.is_vat_exempt).toBe(expectedExempt[method])
+    }
   })
 })
 

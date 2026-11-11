@@ -9,6 +9,7 @@ import { AmountInput } from "@/components/form/amount-input"
 import { ChoiceChips, toChoiceOptions } from "@/components/form/choice-chips"
 import { DateQuickPicker } from "@/components/form/date-quick-picker"
 import { FormSubmitBar, touchFormProps } from "@/components/form/form-submit-bar"
+import { RecentContactChips } from "@/components/form/recent-contact-chips"
 import { RecentRouteChips } from "@/components/form/recent-route-chips"
 import {
   AlertDialog,
@@ -20,7 +21,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { Checkbox } from "@/components/ui/checkbox"
 import {
   Form,
   FormControl,
@@ -38,7 +38,12 @@ import {
   SOURCE_MAJOR_OPTIONS,
 } from "@/lib/constants/source"
 import { getTodayInSeoul } from "@/lib/date"
-import { calcVatFromSupply, formatAmountInput, formatKRW } from "@/lib/money"
+import {
+  calcVatFromSupply,
+  formatAmountInput,
+  formatKRW,
+  isVatExemptForPayment,
+} from "@/lib/money"
 import type { RecentRoute } from "@/lib/quick-entry"
 import { cn } from "@/lib/utils"
 import {
@@ -54,6 +59,7 @@ import {
   searchOriginSuggestionsAction,
   type SaleActionState,
 } from "./actions"
+import { useRecentSaleContacts } from "./use-recent-sale-contacts"
 
 const SOURCE_MAJOR_CHOICES = toChoiceOptions(SOURCE_MAJOR_OPTIONS)
 const SOURCE_CLIENT_MINOR_CHOICES = toChoiceOptions(SOURCE_CLIENT_MINOR_OPTIONS)
@@ -71,11 +77,19 @@ interface SalesFormProps {
   recentRoutes?: RecentRoute[]
 }
 
-/** "더보기"에 접어 두는 필드(오더자 전화번호·계산서정보·비고) 중 값이 있는지 — 있으면 펼친 채로 연다. */
+/**
+ * 거래처가 아닌 출처(지인·카카오톡 등)는 오더자(소분류)와 계산서 받을 업체가 다른 경우가 흔해서
+ * 계산서정보를 연락처 바로 아래에 보여 준다. 거래처이거나 출처 미선택이면 더보기에 접어 둔다.
+ */
+function isBillingShownAbove(sourceMajor: string): boolean {
+  return sourceMajor !== "" && sourceMajor !== CLIENT_SOURCE_MAJOR
+}
+
+/** "더보기"에 접어 두는 필드(계산서정보·출처 비고·비고) 중 값이 있는지 — 있으면 펼친 채로 연다. */
 function hasMoreSectionValues(values: SaleFormValues): boolean {
   return [
-    values.order_contact_phone,
-    values.billing_entity_name,
+    isBillingShownAbove(values.source_major) ? "" : values.billing_entity_name,
+    values.source_note,
     values.memo,
   ].some((value) => value.trim() !== "")
 }
@@ -99,6 +113,10 @@ export function SalesForm({
   const [isMoreOpen, setIsMoreOpen] = useState(() =>
     hasMoreSectionValues(defaultValues)
   )
+  // 출처 비고 칸은 새로 만들지 않는다 — 이미 값이 있는 건(수정·복사)에서만 더보기에 보여 줘서 값이 사라지지 않게 한다.
+  const [showSourceNote] = useState(
+    () => defaultValues.source_note.trim() !== ""
+  )
 
   const form = useForm<SaleFormValues>({
     resolver: zodResolver(saleFormSchema),
@@ -109,14 +127,19 @@ export function SalesForm({
   })
 
   const supplyAmount = form.watch("supply_amount")
-  const isVatExempt = form.watch("is_vat_exempt")
+  // 세액은 지불방법이 세금계산서일 때만 붙는다 (계좌이체·현금은 세액 없음).
+  const isVatExempt = isVatExemptForPayment(form.watch("payment_method"))
   const { vatAmount, totalAmount } = calcVatFromSupply(
     Number.isFinite(supplyAmount) ? supplyAmount : 0,
     isVatExempt
   )
   const sourceMajor = form.watch("source_major")
+  const sourceMinor = form.watch("source_minor")
+  const orderContactPhone = form.watch("order_contact_phone")
   const origin = form.watch("origin")
   const destination = form.watch("destination")
+  const recentContacts = useRecentSaleContacts(sourceMajor, sourceMinor)
+  const billingShownAbove = isBillingShownAbove(sourceMajor)
 
   function applyRecentRoute(route: RecentRoute) {
     form.setValue("origin", route.origin, {
@@ -140,6 +163,21 @@ export function SalesForm({
     ) {
       form.setValue("source_minor", "", { shouldDirty: true })
     }
+    // 계산서정보 칸이 연락처 아래에서 더보기로 옮겨 가면, 이미 적은 값이 접힌 곳에 숨지 않게 펼친다.
+    if (
+      !isBillingShownAbove(next) &&
+      form.getValues("billing_entity_name").trim() !== ""
+    ) {
+      setIsMoreOpen(true)
+    }
+  }
+
+  function handlePaymentMethodChange(
+    next: SaleFormValues["payment_method"],
+    onChange: (value: SaleFormValues["payment_method"]) => void
+  ) {
+    onChange(next)
+    form.setValue("is_vat_exempt", isVatExemptForPayment(next))
   }
 
   async function onSubmit(values: SaleFormValues) {
@@ -177,6 +215,30 @@ export function SalesForm({
     }
     setPendingFormData(null)
   }
+
+  // 계산서정보 칸은 한 번에 한 곳에만 그린다: 거래처 외 출처면 연락처 아래, 아니면 더보기 안.
+  const billingField = (
+    <FormItem>
+      <FormLabel>계산서정보</FormLabel>
+      <FreeTextCombobox
+        value={form.watch("billing_entity_name")}
+        onChange={(v) => form.setValue("billing_entity_name", v)}
+        fetchSuggestions={searchBillingEntityNameSuggestionsAction}
+        placeholder={
+          billingShownAbove
+            ? "계산서 받을 업체 (직접 입력 가능)"
+            : "계산서정보 (직접 입력 가능)"
+        }
+      />
+    </FormItem>
+  )
+  const moreSummary = [
+    billingShownAbove ? null : "계산서정보",
+    showSourceNote ? "출처 비고" : null,
+    "비고",
+  ]
+    .filter(Boolean)
+    .join(" · ")
 
   return (
     <Form {...form}>
@@ -265,7 +327,8 @@ export function SalesForm({
                 </FormControl>
                 {/* 모바일: 세액·합계 칸 대신 한 줄 요약 (데스크톱은 오른쪽 두 칸) */}
                 <p className="text-right text-sm text-muted-foreground tabular-nums md:hidden">
-                  세액 {formatKRW(vatAmount)} · 합계{" "}
+                  {isVatExempt ? "세액 없음" : `세액 ${formatKRW(vatAmount)}`} ·
+                  합계{" "}
                   <span className="font-medium text-foreground">
                     {formatKRW(totalAmount)}
                   </span>
@@ -279,7 +342,8 @@ export function SalesForm({
             <FormControl>
               <Input
                 className="text-right tabular-nums"
-                value={formatAmountInput(vatAmount)}
+                value={isVatExempt ? "" : formatAmountInput(vatAmount)}
+                placeholder={isVatExempt ? "세액 없음" : undefined}
                 disabled
                 readOnly
               />
@@ -300,25 +364,6 @@ export function SalesForm({
 
         <FormField
           control={form.control}
-          name="is_vat_exempt"
-          render={({ field }) => (
-            <FormItem className="flex flex-row items-center gap-3">
-              <FormControl>
-                <Checkbox
-                  checked={field.value}
-                  onCheckedChange={(checked) => field.onChange(checked === true)}
-                />
-              </FormControl>
-              {/* 라벨까지 눌러도 체크되도록 라벨 행을 모바일 44px 터치 영역으로 넓힌다. */}
-              <FormLabel className="!mt-0 min-h-11 flex-1 cursor-pointer md:min-h-0 md:flex-none">
-                현금
-              </FormLabel>
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
           name="payment_method"
           render={({ field }) => (
             <FormItem>
@@ -328,7 +373,9 @@ export function SalesForm({
                   aria-label="지불방법"
                   options={PAYMENT_METHOD_OPTIONS}
                   value={field.value}
-                  onChange={field.onChange}
+                  onChange={(next) =>
+                    handlePaymentMethodChange(next, field.onChange)
+                  }
                 />
               </FormControl>
               <FormMessage />
@@ -361,40 +408,25 @@ export function SalesForm({
         />
 
         {sourceMajor === CLIENT_SOURCE_MAJOR ? (
-          <div className="grid gap-4 md:grid-cols-2">
-            <FormField
-              control={form.control}
-              name="source_minor"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>소분류</FormLabel>
-                  <FormControl>
-                    <ChoiceChips
-                      aria-label="출처 소분류"
-                      allowDeselect
-                      options={SOURCE_CLIENT_MINOR_CHOICES}
-                      value={field.value}
-                      onChange={field.onChange}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="source_note"
-              render={({ field }) => (
-                <FormItem className="content-start">
-                  <FormLabel>비고</FormLabel>
-                  <FormControl>
-                    <Input {...field} placeholder="비고" />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
+          <FormField
+            control={form.control}
+            name="source_minor"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>소분류</FormLabel>
+                <FormControl>
+                  <ChoiceChips
+                    aria-label="출처 소분류"
+                    allowDeselect
+                    options={SOURCE_CLIENT_MINOR_CHOICES}
+                    value={field.value}
+                    onChange={field.onChange}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
         ) : (
           <FormField
             control={form.control}
@@ -403,13 +435,40 @@ export function SalesForm({
               <FormItem>
                 <FormLabel>소분류</FormLabel>
                 <FormControl>
-                  <Input {...field} placeholder="소분류 직접 입력" />
+                  <Input {...field} placeholder="이름 또는 업체명 직접 입력" />
                 </FormControl>
                 <FormMessage />
               </FormItem>
             )}
           />
         )}
+
+        {/* 연락처: 어떤 출처를 골라도 소분류가 곧 오더자이므로 바로 아래에 둔다.
+            같은 거래처라도 담당자가 건마다 달라, 자동으로 채우지 않고 최근 연락처를 칩으로만 제안한다. */}
+        <FormField
+          control={form.control}
+          name="order_contact_phone"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>연락처</FormLabel>
+              <FormControl>
+                <Input {...field} type="tel" placeholder="010-0000-0000" />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <RecentContactChips
+          contacts={recentContacts}
+          value={orderContactPhone}
+          onSelect={(contact) =>
+            form.setValue("order_contact_phone", contact, {
+              shouldDirty: true,
+            })
+          }
+        />
+
+        {billingShownAbove ? billingField : null}
 
         {/* 모바일 "더보기": 자주 비워 두는 필드를 접는다. 값이 있으면(수정·복사) 펼친 채로 연다.
             데스크톱은 기존처럼 항상 펼쳐 둔다. */}
@@ -423,7 +482,7 @@ export function SalesForm({
           <span className="flex min-w-0 items-baseline gap-2">
             <span className="shrink-0">더보기</span>
             <span className="truncate text-xs font-normal text-muted-foreground">
-              오더자 전화번호 · 계산서정보 · 비고
+              {moreSummary}
             </span>
           </span>
           <ChevronDown
@@ -439,29 +498,23 @@ export function SalesForm({
           id={moreSectionId}
           className={cn("flex-col gap-4 md:flex", isMoreOpen ? "flex" : "hidden")}
         >
-          <FormField
-            control={form.control}
-            name="order_contact_phone"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>오더자 전화번호</FormLabel>
-                <FormControl>
-                  <Input {...field} type="tel" placeholder="010-0000-0000" />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+          {billingShownAbove ? null : billingField}
 
-          <FormItem>
-            <FormLabel>계산서정보</FormLabel>
-            <FreeTextCombobox
-              value={form.watch("billing_entity_name")}
-              onChange={(v) => form.setValue("billing_entity_name", v)}
-              fetchSuggestions={searchBillingEntityNameSuggestionsAction}
-              placeholder="계산서정보 (직접 입력 가능)"
+          {showSourceNote ? (
+            <FormField
+              control={form.control}
+              name="source_note"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>출처 비고</FormLabel>
+                  <FormControl>
+                    <Input {...field} placeholder="출처 비고" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
-          </FormItem>
+          ) : null}
 
           <FormField
             control={form.control}

@@ -91,6 +91,18 @@ export function calcVatFromSupply(
   return { vatAmount, totalAmount: supplyAmount + vatAmount }
 }
 
+/**
+ * 매출의 세액 규칙: 세액은 지불방법이 "세금계산서"일 때만 붙는다.
+ * 계좌이체·현금은 현금 거래로 보아 세액이 없다 (create_sale/update_sale RPC의
+ * p_is_vat_exempt = true와 같은 효과). 사용자가 직접 정한 업무 규칙이므로
+ * 폼·서버 액션·복사 등록이 모두 이 함수 하나만 쓴다 — 별도의 "현금" 체크박스는 없다.
+ * 입력이 알 수 없는 값이면 세금계산서가 아닌 것으로 보고 true를 돌려주지만,
+ * 그런 값은 어차피 payment_method 검증(zod enum)에서 거부된다.
+ */
+export function isVatExemptForPayment(paymentMethod: string): boolean {
+  return paymentMethod !== "TAX_INVOICE"
+}
+
 /** 3자리 콤마 + "원" 표기 (4.4 UI 표시 규칙) */
 export function formatKRW(amount: number): string {
   return `${amount.toLocaleString("ko-KR")}원`

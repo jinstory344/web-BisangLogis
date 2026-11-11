@@ -52,7 +52,7 @@ export default async function SaleDetailPage({
       <div className="mt-4 flex items-center gap-2">
         <PaymentBadge status={sale.payment_status} />
         {sale.is_vat_exempt ? (
-          <span className="text-sm text-muted-foreground">면세</span>
+          <span className="text-sm text-muted-foreground">세액 없음</span>
         ) : null}
       </div>
 
@@ -69,9 +69,11 @@ export default async function SaleDetailPage({
         <Field label="입금일" value={sale.paid_at ?? "-"} />
         <Field label="출처 대분류" value={sale.source_major ?? "-"} />
         <Field label="출처 소분류" value={sale.source_minor ?? "-"} />
-        <Field label="출처 비고" value={sale.source_note ?? "-"} />
+        {sale.source_note ? (
+          <Field label="출처 비고" value={sale.source_note} />
+        ) : null}
         <Field
-          label="오더자 전화번호"
+          label="연락처"
           value={formatPhoneNumber(sale.order_contact_phone)}
         />
         <Field

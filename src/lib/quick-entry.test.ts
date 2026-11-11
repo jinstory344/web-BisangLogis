@@ -5,6 +5,7 @@ import {
   matchesQuery,
   parseCopyId,
   pickFrequentCandidates,
+  pickRecentContacts,
   pickRecentRoutes,
   searchCandidates,
   toDispatchCandidate,
@@ -105,6 +106,54 @@ const EXPENSE_ROW = {
   vendor: null,
   memo: null,
 }
+
+describe("pickRecentContacts (최근 연락처 칩)", () => {
+  const rows = (phones: (string | null)[]) =>
+    phones.map((order_contact_phone) => ({ order_contact_phone }))
+
+  it("최근 순서를 유지하며 서로 다른 연락처만 최대 5개 고른다", () => {
+    const result = pickRecentContacts(
+      rows([
+        "010-1111-1111",
+        "010-2222-2222",
+        "010-1111-1111",
+        "010-3333-3333",
+        "010-4444-4444",
+        "010-5555-5555",
+        "010-6666-6666",
+      ])
+    )
+
+    expect(result).toEqual([
+      "010-1111-1111",
+      "010-2222-2222",
+      "010-3333-3333",
+      "010-4444-4444",
+      "010-5555-5555",
+    ])
+  })
+
+  it("표기만 다른 같은 번호는 하나로 보고 가장 최근 표기를 남긴다", () => {
+    expect(
+      pickRecentContacts(
+        rows(["010-1234-5678", "01012345678", "010 1234 5678", "02-123-4567"])
+      )
+    ).toEqual(["010-1234-5678", "02-123-4567"])
+  })
+
+  it("비었거나 숫자가 없는 값은 건너뛰고, 앞뒤 공백은 지운다", () => {
+    expect(
+      pickRecentContacts(rows([null, "", "   ", "-", "  010-9999-0000  "]))
+    ).toEqual(["010-9999-0000"])
+  })
+
+  it("limit을 줄 수 있고, 행이 없으면 빈 배열이다", () => {
+    expect(
+      pickRecentContacts(rows(["010-1111-1111", "010-2222-2222"]), 1)
+    ).toEqual(["010-1111-1111"])
+    expect(pickRecentContacts([])).toEqual([])
+  })
+})
 
 describe("최근 건 복사 목록", () => {
   const sale = toSaleCopyEntry({

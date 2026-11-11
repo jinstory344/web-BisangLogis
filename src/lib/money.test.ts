@@ -7,11 +7,49 @@ import {
   assertVatIntegrity,
   calcNetAmount,
   formatAmountInput,
+  calcVatFromSupply,
   formatKRW,
+  isVatExemptForPayment,
   normalizeAmountFragment,
   parseAmountInput,
   splitVat,
 } from "./money"
+
+describe("isVatExemptForPayment (매출 세액 규칙: 세금계산서만 세액 있음)", () => {
+  it("세금계산서만 세액이 있고, 계좌이체·현금은 세액이 없다", () => {
+    expect(isVatExemptForPayment("TAX_INVOICE")).toBe(false)
+    expect(isVatExemptForPayment("TRANSFER")).toBe(true)
+    expect(isVatExemptForPayment("CASH")).toBe(true)
+  })
+
+  it("알 수 없는 값·빈 값은 세액 없음으로 본다 (그런 값은 zod enum이 따로 거부)", () => {
+    expect(isVatExemptForPayment("")).toBe(true)
+    expect(isVatExemptForPayment("tax_invoice")).toBe(true)
+    expect(isVatExemptForPayment("BOGUS")).toBe(true)
+  })
+
+  it("calcVatFromSupply와 이어 쓰면 PRD 4.3 금액 규칙(공급가액+세액=합계)이 지불방법별로 지켜진다", () => {
+    const methods = ["TAX_INVOICE", "TRANSFER", "CASH"] as const
+    const supplies = [0, 1, 4, 5, 6, 14, 15, 100_000, 550_000, 99_999_999_999]
+
+    for (const method of methods) {
+      for (const supply of supplies) {
+        const { vatAmount, totalAmount } = calcVatFromSupply(
+          supply,
+          isVatExemptForPayment(method)
+        )
+        expect(supply + vatAmount).toBe(totalAmount)
+        if (method === "TAX_INVOICE") {
+          // 세액 = 공급가액의 10%, 원 단위 반올림(round-half-up)
+          expect(vatAmount).toBe(Math.floor((supply + 5) / 10))
+        } else {
+          expect(vatAmount).toBe(0)
+          expect(totalAmount).toBe(supply)
+        }
+      }
+    }
+  })
+})
 
 describe("splitVat", () => {
   it("반올림 기준값들에 대해 정확히 분리한다", () => {

@@ -74,6 +74,37 @@ export function pickRecentRoutes(
   return routes
 }
 
+/** 매출 폼 "최근 연락처" 칩 최대 개수 */
+export const RECENT_CONTACT_LIMIT = 5
+/** 최근 연락처를 고르기 위해 읽어올, 같은 출처·소분류의 최근 매출 행 수 */
+export const RECENT_CONTACT_SCAN_SIZE = 100
+
+/**
+ * 최근 순(created_at 내림차순)으로 정렬된 행에서 서로 다른 연락처를 앞에서부터
+ * 최대 limit개 고른다. "010-1234-5678"과 "01012345678"처럼 표기만 다른 번호는
+ * 같은 번호(숫자만 비교)로 보고 가장 최근 표기 하나만 남기며, 비었거나 숫자가 없는 값은 건너뛴다.
+ */
+export function pickRecentContacts(
+  rows: readonly { order_contact_phone: string | null }[],
+  limit = RECENT_CONTACT_LIMIT
+): string[] {
+  const seen = new Set<string>()
+  const contacts: string[] = []
+
+  for (const row of rows) {
+    if (contacts.length >= limit) break
+
+    const phone = row.order_contact_phone?.trim() ?? ""
+    const digits = phone.replace(/\D/g, "")
+    if (!digits || seen.has(digits)) continue
+
+    seen.add(digits)
+    contacts.push(phone)
+  }
+
+  return contacts
+}
+
 /**
  * 빠른 등록 시트의 "최근 건 복사" 한 줄.
  * 개인정보(오더자·기사 전화번호 등)는 담지 않는다 — 종류·날짜·구간/분류·금액만.
