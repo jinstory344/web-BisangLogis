@@ -5,6 +5,7 @@ import Link from "next/link"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { useState } from "react"
 
+import { PAID_TEXT_CLASS } from "@/components/dispatches/payment-badge"
 import { chipVariants } from "@/components/form/choice-chips"
 import { Input } from "@/components/ui/input"
 import {
@@ -132,7 +133,12 @@ export function SalesMobileControls({
           </div>
           <div>
             <p className="text-xs text-muted-foreground">입금</p>
-            <p className="text-base font-semibold tabular-nums">
+            <p
+              className={cn(
+                "text-base font-semibold tabular-nums",
+                summary.paid.supplyAmount > 0 && PAID_TEXT_CLASS
+              )}
+            >
               {formatKRW(summary.paid.supplyAmount)}
             </p>
           </div>

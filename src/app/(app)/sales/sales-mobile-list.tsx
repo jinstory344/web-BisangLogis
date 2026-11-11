@@ -13,6 +13,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet"
+import { PAID_TEXT_CLASS } from "@/components/dispatches/payment-badge"
 import { PAYMENT_METHOD_LABELS } from "@/lib/constants/payment-method"
 import {
   formatDateWithWeekday,
@@ -43,7 +44,12 @@ function sourceName(sale: SaleRow): string {
 
 function PaidLabel({ sale }: { sale: SaleRow }) {
   return (
-    <span className="inline-flex items-center gap-0.5 text-xs text-muted-foreground">
+    <span
+      className={cn(
+        "inline-flex items-center gap-0.5 text-xs font-medium",
+        PAID_TEXT_CLASS
+      )}
+    >
       <Check className="size-3" aria-hidden />
       입금 {sale.paid_at ? formatMonthDay(sale.paid_at) : ""}
     </span>
@@ -272,9 +278,14 @@ function SaleActionSheetBody({
 
         <p className="text-sm text-muted-foreground">
           {PAYMENT_METHOD_LABELS[sale.payment_method]} ·{" "}
-          {sale.payment_status === "PAID"
-            ? `입금완료${sale.paid_at ? ` (${formatMonthDay(sale.paid_at)})` : ""}`
-            : "미입금"}
+          {sale.payment_status === "PAID" ? (
+            <span className={cn("font-medium", PAID_TEXT_CLASS)}>
+              입금완료
+              {sale.paid_at ? ` (${formatMonthDay(sale.paid_at)})` : ""}
+            </span>
+          ) : (
+            <span className="font-medium text-destructive">미입금</span>
+          )}
           {sale.billing_entity_name
             ? ` · 계산서정보 ${sale.billing_entity_name}`
             : ""}
