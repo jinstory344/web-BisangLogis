@@ -6,8 +6,15 @@ import { getCurrentMonthRangeInSeoul } from "@/lib/date"
 import { createClient } from "@/lib/supabase/server"
 import type { DispatchRow } from "@/lib/supabase/database.types"
 
+import {
+  DISPATCH_CLIENT_CHIP_LIMIT,
+  filterDispatchesByClient,
+  summarizeDispatches,
+} from "@/lib/dispatch-list"
+
 import { DispatchFilters } from "./dispatch-filters"
 import { DispatchList } from "./dispatch-list"
+import { DispatchMobileControls } from "./dispatch-mobile-controls"
 
 const PAGE_SIZE = 50
 
@@ -46,34 +53,40 @@ export default async function DispatchesPage({
   const rangeStart = (page - 1) * PAGE_SIZE
   const rangeEnd = rangeStart + PAGE_SIZE - 1
 
-  // 하단 합계 행: 페이지가 아닌 필터 전체 기준 운임/수수료 합계.
-  let summaryQuery = supabase
+  // 합계: 페이지가 아닌 전체 기준. 거래처 필터는 빼고 기간 안의 배차를 한 번에 가져와서
+  // 모바일 상단의 전체 요약과 거래처 칩을 만들고, 목록 합계는 그중 선택한 거래처 몫이다.
+  const summaryQuery = supabase
     .from("dispatches")
-    .select("freight_amount, fee_amount")
+    .select("client_id, freight_amount, fee_amount")
     .is("deleted_at", null)
     .gte("dispatch_date", from)
     .lte("dispatch_date", to)
-
-  if (clientId) summaryQuery = summaryQuery.eq("client_id", clientId)
 
   const [
     { data, error, count },
     { data: summaryRows },
   ] = await Promise.all([
-    baseQuery.order("dispatch_date", { ascending: false }).range(rangeStart, rangeEnd),
+    baseQuery
+      .order("dispatch_date", { ascending: false })
+      .order("created_at", { ascending: false })
+      .range(rangeStart, rangeEnd),
     summaryQuery,
   ])
 
-  const summary = (summaryRows ?? []).reduce(
-    (acc, row) => ({
-      freightAmount: acc.freightAmount + (row.freight_amount ?? 0),
-      feeAmount: acc.feeAmount + row.fee_amount,
-    }),
-    { freightAmount: 0, feeAmount: 0 }
+  const rangeSummary = summarizeDispatches(summaryRows ?? [])
+  const summary = summarizeDispatches(
+    filterDispatchesByClient(summaryRows ?? [], clientId)
   )
 
+  // 목록 행과 거래처 칩에 쓸 거래처 이름
   const clientIds = Array.from(
-    new Set((data ?? []).map((d) => d.client_id).filter((v): v is string => !!v))
+    new Set([
+      ...(data ?? []).map((d) => d.client_id).filter((v): v is string => !!v),
+      ...rangeSummary.byClient
+        .slice(0, DISPATCH_CLIENT_CHIP_LIMIT)
+        .map((c) => c.clientId),
+      ...(clientId ? [clientId] : []),
+    ])
   )
   let clientNameMap: Record<string, string> = {}
   if (clientIds.length > 0) {
@@ -100,12 +113,22 @@ export default async function DispatchesPage({
         </Button>
       </div>
 
-      <div className="mt-4">
+      <div className="mt-4 hidden md:block">
         <DispatchFilters
           from={from}
           to={to}
           clientId={clientId}
           clientName={clientName}
+        />
+      </div>
+      <div className="mt-3 md:hidden">
+        <DispatchMobileControls
+          from={from}
+          to={to}
+          clientId={clientId}
+          clientName={clientName}
+          summary={rangeSummary}
+          clientNames={clientNameMap}
         />
       </div>
 

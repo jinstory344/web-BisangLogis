@@ -31,6 +31,7 @@ import { formatPhoneNumber } from "@/lib/phone"
 import type { DispatchRow } from "@/lib/supabase/database.types"
 
 import { deleteDispatchAction } from "./actions"
+import { DispatchMobileList } from "./dispatch-mobile-list"
 
 interface DispatchListProps {
   dispatches: DispatchRow[]
@@ -180,72 +181,17 @@ export function DispatchList({
         </Table>
       </div>
 
-      {/* 모바일 카드 리스트 */}
-      <div className="flex flex-col gap-2 md:hidden">
-        {dispatches.map((d) => (
-          <div key={d.id} className="rounded-md border p-3">
-            <div className="flex items-start justify-between gap-2">
-              <div>
-                <p className="inline-block rounded bg-muted px-1.5 py-0.5 text-sm text-muted-foreground italic">
-                  {formatDateWithWeekday(d.dispatch_date)}
-                </p>
-                <p className="font-bold">
-                  {d.origin} → {d.destination}
-                </p>
-                <p className="text-sm text-foreground">
-                  운임{" "}
-                  {d.freight_amount != null
-                    ? formatKRW(d.freight_amount)
-                    : "-"}
-                  {d.fee_amount > 0
-                    ? ` / 수수료 ${formatKRW(d.fee_amount)}`
-                    : ""}
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  {d.plate_no_snapshot ?? "-"}
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  {d.driver_name_snapshot ?? "-"}
-                  {d.driver_phone_snapshot
-                    ? ` ${formatPhoneNumber(d.driver_phone_snapshot)}`
-                    : ""}
-                </p>
-              </div>
-              <div className="text-right">
-                <p className="text-sm font-medium">
-                  {d.client_id ? clientNameMap[d.client_id] ?? "-" : "-"}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  {d.contact_name ?? "-"}
-                </p>
-              </div>
-            </div>
-            <div className="mt-2 flex justify-end gap-2">
-              <Button variant="outline" size="sm" asChild>
-                <Link href={`/dispatches/${d.id}`}>상세</Link>
-              </Button>
-              <Button variant="outline" size="sm" asChild>
-                <Link href={`/dispatches/${d.id}/edit`}>수정</Link>
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setDeleteTarget(d)}
-              >
-                삭제
-              </Button>
-            </div>
-          </div>
-        ))}
-        <div className="rounded-md border bg-muted/30 p-3 text-sm">
-          <div className="flex justify-between">
-            <span>{totalCount}건</span>
-            <span className="text-base">운임 {formatKRW(summary.freightAmount)}</span>
-          </div>
-          <div className="mt-1 flex justify-end text-muted-foreground">
-            <span>수수료 {formatKRW(summary.feeAmount)}</span>
-          </div>
-        </div>
+      {/* 모바일: 날짜별 묶음 + 한 건당 두 줄 행 (요약은 페이지 상단 DispatchMobileControls) */}
+      <div className="md:hidden">
+        <DispatchMobileList
+          dispatches={dispatches}
+          clientNameMap={clientNameMap}
+          totalCount={totalCount}
+          filteredTotals={
+            searchParams.get("client_id") ? summary : null
+          }
+          onDelete={setDeleteTarget}
+        />
       </div>
 
       {totalPages > 1 ? (
