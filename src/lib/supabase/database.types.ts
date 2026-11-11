@@ -131,6 +131,16 @@ export type ExpenseRow = BaseColumns & {
   memo: string | null
 }
 
+/**
+ * 지출 분류. minor가 null이면 대분류 행, 값이 있으면 그 대분류의 소분류 행이다.
+ * 분류 목록의 원본이며, 지출(ExpenseRow)은 분류 이름을 글자로 그대로 가진다.
+ */
+export type ExpenseCategoryRow = BaseColumns & {
+  major: string
+  minor: string | null
+  sort_order: number
+}
+
 export type TaxInvoiceRow = BaseColumns & {
   issue_date: string
   client_id: string | null
@@ -201,6 +211,7 @@ export type Database = {
       dispatches: TableDef<DispatchRow>
       sales: TableDef<SaleRow>
       expenses: TableDef<ExpenseRow>
+      expense_categories: TableDef<ExpenseCategoryRow>
       tax_invoices: TableDef<TaxInvoiceRow>
       tax_invoice_dispatches: TableDef<TaxInvoiceDispatchRow>
       purchase_invoices: TableDef<PurchaseInvoiceRow>

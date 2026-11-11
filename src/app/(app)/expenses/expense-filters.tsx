@@ -13,8 +13,9 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import {
-  EXPENSE_CATEGORY_MAJORS,
-  getMinorCategories,
+  getMajors,
+  getMinorsOf,
+  type ExpenseCategoryTree,
 } from "@/lib/constants/expense-categories"
 import {
   getCurrentMonthRangeInSeoul,
@@ -26,6 +27,8 @@ interface ExpenseFiltersProps {
   to: string
   categoryMajor: string
   categoryMinor: string
+  /** 분류 목록 (DB) */
+  categories: ExpenseCategoryTree
 }
 
 export function ExpenseFilters({
@@ -33,6 +36,7 @@ export function ExpenseFilters({
   to,
   categoryMajor,
   categoryMinor,
+  categories,
 }: ExpenseFiltersProps) {
   const router = useRouter()
   const pathname = usePathname()
@@ -41,9 +45,7 @@ export function ExpenseFilters({
   const [dateFrom, setDateFrom] = useState(from)
   const [dateTo, setDateTo] = useState(to)
 
-  const minorOptions = categoryMajor
-    ? getMinorCategories(categoryMajor)
-    : []
+  const minorOptions = categoryMajor ? getMinorsOf(categories, categoryMajor) : []
 
   function pushParams(next: Record<string, string>) {
     const params = new URLSearchParams(searchParams.toString())
@@ -115,7 +117,7 @@ export function ExpenseFilters({
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="ALL">대분류 전체</SelectItem>
-            {EXPENSE_CATEGORY_MAJORS.map((major) => (
+            {getMajors(categories).map((major) => (
               <SelectItem key={major} value={major}>
                 {major}
               </SelectItem>

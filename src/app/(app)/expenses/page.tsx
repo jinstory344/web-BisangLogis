@@ -7,12 +7,14 @@ import { getCurrentMonthRangeInSeoul } from "@/lib/date"
 import { createClient } from "@/lib/supabase/server"
 import type { ExpenseRow } from "@/lib/supabase/database.types"
 
+import { getMajors } from "@/lib/constants/expense-categories"
 import { filterExpenses, summarizeExpenses } from "@/lib/expense-list"
 
 import { ExpenseFilters } from "./expense-filters"
 import { ExpenseList } from "./expense-list"
 import { ExpenseMobileControls } from "./expense-mobile-controls"
 import { ExpenseSummary } from "./expense-summary"
+import { getExpenseCategories } from "./categories"
 
 const PAGE_SIZE = 50
 
@@ -62,17 +64,21 @@ export default async function ExpensesPage({
     .lte("expense_date", to)
 
   // 서로 독립된 조회라 순차 대기 대신 동시에 보내 왕복 지연을 줄인다.
-  const [{ data, error, count }, { data: summaryRows }] = await Promise.all([
-    baseQuery
-      .order("expense_date", { ascending: false })
-      .order("created_at", { ascending: false })
-      .range(rangeStart, rangeEnd),
-    summaryQuery,
-  ])
+  const [{ data, error, count }, { data: summaryRows }, { tree: categories }] =
+    await Promise.all([
+      baseQuery
+        .order("expense_date", { ascending: false })
+        .order("created_at", { ascending: false })
+        .range(rangeStart, rangeEnd),
+      summaryQuery,
+      getExpenseCategories(),
+    ])
 
-  const rangeSummary = summarizeExpenses(summaryRows ?? [])
+  const majorOrder = getMajors(categories)
+  const rangeSummary = summarizeExpenses(summaryRows ?? [], majorOrder)
   const filtered = summarizeExpenses(
-    filterExpenses(summaryRows ?? [], categoryMajor, categoryMinor)
+    filterExpenses(summaryRows ?? [], categoryMajor, categoryMinor),
+    majorOrder
   )
   const summary = {
     count: filtered.count,
@@ -109,6 +115,7 @@ export default async function ExpensesPage({
               to={to}
               categoryMajor={categoryMajor}
               categoryMinor={categoryMinor}
+              categories={categories}
             />
           </div>
           <div className="md:hidden">
@@ -118,6 +125,7 @@ export default async function ExpensesPage({
               categoryMajor={categoryMajor}
               categoryMinor={categoryMinor}
               summary={rangeSummary}
+              categories={categories}
             />
           </div>
 
@@ -137,7 +145,7 @@ export default async function ExpensesPage({
         </TabsContent>
 
         <TabsContent value="summary">
-          <ExpenseSummary from={from} />
+          <ExpenseSummary from={from} categories={categories} />
         </TabsContent>
       </Tabs>
     </div>

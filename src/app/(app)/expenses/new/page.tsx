@@ -9,6 +9,7 @@ import {
 } from "@/lib/validations/expense"
 
 import { createExpenseAction } from "../actions"
+import { getExpenseCategories } from "../categories"
 import { ExpenseForm } from "../expense-form"
 
 /**
@@ -36,7 +37,10 @@ export default async function NewExpensePage({
 }) {
   const { copy } = await searchParams
   const copyId = parseCopyId(copy)
-  const copiedValues = copyId ? await loadExpenseCopyDefaults(copyId) : null
+  const [copiedValues, categories] = await Promise.all([
+    copyId ? loadExpenseCopyDefaults(copyId) : null,
+    getExpenseCategories(),
+  ])
 
   return (
     <div className="p-4 md:p-6">
@@ -49,6 +53,8 @@ export default async function NewExpensePage({
           action={createExpenseAction}
           defaultValues={copiedValues ?? expenseFormDefaults}
           submitLabel="등록"
+          categories={categories.tree}
+          categoriesEditable={categories.editable}
         />
       </div>
     </div>

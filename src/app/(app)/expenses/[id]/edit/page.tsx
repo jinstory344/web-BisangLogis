@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server"
 import { expenseRowToFormValues } from "@/lib/validations/expense"
 
 import { updateExpenseAction } from "../../actions"
+import { getExpenseCategories } from "../../categories"
 import { ExpenseForm } from "../../expense-form"
 
 export default async function EditExpensePage({
@@ -25,6 +26,7 @@ export default async function EditExpensePage({
   }
 
   const defaultValues = expenseRowToFormValues(expense)
+  const categories = await getExpenseCategories()
 
   return (
     <div className="p-4 md:p-6">
@@ -34,6 +36,8 @@ export default async function EditExpensePage({
           action={updateExpenseAction.bind(null, id)}
           defaultValues={defaultValues}
           submitLabel="저장"
+          categories={categories.tree}
+          categoriesEditable={categories.editable}
         />
       </div>
     </div>

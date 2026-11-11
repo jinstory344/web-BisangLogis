@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
 
 import { recordAuditLog } from "@/lib/audit/log"
+import { isValidCategoryPairIn } from "@/lib/constants/expense-categories"
 import { softDelete } from "@/lib/soft-delete/soft-delete"
 import { createClient } from "@/lib/supabase/server"
 import {
@@ -11,8 +12,18 @@ import {
   expenseFormSchema,
 } from "@/lib/validations/expense"
 
+import { getExpenseCategories } from "./categories"
+
 export interface ExpenseActionState {
   error: string | null
+}
+
+const INVALID_CATEGORY_MESSAGE = "대분류/소분류 조합이 올바르지 않습니다"
+
+/** 분류 목록(DB)에 있는 대분류/소분류 조합인지 확인한다. */
+async function hasValidCategory(major: string, minor: string): Promise<boolean> {
+  const { tree } = await getExpenseCategories()
+  return isValidCategoryPairIn(tree, major, minor)
 }
 
 export async function createExpenseAction(
@@ -27,6 +38,9 @@ export async function createExpenseAction(
   }
 
   const values = parsed.data
+  if (!(await hasValidCategory(values.category_major, values.category_minor))) {
+    return { error: INVALID_CATEGORY_MESSAGE }
+  }
   const supabase = await createClient()
   const { vendor, memo, ...rest } = values
   const insertValues = {
@@ -85,6 +99,17 @@ export async function updateExpenseAction(
 
   if (fetchError || !before) {
     return { error: "대상 지출을 찾을 수 없습니다" }
+  }
+
+  // 분류를 바꾸지 않았으면 (지워진 분류가 붙은 예전 지출이라도) 그대로 저장할 수 있다.
+  const categoryUnchanged =
+    values.category_major === before.category_major &&
+    values.category_minor === before.category_minor
+  if (
+    !categoryUnchanged &&
+    !(await hasValidCategory(values.category_major, values.category_minor))
+  ) {
+    return { error: INVALID_CATEGORY_MESSAGE }
   }
 
   const { error } = await supabase

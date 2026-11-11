@@ -15,7 +15,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { getMinorCategories } from "@/lib/constants/expense-categories"
+import {
+  getMinorsOf,
+  type ExpenseCategoryTree,
+} from "@/lib/constants/expense-categories"
 import { isFullMonthRange } from "@/lib/date"
 import type { ExpenseSummary } from "@/lib/expense-list"
 import { formatKRW } from "@/lib/money"
@@ -28,6 +31,8 @@ interface ExpenseMobileControlsProps {
   categoryMinor: string
   /** 기간 안의 전체 지출 요약 (대분류·소분류 필터와 상관없이 센 것) */
   summary: ExpenseSummary
+  /** 분류 목록 (DB) — 소분류 필터 선택지 */
+  categories: ExpenseCategoryTree
 }
 
 /**
@@ -41,6 +46,7 @@ export function ExpenseMobileControls({
   categoryMajor,
   categoryMinor,
   summary,
+  categories,
 }: ExpenseMobileControlsProps) {
   const router = useRouter()
   const pathname = usePathname()
@@ -51,7 +57,7 @@ export function ExpenseMobileControls({
   const activeFilterCount = (isMonth ? 0 : 1) + (categoryMinor ? 1 : 0)
   const [isFilterOpen, setIsFilterOpen] = useState(activeFilterCount > 0)
 
-  const minorOptions = categoryMajor ? getMinorCategories(categoryMajor) : []
+  const minorOptions = categoryMajor ? getMinorsOf(categories, categoryMajor) : []
   const spent = summary.byMajor.filter((major) => major.count > 0)
 
   function hrefWith(next: Record<string, string>) {

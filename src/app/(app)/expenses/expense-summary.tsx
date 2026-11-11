@@ -1,12 +1,23 @@
 import { SummaryMonthNav } from "@/components/list/summary-month-nav"
-import { EXPENSE_CATEGORIES } from "@/lib/constants/expense-categories"
+import type { ExpenseCategoryTree } from "@/lib/constants/expense-categories"
 import { formatYearMonth, getMonthRange, shiftMonthRange } from "@/lib/date"
+import { buildMonthBreakdown } from "@/lib/expense-list"
 import { formatKRW } from "@/lib/money"
-import { formatChangeRate } from "@/lib/summary"
+import { formatChangeRate, percentOf } from "@/lib/summary"
 import { createClient } from "@/lib/supabase/server"
 
-/** 지출 월간 집계 탭: 목록 탭에서 보고 있는 달(from이 속한 달)을 집계한다. */
-export async function ExpenseSummary({ from }: { from: string }) {
+/**
+ * 지출 월간 집계 탭: 목록 탭에서 보고 있는 달(from이 속한 달)을 집계한다.
+ * 대분류·소분류는 분류 목록(DB) 순서로 보여 주고, 목록에 없는 값(직접 입력한 소분류, 지운 분류)도
+ * 빠뜨리지 않고 뒤에 붙인다.
+ */
+export async function ExpenseSummary({
+  from,
+  categories,
+}: {
+  from: string
+  categories: ExpenseCategoryTree
+}) {
   const supabase = await createClient()
   const current = getMonthRange(from)
   const previous = shiftMonthRange(from, -1)
@@ -41,23 +52,7 @@ export async function ExpenseSummary({ from }: { from: string }) {
     (sum, r) => sum + r.amount,
     0
   )
-
-  const majorTotals = new Map<string, number>()
-  const minorTotals = new Map<string, Map<string, number>>()
-  for (const row of rows) {
-    majorTotals.set(
-      row.category_major,
-      (majorTotals.get(row.category_major) ?? 0) + row.amount
-    )
-    if (!minorTotals.has(row.category_major)) {
-      minorTotals.set(row.category_major, new Map())
-    }
-    const minorMap = minorTotals.get(row.category_major)!
-    minorMap.set(
-      row.category_minor,
-      (minorMap.get(row.category_minor) ?? 0) + row.amount
-    )
-  }
+  const breakdown = buildMonthBreakdown(categories, rows)
 
   return (
     <div className="flex flex-col gap-4">
@@ -75,50 +70,34 @@ export async function ExpenseSummary({ from }: { from: string }) {
       </div>
 
       <div className="rounded-md border">
-        {EXPENSE_CATEGORIES.map(({ major, minors }) => {
-          const majorTotal = majorTotals.get(major) ?? 0
-          const majorPct =
-            grandTotal > 0 ? Math.round((majorTotal / grandTotal) * 100) : 0
-          const minorMap = minorTotals.get(major)
-
-          return (
-            <div key={major} className="border-b last:border-0">
-              <div className="flex items-center justify-between p-3 font-medium">
-                <span>{major}</span>
-                <span>
-                  {formatKRW(majorTotal)}{" "}
-                  <span className="text-sm text-muted-foreground">
-                    ({majorPct}%)
-                  </span>
+        {breakdown.map(({ major, total, minors }) => (
+          <div key={major} className="border-b last:border-0">
+            <div className="flex items-center justify-between p-3 font-medium">
+              <span>{major}</span>
+              <span>
+                {formatKRW(total)}{" "}
+                <span className="text-sm text-muted-foreground">
+                  ({percentOf(total, grandTotal)}%)
                 </span>
-              </div>
-              {minorMap && minorMap.size > 0 ? (
-                <div className="flex flex-col gap-1 px-3 pb-3 pl-6">
-                  {minors
-                    .filter((minor) => minorMap.has(minor))
-                    .map((minor) => {
-                      const minorTotal = minorMap.get(minor) ?? 0
-                      const minorPct =
-                        grandTotal > 0
-                          ? Math.round((minorTotal / grandTotal) * 100)
-                          : 0
-                      return (
-                        <div
-                          key={minor}
-                          className="flex items-center justify-between text-sm text-muted-foreground"
-                        >
-                          <span>{minor}</span>
-                          <span>
-                            {formatKRW(minorTotal)} ({minorPct}%)
-                          </span>
-                        </div>
-                      )
-                    })}
-                </div>
-              ) : null}
+              </span>
             </div>
-          )
-        })}
+            {minors.length > 0 ? (
+              <div className="flex flex-col gap-1 px-3 pb-3 pl-6">
+                {minors.map(({ minor, total: minorTotal }) => (
+                  <div
+                    key={minor}
+                    className="flex items-center justify-between text-sm text-muted-foreground"
+                  >
+                    <span>{minor}</span>
+                    <span>
+                      {formatKRW(minorTotal)} ({percentOf(minorTotal, grandTotal)}%)
+                    </span>
+                  </div>
+                ))}
+              </div>
+            ) : null}
+          </div>
+        ))}
       </div>
     </div>
   )
