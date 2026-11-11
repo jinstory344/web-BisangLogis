@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server"
 import { saleRowToFormValues } from "@/lib/validations/sales"
 
 import { updateSaleAction } from "../../actions"
+import { getSaleClientChoices } from "../../client-choices"
 import { SalesForm } from "../../sales-form"
 
 export default async function EditSalePage({
@@ -27,6 +28,8 @@ export default async function EditSalePage({
   }
 
   const defaultValues = saleRowToFormValues(sale)
+  // 거래처 명단은 부가 기능이라 조회 실패 시 비운다 (수정 화면은 계속 쓸 수 있다).
+  const clientChoices = await getSaleClientChoices().catch(() => [])
 
   return (
     <div className="p-4 md:p-6">
@@ -40,6 +43,7 @@ export default async function EditSalePage({
         <SalesForm
           action={updateSaleAction.bind(null, id)}
           defaultValues={defaultValues}
+          clientChoices={clientChoices}
           submitLabel="저장"
         />
       </div>

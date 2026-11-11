@@ -33,7 +33,11 @@ import {
 } from "@/lib/constants/client"
 import type { ClientRow } from "@/lib/supabase/database.types"
 
-import { deleteClientAction, getClientDispatchCount } from "./actions"
+import {
+  deleteClientAction,
+  getClientDispatchCount,
+  getClientSaleCount,
+} from "./actions"
 
 /** 구분 표시: 내 거래처는 채운 배지, 타 거래처는 윤곽선 배지로 한눈에 구별한다. */
 function CategoryBadge({ client }: { client: ClientRow }) {
@@ -49,12 +53,16 @@ export function ClientList({ clients }: { clients: ClientRow[] }) {
   const [target, setTarget] = useState<{
     client: ClientRow
     dispatchCount: number
+    saleCount: number
   } | null>(null)
   const [isPending, startTransition] = useTransition()
 
   async function handleDeleteClick(client: ClientRow) {
-    const count = await getClientDispatchCount(client.id)
-    setTarget({ client, dispatchCount: count })
+    const [dispatchCount, saleCount] = await Promise.all([
+      getClientDispatchCount(client.id),
+      getClientSaleCount(client.id),
+    ])
+    setTarget({ client, dispatchCount, saleCount })
   }
 
   function handleConfirmDelete() {
@@ -176,8 +184,15 @@ export function ClientList({ clients }: { clients: ClientRow[] }) {
               &quot;{target?.client.name}&quot; 거래처를 삭제할까요?
             </AlertDialogTitle>
             <AlertDialogDescription>
-              {target && target.dispatchCount > 0
-                ? `이 거래처와 연결된 배차 이력이 ${target.dispatchCount}건 있습니다. 삭제해도 이력은 유지되며, 휴지통에서 30일 내 복구할 수 있습니다.`
+              {target && target.dispatchCount + target.saleCount > 0
+                ? `이 거래처와 연결된 이력이 ${[
+                    target.dispatchCount > 0
+                      ? `배차 ${target.dispatchCount}건`
+                      : null,
+                    target.saleCount > 0 ? `매출 ${target.saleCount}건` : null,
+                  ]
+                    .filter(Boolean)
+                    .join(", ")} 있습니다. 삭제해도 이력은 유지되며, 휴지통에서 30일 내 복구할 수 있습니다.`
                 : "휴지통으로 이동하며, 30일 내 복구할 수 있습니다."}
             </AlertDialogDescription>
           </AlertDialogHeader>

@@ -6,10 +6,14 @@ import {
   buildSaleCopyDefaults,
   buildSaleFormData,
   coerceSaleFormData,
+  resolveSaleClientId,
+  saleFormDefaults,
   saleFormSchema,
   saleRowToFormValues,
   type SaleFormValues,
 } from "./sales"
+
+const CLIENT_ID = "12956745-839d-4d78-b02e-1ea9363d3c35"
 
 const baseRow: SaleRow = {
   id: "11111111-1111-1111-1111-111111111111",
@@ -31,6 +35,7 @@ const baseRow: SaleRow = {
   source_note: "월말 정산",
   billing_entity_name: "조은물류(주)",
   order_contact_phone: "010-1234-5678",
+  client_id: CLIENT_ID,
   memo: "냉동",
 }
 
@@ -56,6 +61,7 @@ describe("saleRowToFormValues", () => {
       source_note: null,
       billing_entity_name: null,
       order_contact_phone: null,
+      client_id: null,
       memo: null,
     })
 
@@ -64,6 +70,7 @@ describe("saleRowToFormValues", () => {
     expect(values.source_note).toBe("")
     expect(values.billing_entity_name).toBe("")
     expect(values.order_contact_phone).toBe("")
+    expect(values.client_id).toBe("")
     expect(values.memo).toBe("")
   })
 })
@@ -85,6 +92,7 @@ describe("buildSaleCopyDefaults (이전 건 복사)", () => {
       source_note: "월말 정산",
       billing_entity_name: "조은물류(주)",
       order_contact_phone: "010-1234-5678",
+      client_id: CLIENT_ID,
       memo: "냉동",
     })
   })
@@ -200,6 +208,62 @@ describe("세액 규칙: 지불방법이 세금계산서일 때만 세액 있음
       expect(parsed.payment_method).toBe(method)
       expect(parsed.is_vat_exempt).toBe(expectedExempt[method])
     }
+  })
+})
+
+describe("거래처 연결(client_id)", () => {
+  it("기본값은 연결 없음이고, 저장된 행의 연결을 폼 값으로 가져온다", () => {
+    expect(saleFormDefaults.client_id).toBe("")
+    expect(saleRowToFormValues(baseRow).client_id).toBe(CLIENT_ID)
+    expect(saleRowToFormValues({ ...baseRow, client_id: null }).client_id).toBe("")
+  })
+
+  it("복사 등록은 거래처 연결도 그대로 가져온다", () => {
+    expect(buildSaleCopyDefaults(baseRow, "2026-11-08").client_id).toBe(CLIENT_ID)
+  })
+
+  it("검증: 빈 값이거나 uuid여야 한다", () => {
+    const parse = (client_id: string) =>
+      saleFormSchema.safeParse({
+        ...saleRowToFormValues(baseRow),
+        client_id,
+      })
+
+    expect(parse("").success).toBe(true)
+    expect(parse(CLIENT_ID).success).toBe(true)
+    expect(parse("not-a-uuid").success).toBe(false)
+    expect(parse("12956745").success).toBe(false)
+  })
+
+  it("폼 값 → FormData → 서버 파싱 후에도 연결이 그대로다", () => {
+    const parsed = saleFormSchema.parse(
+      coerceSaleFormData(submittedEntries(saleRowToFormValues(baseRow)))
+    )
+    expect(parsed.client_id).toBe(CLIENT_ID)
+  })
+
+  it("client_id가 아예 안 와도(구버전 클라이언트) 연결 없음으로 본다", () => {
+    const entries = submittedEntries(saleRowToFormValues(baseRow))
+    delete entries.client_id
+    expect(saleFormSchema.parse(coerceSaleFormData(entries)).client_id).toBe("")
+  })
+
+  it("resolveSaleClientId: 출처가 거래처일 때만 연결을 RPC로 넘긴다", () => {
+    expect(
+      resolveSaleClientId({ source_major: "거래처", client_id: CLIENT_ID })
+    ).toBe(CLIENT_ID)
+
+    // 다른 출처로 바꾸고 저장해도 이전에 고른 거래처 연결이 남지 않는다.
+    for (const major of ["", "지인", "카카오톡", "밴드", "24시콜화물", "기타"]) {
+      expect(
+        resolveSaleClientId({ source_major: major, client_id: CLIENT_ID })
+      ).toBeNull()
+    }
+
+    // 거래처인데 연결이 없으면(이름만 적은 예전 건) null
+    expect(
+      resolveSaleClientId({ source_major: "거래처", client_id: "" })
+    ).toBeNull()
   })
 })
 

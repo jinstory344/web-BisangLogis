@@ -17,11 +17,14 @@ import {
   ComboboxList,
 } from "@/components/ui/combobox"
 import { formatBizNo } from "@/lib/biz-no"
+import type { ClientCategory } from "@/lib/supabase/database.types"
 
 interface ClientComboboxProps {
   value: ClientSearchResult | null
   onChange: (client: ClientSearchResult | null) => void
   disabled?: boolean
+  /** "신규 등록"으로 새로 만들 거래처의 구분. 없으면 기본(내 거래처). */
+  newClientCategory?: ClientCategory
 }
 
 const MIN_QUERY_LENGTH = 2
@@ -36,6 +39,7 @@ export function ClientCombobox({
   value,
   onChange,
   disabled,
+  newClientCategory,
 }: ClientComboboxProps) {
   const [inputValue, setInputValue] = useState(value?.name ?? "")
   const [items, setItems] = useState<ClientSearchResult[]>([])
@@ -80,7 +84,10 @@ export function ClientCombobox({
     if (next.id === CREATE_ID) {
       setIsCreating(true)
       try {
-        const created = await quickCreateClientAction(next.name)
+        const created = await quickCreateClientAction(
+          next.name,
+          newClientCategory
+        )
         onChange(created)
         setInputValue(created.name)
       } catch (err) {

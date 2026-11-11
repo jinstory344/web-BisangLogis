@@ -1,5 +1,6 @@
 import { z } from "zod"
 
+import { SOURCE_MAJOR_CLIENT } from "@/lib/constants/source"
 import { amountSchema, isVatExemptForPayment } from "@/lib/money"
 import type { SaleRow } from "@/lib/supabase/database.types"
 
@@ -39,6 +40,14 @@ export const saleFormSchema = z.object({
    */
   billing_entity_name: z.string().trim(),
   order_contact_phone: z.string().trim(),
+  /**
+   * 연결된 거래처 id. 폼 상태는 빈 문자열("연결 없음")로 다루고 서버 액션이 `|| null`로 바꾼다.
+   * 출처 대분류가 "거래처"일 때만 의미가 있다 (resolveSaleClientId).
+   */
+  client_id: z.union([
+    z.literal(""),
+    z.string().uuid("거래처 값이 올바르지 않습니다"),
+  ]),
   memo: z.string().trim(),
 })
 
@@ -56,6 +65,7 @@ export const saleFormDefaults: SaleFormValues = {
   source_note: "",
   billing_entity_name: "",
   order_contact_phone: "",
+  client_id: "",
   memo: "",
 }
 
@@ -78,8 +88,21 @@ export function saleRowToFormValues(row: SaleRow): SaleFormValues {
     source_note: row.source_note ?? "",
     billing_entity_name: row.billing_entity_name ?? "",
     order_contact_phone: row.order_contact_phone ?? "",
+    client_id: row.client_id ?? "",
     memo: row.memo ?? "",
   }
+}
+
+/**
+ * RPC에 넘길 거래처 id. 연결은 출처 대분류가 "거래처"일 때만 유효하다 — 다른 출처로 바꾸고
+ * 저장하면 이전에 고른 거래처 연결이 남지 않도록 여기서 null로 만든다 (DB도 같은 규칙으로 거부한다).
+ */
+export function resolveSaleClientId(
+  values: Pick<SaleFormValues, "source_major" | "client_id">
+): string | null {
+  return values.source_major === SOURCE_MAJOR_CLIENT && values.client_id
+    ? values.client_id
+    : null
 }
 
 /**
@@ -122,5 +145,6 @@ export function coerceSaleFormData(
     // 선택 필드가 아예 전송되지 않은 경우(구버전 클라이언트 등)도 "미입력"으로 취급한다.
     billing_entity_name: raw.billing_entity_name ?? "",
     order_contact_phone: raw.order_contact_phone ?? "",
+    client_id: raw.client_id ?? "",
   }
 }

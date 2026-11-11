@@ -34,7 +34,7 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { PAYMENT_METHOD_OPTIONS } from "@/lib/constants/payment-method"
 import {
-  SOURCE_CLIENT_MINOR_OPTIONS,
+  SOURCE_MAJOR_CLIENT,
   SOURCE_MAJOR_OPTIONS,
 } from "@/lib/constants/source"
 import { getTodayInSeoul } from "@/lib/date"
@@ -45,6 +45,7 @@ import {
   isVatExemptForPayment,
 } from "@/lib/money"
 import type { RecentRoute } from "@/lib/quick-entry"
+import { nextBillingEntityName, type SaleClientChoice } from "@/lib/sale-clients"
 import { cn } from "@/lib/utils"
 import {
   buildSaleFormData,
@@ -59,12 +60,13 @@ import {
   searchOriginSuggestionsAction,
   type SaleActionState,
 } from "./actions"
+import {
+  ClientSourcePicker,
+  type PickedSaleClient,
+} from "./client-source-picker"
 import { useRecentSaleContacts } from "./use-recent-sale-contacts"
 
 const SOURCE_MAJOR_CHOICES = toChoiceOptions(SOURCE_MAJOR_OPTIONS)
-const SOURCE_CLIENT_MINOR_CHOICES = toChoiceOptions(SOURCE_CLIENT_MINOR_OPTIONS)
-/** 대분류가 이 값일 때만 소분류가 칩(SOURCE_CLIENT_MINOR_OPTIONS)이고, 그 외엔 자유 입력이다. */
-const CLIENT_SOURCE_MAJOR = "거래처"
 
 interface SalesFormProps {
   action: (
@@ -75,6 +77,11 @@ interface SalesFormProps {
   submitLabel: string
   /** 새 등록·복사 등록 화면에서만 넘긴다. 없으면(수정 화면) 최근 구간 칩을 그리지 않는다. */
   recentRoutes?: RecentRoute[]
+  /**
+   * 출처 "거래처"의 소분류로 고를 수 있는 거래처 명단(매출에서 많이 쓴 순).
+   * 거래처 페이지에 등록된 거래처를 그대로 쓴다. 조회에 실패하면 비워서 넘겨도 폼은 쓸 수 있다.
+   */
+  clientChoices?: SaleClientChoice[]
 }
 
 /**
@@ -82,7 +89,7 @@ interface SalesFormProps {
  * 계산서정보를 연락처 바로 아래에 보여 준다. 거래처이거나 출처 미선택이면 더보기에 접어 둔다.
  */
 function isBillingShownAbove(sourceMajor: string): boolean {
-  return sourceMajor !== "" && sourceMajor !== CLIENT_SOURCE_MAJOR
+  return sourceMajor !== "" && sourceMajor !== SOURCE_MAJOR_CLIENT
 }
 
 /** "더보기"에 접어 두는 필드(계산서정보·출처 비고·비고) 중 값이 있는지 — 있으면 펼친 채로 연다. */
@@ -103,6 +110,7 @@ export function SalesForm({
   defaultValues,
   submitLabel,
   recentRoutes,
+  clientChoices = [],
 }: SalesFormProps) {
   const [state, formAction, isPending] = useActionState(action, {
     error: null,
@@ -135,6 +143,8 @@ export function SalesForm({
   )
   const sourceMajor = form.watch("source_major")
   const sourceMinor = form.watch("source_minor")
+  const clientId = form.watch("client_id")
+  const billingEntityName = form.watch("billing_entity_name")
   const orderContactPhone = form.watch("order_contact_phone")
   const origin = form.watch("origin")
   const destination = form.watch("destination")
@@ -158,10 +168,24 @@ export function SalesForm({
     // "거래처"(소분류 칩) ↔ 그 외(소분류 자유 입력)로 바뀌면 소분류 값의 의미가 달라진다.
     // 그대로 두면 칩에 표시되지 않는 값이 저장되거나, 거래처명이 자유 입력칸에 남는다.
     if (
-      (previous === CLIENT_SOURCE_MAJOR) !==
-      (next === CLIENT_SOURCE_MAJOR)
+      (previous === SOURCE_MAJOR_CLIENT) !==
+      (next === SOURCE_MAJOR_CLIENT)
     ) {
+      const previousMinor = form.getValues("source_minor")
       form.setValue("source_minor", "", { shouldDirty: true })
+
+      // 거래처를 벗어나면 거래처 연결도 끊고, 거래처 이름으로 자동 입력했던 계산서정보만 비운다.
+      if (previous === SOURCE_MAJOR_CLIENT) {
+        form.setValue("client_id", "", { shouldDirty: true })
+        const cleared = nextBillingEntityName({
+          currentBilling: form.getValues("billing_entity_name"),
+          previousClientName: previousMinor,
+          nextClientName: null,
+        })
+        if (cleared !== null) {
+          form.setValue("billing_entity_name", cleared, { shouldDirty: true })
+        }
+      }
     }
     // 계산서정보 칸이 연락처 아래에서 더보기로 옮겨 가면, 이미 적은 값이 접힌 곳에 숨지 않게 펼친다.
     if (
@@ -169,6 +193,26 @@ export function SalesForm({
       form.getValues("billing_entity_name").trim() !== ""
     ) {
       setIsMoreOpen(true)
+    }
+  }
+
+  /**
+   * 소분류 거래처를 고르거나 해제한다. 소분류에는 거래처 이름을 그대로 남기고(이름 스냅샷),
+   * 계산서정보는 비어 있거나 이전 거래처 이름 그대로일 때만 새 거래처 이름으로 채운다.
+   * 연락처는 담당자가 건마다 달라 덮어쓰지 않는다 (최근 연락처 칩으로 고른다).
+   */
+  function handleClientChange(client: PickedSaleClient | null) {
+    const previousName = form.getValues("source_minor")
+    const nextBilling = nextBillingEntityName({
+      currentBilling: form.getValues("billing_entity_name"),
+      previousClientName: previousName,
+      nextClientName: client?.name ?? null,
+    })
+
+    form.setValue("client_id", client?.id ?? "", { shouldDirty: true })
+    form.setValue("source_minor", client?.name ?? "", { shouldDirty: true })
+    if (nextBilling !== null) {
+      form.setValue("billing_entity_name", nextBilling, { shouldDirty: true })
     }
   }
 
@@ -407,26 +451,22 @@ export function SalesForm({
           )}
         />
 
-        {sourceMajor === CLIENT_SOURCE_MAJOR ? (
-          <FormField
-            control={form.control}
-            name="source_minor"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>소분류</FormLabel>
-                <FormControl>
-                  <ChoiceChips
-                    aria-label="출처 소분류"
-                    allowDeselect
-                    options={SOURCE_CLIENT_MINOR_CHOICES}
-                    value={field.value}
-                    onChange={field.onChange}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+        {sourceMajor === SOURCE_MAJOR_CLIENT ? (
+          <FormItem>
+            <FormLabel>소분류</FormLabel>
+            <ClientSourcePicker
+              choices={clientChoices}
+              clientId={clientId}
+              sourceMinor={sourceMinor}
+              onChange={handleClientChange}
+            />
+            {/* 계산서정보는 더보기에 접혀 있으므로, 거래처로 자동 입력된 값을 여기서 바로 보여 준다. */}
+            {clientId && billingEntityName.trim() ? (
+              <p className="text-xs text-muted-foreground">
+                계산서정보: {billingEntityName.trim()}
+              </p>
+            ) : null}
+          </FormItem>
         ) : (
           <FormField
             control={form.control}

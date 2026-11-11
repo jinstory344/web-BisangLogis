@@ -15,7 +15,11 @@ import {
 } from "@/lib/quick-entry"
 import { softDelete } from "@/lib/soft-delete/soft-delete"
 import { createClient } from "@/lib/supabase/server"
-import { coerceSaleFormData, saleFormSchema } from "@/lib/validations/sales"
+import {
+  coerceSaleFormData,
+  resolveSaleClientId,
+  saleFormSchema,
+} from "@/lib/validations/sales"
 
 /**
  * 매출 전용 서버 액션. 배차(dispatches)와는 완전히 독립된 테이블이므로
@@ -218,6 +222,7 @@ export async function createSaleAction(
     p_memo: values.memo || null,
     p_billing_entity_name: values.billing_entity_name || null,
     p_order_contact_phone: values.order_contact_phone || null,
+    p_client_id: resolveSaleClientId(values),
   })
 
   if (error) {
@@ -258,6 +263,7 @@ export async function updateSaleAction(
     p_memo: values.memo || null,
     p_billing_entity_name: values.billing_entity_name || null,
     p_order_contact_phone: values.order_contact_phone || null,
+    p_client_id: resolveSaleClientId(values),
   })
 
   if (error) {

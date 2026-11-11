@@ -9,6 +9,7 @@ import {
 } from "@/lib/validations/sales"
 
 import { createSaleAction, getRecentSaleRoutesAction } from "../actions"
+import { getSaleClientChoices } from "../client-choices"
 import { SalesForm } from "../sales-form"
 
 /**
@@ -35,10 +36,11 @@ export default async function NewSalesPage({
   const { copy } = await searchParams
   const copyId = parseCopyId(copy)
 
-  const [copiedValues, recentRoutes] = await Promise.all([
+  const [copiedValues, recentRoutes, clientChoices] = await Promise.all([
     copyId ? loadSaleCopyDefaults(copyId) : null,
-    // 최근 구간 칩은 부가 기능이라 조회 실패 시 칩만 숨긴다.
+    // 최근 구간 칩·거래처 명단은 부가 기능이라 조회 실패 시 그 부분만 비운다 (매출 폼은 계속 쓸 수 있다).
     getRecentSaleRoutesAction().catch(() => []),
+    getSaleClientChoices().catch(() => []),
   ])
 
   return (
@@ -52,6 +54,7 @@ export default async function NewSalesPage({
           action={createSaleAction}
           defaultValues={copiedValues ?? saleFormDefaults}
           recentRoutes={recentRoutes}
+          clientChoices={clientChoices}
           submitLabel="등록"
         />
       </div>

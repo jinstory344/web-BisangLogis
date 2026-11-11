@@ -109,6 +109,11 @@ export type SaleRow = BaseColumns & {
   billing_entity_name: string | null
   /** 오더자 전화번호 — source_minor(오더자)와 짝을 이루는 연락처. */
   order_contact_phone: string | null
+  /**
+   * 연결된 거래처 — 출처 대분류가 "거래처"일 때 소분류를 거래처 명단에서 고른 건에만 있다(그 외 null).
+   * source_minor에 이름을 그대로 남기므로 거래처 이름을 나중에 바꿔도 지난 매출 표시는 변하지 않는다.
+   */
+  client_id: string | null
   memo: string | null
 }
 
@@ -286,6 +291,8 @@ export type Database = {
           p_memo?: string | null
           p_billing_entity_name?: string | null
           p_order_contact_phone?: string | null
+          /** 출처 대분류가 "거래처"일 때만 허용된다 (RPC가 검사). */
+          p_client_id?: string | null
         }
         Returns: string
       }
@@ -304,6 +311,7 @@ export type Database = {
           p_memo?: string | null
           p_billing_entity_name?: string | null
           p_order_contact_phone?: string | null
+          p_client_id?: string | null
         }
         Returns: undefined
       }

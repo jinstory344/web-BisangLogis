@@ -9,10 +9,14 @@ import {
   mergeClientDuplicates,
   type ClientDuplicate,
 } from "@/lib/client-duplicates"
-import { DEFAULT_CLIENT_CATEGORY } from "@/lib/constants/client"
+import {
+  DEFAULT_CLIENT_CATEGORY,
+  normalizeClientCategory,
+} from "@/lib/constants/client"
 import { nullifyEmptyStrings } from "@/lib/nullify-empty"
 import { softDelete } from "@/lib/soft-delete/soft-delete"
 import { createClient } from "@/lib/supabase/server"
+import type { ClientCategory } from "@/lib/supabase/database.types"
 import { clientFormSchema } from "@/lib/validations/client"
 
 export interface ClientSearchResult {
@@ -48,14 +52,18 @@ export async function searchClientsAction(
  * 2.2 거래처 콤보박스에서 "미등록 시 즉시 신규 등록" — 거래처명만으로 최소 생성.
  * 같은 이름의 거래처가 이미 있으면 새로 만들지 않고 그 거래처를 돌려준다. 검색 결과가 오기 전에
  * "신규 등록"을 누르거나 연속으로 눌러도 같은 이름이 두 개 생기지 않게 하는 안전장치다.
+ * 새로 만들 때의 구분은 호출한 화면이 정한다: 배차 화면은 내 거래처(기본), 매출 화면은 타 거래처.
  */
 export async function quickCreateClientAction(
-  name: string
+  name: string,
+  category: ClientCategory = DEFAULT_CLIENT_CATEGORY
 ): Promise<ClientSearchResult> {
   const trimmed = name.trim()
   if (!trimmed) {
     throw new Error("거래처명을 입력하세요")
   }
+  // 클라이언트가 보낸 값이므로 알 수 없는 값은 기본 구분으로 바꾼다.
+  const safeCategory = normalizeClientCategory(category)
 
   const supabase = await createClient()
 
@@ -76,7 +84,7 @@ export async function quickCreateClientAction(
 
   const { data, error } = await supabase
     .from("clients")
-    .insert({ name: trimmed, category: DEFAULT_CLIENT_CATEGORY })
+    .insert({ name: trimmed, category: safeCategory })
     .select("id, name, biz_no")
     .single()
 
@@ -88,7 +96,7 @@ export async function quickCreateClientAction(
     tableName: "clients",
     recordId: data.id,
     action: "CREATE",
-    afterData: { name: trimmed, category: DEFAULT_CLIENT_CATEGORY },
+    afterData: { name: trimmed, category: safeCategory },
   })
 
   revalidatePath("/clients")
@@ -233,6 +241,22 @@ export async function getClientDispatchCount(id: string): Promise<number> {
 
   if (error) {
     throw new Error(`배차 이력 조회 실패: ${error.message}`)
+  }
+
+  return count ?? 0
+}
+
+/** 매출 이력이 있으면 삭제 전 경고 표시용 건수 조회 (매출 폼에서 거래처로 연결한 건) */
+export async function getClientSaleCount(id: string): Promise<number> {
+  const supabase = await createClient()
+  const { count, error } = await supabase
+    .from("sales")
+    .select("id", { count: "exact", head: true })
+    .eq("client_id", id)
+    .is("deleted_at", null)
+
+  if (error) {
+    throw new Error(`매출 이력 조회 실패: ${error.message}`)
   }
 
   return count ?? 0
