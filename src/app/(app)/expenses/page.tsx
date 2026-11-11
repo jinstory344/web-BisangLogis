@@ -7,8 +7,11 @@ import { getCurrentMonthRangeInSeoul } from "@/lib/date"
 import { createClient } from "@/lib/supabase/server"
 import type { ExpenseRow } from "@/lib/supabase/database.types"
 
+import { filterExpenses, summarizeExpenses } from "@/lib/expense-list"
+
 import { ExpenseFilters } from "./expense-filters"
 import { ExpenseList } from "./expense-list"
+import { ExpenseMobileControls } from "./expense-mobile-controls"
 import { ExpenseSummary } from "./expense-summary"
 
 const PAGE_SIZE = 50
@@ -49,40 +52,34 @@ export default async function ExpensesPage({
   const rangeStart = (page - 1) * PAGE_SIZE
   const rangeEnd = rangeStart + PAGE_SIZE - 1
 
-  let summaryQuery = supabase
+  // 목록 합계: 페이지가 아닌 필터 전체 기준. 대분류·소분류 필터는 빼고 기간 안의 지출을 한 번에 가져와서
+  // 모바일 상단의 전체/대분류별 건수·금액을 만들고, 목록 합계는 그중 선택한 분류 몫이다.
+  const summaryQuery = supabase
     .from("expenses")
-    .select("category_major, amount")
+    .select("category_major, category_minor, amount")
     .is("deleted_at", null)
     .gte("expense_date", from)
     .lte("expense_date", to)
 
-  if (categoryMajor) summaryQuery = summaryQuery.eq("category_major", categoryMajor)
-  if (categoryMinor) summaryQuery = summaryQuery.eq("category_minor", categoryMinor)
-
   // 서로 독립된 조회라 순차 대기 대신 동시에 보내 왕복 지연을 줄인다.
   const [{ data, error, count }, { data: summaryRows }] = await Promise.all([
-    baseQuery.order("expense_date", { ascending: false }).range(rangeStart, rangeEnd),
+    baseQuery
+      .order("expense_date", { ascending: false })
+      .order("created_at", { ascending: false })
+      .range(rangeStart, rangeEnd),
     summaryQuery,
   ])
 
-  const byMajorMap = new Map<string, number>()
-  let total = 0
-  for (const row of summaryRows ?? []) {
-    total += row.amount
-    byMajorMap.set(
-      row.category_major,
-      (byMajorMap.get(row.category_major) ?? 0) + row.amount
-    )
-  }
-  const byMajor = Array.from(byMajorMap.entries()).map(([major, sum]) => ({
-    major,
-    total: sum,
-  }))
-
+  const rangeSummary = summarizeExpenses(summaryRows ?? [])
+  const filtered = summarizeExpenses(
+    filterExpenses(summaryRows ?? [], categoryMajor, categoryMinor)
+  )
   const summary = {
-    count: summaryRows?.length ?? 0,
-    total,
-    byMajor,
+    count: filtered.count,
+    total: filtered.total,
+    byMajor: filtered.byMajor
+      .filter((major) => major.count > 0)
+      .map((major) => ({ major: major.major, total: major.total })),
   }
 
   const totalPages = Math.max(1, Math.ceil((count ?? 0) / PAGE_SIZE))
@@ -106,12 +103,23 @@ export default async function ExpensesPage({
         </TabsList>
 
         <TabsContent value="list" className="flex flex-col gap-4">
-          <ExpenseFilters
-            from={from}
-            to={to}
-            categoryMajor={categoryMajor}
-            categoryMinor={categoryMinor}
-          />
+          <div className="hidden md:block">
+            <ExpenseFilters
+              from={from}
+              to={to}
+              categoryMajor={categoryMajor}
+              categoryMinor={categoryMinor}
+            />
+          </div>
+          <div className="md:hidden">
+            <ExpenseMobileControls
+              from={from}
+              to={to}
+              categoryMajor={categoryMajor}
+              categoryMinor={categoryMinor}
+              summary={rangeSummary}
+            />
+          </div>
 
           {error ? (
             <p className="text-sm text-destructive">

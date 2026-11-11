@@ -35,6 +35,7 @@ import { formatKRW } from "@/lib/money"
 import type { ExpenseRow } from "@/lib/supabase/database.types"
 
 import { deleteExpenseAction } from "./actions"
+import { ExpenseMobileList } from "./expense-mobile-list"
 
 interface ExpenseListProps {
   expenses: ExpenseRow[]
@@ -239,78 +240,18 @@ export function ExpenseList({
         </div>
       </div>
 
-      {/* 모바일 카드 리스트 */}
-      <div className="flex flex-col gap-3 md:hidden">
-        {weekGroups.map((group) => {
-          const isExpanded = expandedWeeks.has(group.key)
-          return (
-            <div key={group.key} className="flex flex-col gap-2">
-              <button
-                type="button"
-                className="flex items-center justify-between gap-2 rounded-md border bg-muted/40 p-3 text-left"
-                onClick={() => toggleWeek(group.key)}
-              >
-                <span className="flex items-center gap-1.5 font-medium">
-                  {isExpanded ? (
-                    <ChevronDown className="size-4" />
-                  ) : (
-                    <ChevronRight className="size-4" />
-                  )}
-                  {group.label}
-                  <span className="text-sm font-normal text-muted-foreground">
-                    {formatMonthDay(group.rows[group.rows.length - 1].expense_date)}
-                    ~{formatMonthDay(group.rows[0].expense_date)} · {group.rows.length}건
-                  </span>
-                </span>
-                <span className="text-sm text-muted-foreground">
-                  {formatKRW(group.total)}
-                </span>
-              </button>
-
-              {isExpanded
-                ? group.rows.map((expense) => (
-                    <div key={expense.id} className="rounded-md border p-3">
-                      <div className="flex items-start justify-between gap-2">
-                        <div>
-                          <p className="text-sm text-muted-foreground">
-                            {formatDateWithWeekday(expense.expense_date)}
-                          </p>
-                          <p className="font-medium">
-                            {expense.category_major} · {expense.category_minor}
-                          </p>
-                        </div>
-                        <span className="font-medium">
-                          {formatKRW(expense.amount)}
-                        </span>
-                      </div>
-                      <div className="mt-2 flex items-center justify-end">
-                        <div className="flex gap-2">
-                          <Button variant="outline" size="sm" asChild>
-                            <Link href={`/expenses/${expense.id}/edit`}>
-                              수정
-                            </Link>
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setDeleteTarget(expense)}
-                          >
-                            삭제
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  ))
-                : null}
-            </div>
-          )
-        })}
-        <div className="rounded-md border bg-muted/30 p-3 text-sm">
-          <div className="flex justify-between font-medium">
-            <span>{summary.count}건</span>
-            <span>합계 {formatKRW(summary.total)}</span>
-          </div>
-        </div>
+      {/* 모바일: 날짜별 묶음 + 한 건당 두 줄 행 (요약은 페이지 상단 ExpenseMobileControls) */}
+      <div className="md:hidden">
+        <ExpenseMobileList
+          expenses={expenses}
+          count={summary.count}
+          total={summary.total}
+          isFiltered={Boolean(
+            searchParams.get("category_major") ||
+              searchParams.get("category_minor")
+          )}
+          onDelete={setDeleteTarget}
+        />
       </div>
 
       {totalPages > 1 ? (

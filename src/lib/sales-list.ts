@@ -1,3 +1,4 @@
+import { groupByDay } from "@/lib/day-groups"
 import type { PaymentStatus } from "@/lib/supabase/database.types"
 
 /** 날짜 하나에 속한 매출 행들 (모바일 매출 목록의 "날짜별 묶음") */
@@ -16,23 +17,15 @@ export interface DayGroup<T> {
 export function groupSalesByDay<
   T extends { sale_date: string; supply_amount: number },
 >(sales: readonly T[]): DayGroup<T>[] {
-  const groups: DayGroup<T>[] = []
-  const indexByDate = new Map<string, number>()
-
-  for (const sale of sales) {
-    let index = indexByDate.get(sale.sale_date)
-    if (index === undefined) {
-      index = groups.length
-      indexByDate.set(sale.sale_date, index)
-      groups.push({ date: sale.sale_date, rows: [], supplyAmount: 0 })
-    }
-
-    const group = groups[index]
-    group.rows.push(sale)
-    group.supplyAmount += sale.supply_amount
-  }
-
-  return groups
+  return groupByDay(
+    sales,
+    (sale) => sale.sale_date,
+    (sale) => sale.supply_amount
+  ).map((group) => ({
+    date: group.date,
+    rows: group.rows,
+    supplyAmount: group.total,
+  }))
 }
 
 export interface StatusTotals {

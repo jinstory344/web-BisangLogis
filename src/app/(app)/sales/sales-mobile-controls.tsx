@@ -1,13 +1,14 @@
 "use client"
 
-import { ChevronLeft, ChevronRight, SlidersHorizontal } from "lucide-react"
+import { SlidersHorizontal } from "lucide-react"
 import Link from "next/link"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { useState } from "react"
 
 import { PAID_TEXT_CLASS } from "@/components/dispatches/payment-badge"
 import { chipVariants } from "@/components/form/choice-chips"
-import { Input } from "@/components/ui/input"
+import { DateRangeInputs } from "@/components/list/date-range-inputs"
+import { MonthNavigator } from "@/components/list/month-navigator"
 import {
   Select,
   SelectContent,
@@ -17,13 +18,7 @@ import {
 } from "@/components/ui/select"
 import { PAYMENT_METHOD_OPTIONS } from "@/lib/constants/payment-method"
 import { SOURCE_MAJOR_OPTIONS } from "@/lib/constants/source"
-import {
-  formatMonthDay,
-  formatYearMonth,
-  getCurrentMonthRangeInSeoul,
-  isFullMonthRange,
-  shiftMonthRange,
-} from "@/lib/date"
+import { isFullMonthRange } from "@/lib/date"
 import { formatKRW } from "@/lib/money"
 import type { StatusSummary } from "@/lib/sales-list"
 import { cn } from "@/lib/utils"
@@ -62,8 +57,6 @@ export function SalesMobileControls({
   const searchParams = useSearchParams()
 
   const isMonth = isFullMonthRange({ from, to })
-  const currentMonth = getCurrentMonthRangeInSeoul()
-  const isCurrentMonth = from === currentMonth.from && to === currentMonth.to
   // 기간 직접 지정, 출처, 지불방법 중 하나라도 걸려 있으면 필터 버튼에 표시한다.
   const activeFilterCount =
     (isMonth ? 0 : 1) + (sourceMajor ? 1 : 0) + (paymentMethod ? 1 : 0)
@@ -83,45 +76,11 @@ export function SalesMobileControls({
     router.push(hrefWith(next))
   }
 
-  function monthHref(months: number) {
-    return hrefWith({ ...shiftMonthRange(from, months) })
-  }
-
-  const label = isMonth
-    ? formatYearMonth(from)
-    : `${formatMonthDay(from)} ~ ${formatMonthDay(to)}`
-
   const unpaid = summary.unpaid.supplyAmount
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex items-center justify-between">
-        <Link
-          href={monthHref(-1)}
-          aria-label="이전 달"
-          className="flex size-11 items-center justify-center rounded-full text-muted-foreground hover:bg-muted"
-        >
-          <ChevronLeft className="size-5" />
-        </Link>
-        <div className="flex flex-col items-center">
-          <span className="text-lg font-semibold">{label}</span>
-          {isCurrentMonth ? null : (
-            <Link
-              href={hrefWith({ ...currentMonth })}
-              className="text-xs text-muted-foreground underline underline-offset-2"
-            >
-              이번 달로
-            </Link>
-          )}
-        </div>
-        <Link
-          href={monthHref(1)}
-          aria-label="다음 달"
-          className="flex size-11 items-center justify-center rounded-full text-muted-foreground hover:bg-muted"
-        >
-          <ChevronRight className="size-5" />
-        </Link>
-      </div>
+      <MonthNavigator from={from} to={to} hrefForRange={(range) => hrefWith({ ...range })} />
 
       <div className="rounded-xl border p-3">
         <div className="grid grid-cols-3 gap-2">
@@ -160,7 +119,7 @@ export function SalesMobileControls({
       </div>
 
       <div className="flex items-center gap-2">
-        <div className="no-scrollbar -mx-4 flex min-w-0 flex-1 gap-2 overflow-x-auto px-4 py-0.5 [contain:inline-size]">
+        <div className="no-scrollbar -ml-4 flex min-w-0 flex-1 gap-2 overflow-x-auto py-0.5 pl-4 [contain:inline-size]">
           {STATUS_CHIPS.map((chip) => (
             <Link
               key={chip.key}
@@ -237,42 +196,6 @@ export function SalesMobileControls({
           />
         </div>
       ) : null}
-    </div>
-  )
-}
-
-/** 기간 직접 지정: 입력을 마치고 포커스가 벗어나면 적용한다 (데스크톱 필터와 같은 방식). */
-function DateRangeInputs({
-  from,
-  to,
-  onApply,
-}: {
-  from: string
-  to: string
-  onApply: (range: { from: string; to: string }) => void
-}) {
-  const [dateFrom, setDateFrom] = useState(from)
-  const [dateTo, setDateTo] = useState(to)
-
-  return (
-    <div className="flex items-center gap-2">
-      <Input
-        type="date"
-        aria-label="시작일"
-        value={dateFrom}
-        onChange={(e) => setDateFrom(e.target.value)}
-        onBlur={() => onApply({ from: dateFrom, to: dateTo })}
-        className="h-11 min-w-0 flex-1"
-      />
-      <span className="text-muted-foreground">~</span>
-      <Input
-        type="date"
-        aria-label="종료일"
-        value={dateTo}
-        onChange={(e) => setDateTo(e.target.value)}
-        onBlur={() => onApply({ from: dateFrom, to: dateTo })}
-        className="h-11 min-w-0 flex-1"
-      />
     </div>
   )
 }

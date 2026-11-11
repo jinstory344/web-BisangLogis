@@ -14,12 +14,10 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet"
 import { PAID_TEXT_CLASS } from "@/components/dispatches/payment-badge"
+import { DayHeader } from "@/components/list/day-header"
 import { PAYMENT_METHOD_LABELS } from "@/lib/constants/payment-method"
-import {
-  formatDateWithWeekday,
-  formatMonthDay,
-  getWeekdayLabel,
-} from "@/lib/date"
+import { spansMultipleMonths } from "@/lib/day-groups"
+import { formatDateWithWeekday, formatMonthDay } from "@/lib/date"
 import { formatKRW } from "@/lib/money"
 import { formatPhoneNumber } from "@/lib/phone"
 import { groupSalesByDay } from "@/lib/sales-list"
@@ -77,9 +75,7 @@ export function SalesMobileList({
   const [isSheetOpen, setIsSheetOpen] = useState(false)
 
   // 기간이 여러 달에 걸치면 날짜 머리글에 월을 함께 보여 준다.
-  const spansMonths =
-    groups.length > 0 &&
-    groups[0].date.slice(0, 7) !== groups[groups.length - 1].date.slice(0, 7)
+  const spansMonths = spansMultipleMonths(groups)
 
   const sheetSale = sales.find((sale) => sale.id === sheetId) ?? null
   const allSelected = sales.length > 0 && selected.size === sales.length
@@ -127,24 +123,11 @@ export function SalesMobileList({
 
       {groups.map((group) => (
         <section key={group.date} className="overflow-hidden rounded-xl border">
-          <div className="flex items-center justify-between bg-muted/50 px-4 py-2">
-            <span className="flex items-center gap-1.5">
-              {spansMonths ? (
-                <span className="text-xs text-muted-foreground">
-                  {Number(group.date.slice(5, 7))}월
-                </span>
-              ) : null}
-              <span className="text-lg leading-none font-semibold tabular-nums">
-                {Number(group.date.slice(8, 10))}
-              </span>
-              <span className="rounded bg-muted px-1.5 py-0.5 text-xs text-muted-foreground">
-                {getWeekdayLabel(group.date)}요일
-              </span>
-            </span>
-            <span className="text-sm text-muted-foreground tabular-nums">
-              {formatKRW(group.supplyAmount)}
-            </span>
-          </div>
+          <DayHeader
+            date={group.date}
+            totalLabel={formatKRW(group.supplyAmount)}
+            showMonth={spansMonths}
+          />
 
           {group.rows.map((sale) => {
             const isSelected = selected.has(sale.id)
