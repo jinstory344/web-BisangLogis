@@ -28,7 +28,7 @@ const MIN_QUERY_LENGTH = 2
 const CREATE_ID = "__create__"
 
 /**
- * 2.2 거래처 자동완성: 사업자명 2글자 이상 입력 시 검색.
+ * 2.2 거래처 자동완성: 거래처명 2글자 이상 입력 시 검색.
  * 일치하는 거래처가 없으면 목록 안에 "'X' 신규 등록" 항목이 나타나고,
  * 선택하는 즉시(별도 확인 창 없이) 등록과 선택이 함께 이루어진다.
  */
@@ -124,7 +124,7 @@ export function ClientCombobox({
         </ComboboxList>
         <ComboboxEmpty>
           <p className="py-4 text-center text-sm text-muted-foreground">
-            사업자명을 2글자 이상 입력하세요
+            거래처명을 2글자 이상 입력하세요
           </p>
         </ComboboxEmpty>
       </ComboboxContent>

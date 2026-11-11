@@ -14,6 +14,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
+import { TaxInfoBadge } from "@/components/clients/tax-info-badge"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
   Table,
@@ -24,9 +26,24 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { formatBizNo } from "@/lib/biz-no"
+import { getTaxInfoStatus } from "@/lib/client-tax-info"
+import {
+  CLIENT_CATEGORY_LABELS,
+  normalizeClientCategory,
+} from "@/lib/constants/client"
 import type { ClientRow } from "@/lib/supabase/database.types"
 
 import { deleteClientAction, getClientDispatchCount } from "./actions"
+
+/** 구분 표시: 내 거래처는 채운 배지, 타 거래처는 윤곽선 배지로 한눈에 구별한다. */
+function CategoryBadge({ client }: { client: ClientRow }) {
+  const category = normalizeClientCategory(client.category)
+  return (
+    <Badge variant={category === "MINE" ? "secondary" : "outline"}>
+      {CLIENT_CATEGORY_LABELS[category]}
+    </Badge>
+  )
+}
 
 export function ClientList({ clients }: { clients: ClientRow[] }) {
   const [target, setTarget] = useState<{
@@ -70,11 +87,12 @@ export function ClientList({ clients }: { clients: ClientRow[] }) {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>사업자명</TableHead>
-              <TableHead>사업자번호</TableHead>
-              <TableHead>대표자</TableHead>
+              <TableHead>거래처명</TableHead>
+              <TableHead>구분</TableHead>
               <TableHead>담당자</TableHead>
               <TableHead>연락처</TableHead>
+              <TableHead>세금계산서 정보</TableHead>
+              <TableHead>사업자번호</TableHead>
               <TableHead className="text-right">관리</TableHead>
             </TableRow>
           </TableHeader>
@@ -83,11 +101,16 @@ export function ClientList({ clients }: { clients: ClientRow[] }) {
               <TableRow key={client.id}>
                 <TableCell className="font-medium">{client.name}</TableCell>
                 <TableCell>
-                  {client.biz_no ? formatBizNo(client.biz_no) : "-"}
+                  <CategoryBadge client={client} />
                 </TableCell>
-                <TableCell>{client.ceo_name ?? "-"}</TableCell>
                 <TableCell>{client.contact_name ?? "-"}</TableCell>
                 <TableCell>{client.contact_phone ?? "-"}</TableCell>
+                <TableCell>
+                  <TaxInfoBadge status={getTaxInfoStatus(client)} />
+                </TableCell>
+                <TableCell>
+                  {client.biz_no ? formatBizNo(client.biz_no) : "-"}
+                </TableCell>
                 <TableCell className="text-right">
                   <div className="flex justify-end gap-2">
                     <Button variant="outline" size="sm" asChild>
@@ -113,9 +136,13 @@ export function ClientList({ clients }: { clients: ClientRow[] }) {
         {clients.map((client) => (
           <div key={client.id} className="rounded-md border p-3">
             <div className="flex items-start justify-between gap-2">
-              <div>
+              <div className="min-w-0">
                 <p className="font-medium">{client.name}</p>
-                <p className="text-sm text-muted-foreground">
+                <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                  <CategoryBadge client={client} />
+                  <TaxInfoBadge status={getTaxInfoStatus(client)} />
+                </div>
+                <p className="mt-1 text-sm text-muted-foreground">
                   {client.biz_no ? formatBizNo(client.biz_no) : "사업자번호 미등록"}
                 </p>
               </div>

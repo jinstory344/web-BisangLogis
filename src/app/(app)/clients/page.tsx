@@ -3,18 +3,21 @@ import { Plus } from "lucide-react"
 
 import { SearchBox } from "@/components/common/search-box"
 import { Button } from "@/components/ui/button"
+import { parseClientCategoryFilter } from "@/lib/constants/client"
 import { createClient } from "@/lib/supabase/server"
 import type { ClientRow } from "@/lib/supabase/database.types"
 
+import { ClientCategoryFilterChips } from "./client-category-filter"
 import { ClientList } from "./client-list"
 
 export default async function ClientsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string }>
+  searchParams: Promise<{ q?: string; category?: string }>
 }) {
-  const { q } = await searchParams
+  const { q, category } = await searchParams
   const query = q?.trim() ?? ""
+  const categoryFilter = parseClientCategoryFilter(category)
 
   const supabase = await createClient()
   let request = supabase
@@ -25,6 +28,9 @@ export default async function ClientsPage({
 
   if (query) {
     request = request.or(`name.ilike.%${query}%,biz_no.ilike.%${query}%`)
+  }
+  if (categoryFilter !== "ALL") {
+    request = request.eq("category", categoryFilter)
   }
 
   const { data, error } = await request
@@ -41,10 +47,11 @@ export default async function ClientsPage({
         </Button>
       </div>
 
-      <div className="mt-4">
+      <div className="mt-4 flex flex-col gap-3">
+        <ClientCategoryFilterChips />
         <SearchBox
           defaultValue={query}
-          placeholder="사업자명 또는 사업자번호 검색"
+          placeholder="거래처명 또는 사업자번호 검색"
         />
       </div>
 

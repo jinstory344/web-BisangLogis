@@ -35,8 +35,12 @@ type BaseColumns = {
   deleted_at: string | null
 }
 
+/** 거래처 구분: MINE = 내 거래처, OTHER = 타 거래처 (보기 편하게 걸러 주는 표시) */
+export type ClientCategory = "MINE" | "OTHER"
+
 export type ClientRow = BaseColumns & {
   name: string
+  category: ClientCategory
   biz_no: string | null
   ceo_name: string | null
   address: string | null

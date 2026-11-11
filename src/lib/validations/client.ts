@@ -1,9 +1,12 @@
 import { z } from "zod"
 
 import { bizNoSchema } from "@/lib/biz-no"
+import { DEFAULT_CLIENT_CATEGORY } from "@/lib/constants/client"
 
 export const clientFormSchema = z.object({
-  name: z.string().trim().min(1, "사업자명을 입력하세요"),
+  name: z.string().trim().min(1, "거래처명을 입력하세요"),
+  /** 내 거래처 / 타 거래처 — 보기 편하게 걸러 주는 표시 */
+  category: z.enum(["MINE", "OTHER"]),
   biz_no: bizNoSchema,
   ceo_name: z.string().trim(),
   address: z.string().trim(),
@@ -19,6 +22,7 @@ export type ClientFormValues = z.infer<typeof clientFormSchema>
 
 export const clientFormDefaults: ClientFormValues = {
   name: "",
+  category: DEFAULT_CLIENT_CATEGORY,
   biz_no: "",
   ceo_name: "",
   address: "",

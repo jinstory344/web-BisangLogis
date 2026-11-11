@@ -4,6 +4,12 @@ import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
 
 import { recordAuditLog } from "@/lib/audit/log"
+import { normalizeBizNo } from "@/lib/biz-no"
+import {
+  mergeClientDuplicates,
+  type ClientDuplicate,
+} from "@/lib/client-duplicates"
+import { DEFAULT_CLIENT_CATEGORY } from "@/lib/constants/client"
 import { nullifyEmptyStrings } from "@/lib/nullify-empty"
 import { softDelete } from "@/lib/soft-delete/soft-delete"
 import { createClient } from "@/lib/supabase/server"
@@ -15,7 +21,7 @@ export interface ClientSearchResult {
   biz_no: string | null
 }
 
-/** 2.2 거래처 자동완성: 사업자명/사업자번호로 검색 */
+/** 2.2 거래처 자동완성: 거래처명/사업자번호로 검색 */
 export async function searchClientsAction(
   query: string
 ): Promise<ClientSearchResult[]> {
@@ -38,19 +44,39 @@ export async function searchClientsAction(
   return data
 }
 
-/** 2.2 거래처 콤보박스에서 "미등록 시 즉시 신규 등록" — 사업자명만으로 최소 생성 */
+/**
+ * 2.2 거래처 콤보박스에서 "미등록 시 즉시 신규 등록" — 거래처명만으로 최소 생성.
+ * 같은 이름의 거래처가 이미 있으면 새로 만들지 않고 그 거래처를 돌려준다. 검색 결과가 오기 전에
+ * "신규 등록"을 누르거나 연속으로 눌러도 같은 이름이 두 개 생기지 않게 하는 안전장치다.
+ */
 export async function quickCreateClientAction(
   name: string
 ): Promise<ClientSearchResult> {
   const trimmed = name.trim()
   if (!trimmed) {
-    throw new Error("사업자명을 입력하세요")
+    throw new Error("거래처명을 입력하세요")
   }
 
   const supabase = await createClient()
+
+  const { data: existing, error: findError } = await supabase
+    .from("clients")
+    .select("id, name, biz_no")
+    .eq("name", trimmed)
+    .is("deleted_at", null)
+    .order("created_at")
+    .limit(1)
+
+  if (findError) {
+    throw new Error(`거래처 확인 실패: ${findError.message}`)
+  }
+  if (existing.length > 0) {
+    return existing[0]
+  }
+
   const { data, error } = await supabase
     .from("clients")
-    .insert({ name: trimmed })
+    .insert({ name: trimmed, category: DEFAULT_CLIENT_CATEGORY })
     .select("id, name, biz_no")
     .single()
 
@@ -62,11 +88,56 @@ export async function quickCreateClientAction(
     tableName: "clients",
     recordId: data.id,
     action: "CREATE",
-    afterData: { name: trimmed },
+    afterData: { name: trimmed, category: DEFAULT_CLIENT_CATEGORY },
   })
 
   revalidatePath("/clients")
   return data
+}
+
+/**
+ * 거래처 등록·수정 전에 같은 이름 또는 같은 사업자번호의 거래처가 이미 있는지 확인한다.
+ * 막지는 않고 화면이 "그래도 저장할까요?"로 확인만 받는다 (본점·지점처럼 같은 번호를 쓰는 경우가 있다).
+ * 수정할 때는 자기 자신(excludeId)을 뺀다. 삭제된 거래처는 보지 않는다.
+ */
+export async function findDuplicateClientsAction(input: {
+  name: string
+  bizNo: string
+  excludeId?: string
+}): Promise<ClientDuplicate[]> {
+  const name = input.name.trim()
+  const bizNo = normalizeBizNo(input.bizNo)
+  const supabase = await createClient()
+
+  async function findBy(
+    column: "name" | "biz_no",
+    value: string
+  ): Promise<ClientSearchResult[]> {
+    if (!value) return []
+
+    let request = supabase
+      .from("clients")
+      .select("id, name, biz_no")
+      .eq(column, value)
+      .is("deleted_at", null)
+      .limit(5)
+    if (input.excludeId) {
+      request = request.neq("id", input.excludeId)
+    }
+
+    const { data, error } = await request
+    if (error) {
+      throw new Error(`거래처 중복 확인 실패: ${error.message}`)
+    }
+    return data
+  }
+
+  const [sameName, sameBizNo] = await Promise.all([
+    findBy("name", name),
+    findBy("biz_no", bizNo),
+  ])
+
+  return mergeClientDuplicates(sameName, sameBizNo)
 }
 
 export interface ClientActionState {
@@ -83,8 +154,9 @@ export async function createClientAction(
   }
 
   const supabase = await createClient()
-  const { name, ...optional } = parsed.data
-  const values = { name, ...nullifyEmptyStrings(optional) }
+  // name·category는 빈 문자열이 올 수 없는 필수 값이라 null 변환에서 뺀다 (category의 타입이 string으로 넓어지지 않게).
+  const { name, category, ...optional } = parsed.data
+  const values = { name, category, ...nullifyEmptyStrings(optional) }
 
   const { data, error } = await supabase
     .from("clients")
@@ -118,8 +190,9 @@ export async function updateClientAction(
   }
 
   const supabase = await createClient()
-  const { name, ...optional } = parsed.data
-  const values = { name, ...nullifyEmptyStrings(optional) }
+  // name·category는 빈 문자열이 올 수 없는 필수 값이라 null 변환에서 뺀다 (category의 타입이 string으로 넓어지지 않게).
+  const { name, category, ...optional } = parsed.data
+  const values = { name, category, ...nullifyEmptyStrings(optional) }
 
   const { data: before, error: fetchError } = await supabase
     .from("clients")

@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation"
 
+import { normalizeClientCategory } from "@/lib/constants/client"
 import { createClient } from "@/lib/supabase/server"
 import type { ClientFormValues } from "@/lib/validations/client"
 
@@ -26,6 +27,7 @@ export default async function EditClientPage({
 
   const defaultValues: ClientFormValues = {
     name: client.name,
+    category: normalizeClientCategory(client.category),
     biz_no: client.biz_no ?? "",
     ceo_name: client.ceo_name ?? "",
     address: client.address ?? "",
@@ -45,6 +47,7 @@ export default async function EditClientPage({
           action={updateClientAction.bind(null, id)}
           defaultValues={defaultValues}
           submitLabel="저장"
+          clientId={id}
         />
       </div>
     </div>
