@@ -221,3 +221,30 @@ export function getLedgerRange(
   }
   return { from: "1970-01-01", to: "2099-12-31" }
 }
+
+/** 일일 장부에서 보여 줄 건 거르기: 전체 · 매출만 · 지출만 · 미입금 매출만 */
+export type LedgerKindFilter = "all" | "sale" | "expense" | "unpaid"
+
+export const LEDGER_KIND_FILTERS: readonly { value: LedgerKindFilter; label: string }[] = [
+  { value: "all", label: "전체" },
+  { value: "sale", label: "매출" },
+  { value: "expense", label: "지출" },
+  { value: "unpaid", label: "미입금" },
+]
+
+export function parseLedgerKind(raw: string | string[] | undefined): LedgerKindFilter {
+  const value = Array.isArray(raw) ? raw[0] : raw
+  return LEDGER_KIND_FILTERS.some((f) => f.value === value)
+    ? (value as LedgerKindFilter)
+    : "all"
+}
+
+export function filterLedgerEntries<
+  T extends { kind: "sale" | "expense"; isUnpaid?: boolean },
+>(entries: readonly T[], filter: LedgerKindFilter): T[] {
+  if (filter === "all") return [...entries]
+  if (filter === "unpaid") {
+    return entries.filter((e) => e.kind === "sale" && e.isUnpaid === true)
+  }
+  return entries.filter((e) => e.kind === filter)
+}

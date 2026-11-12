@@ -67,7 +67,9 @@ export async function createExpenseAction(
   })
 
   revalidatePath("/expenses")
-  redirect("/expenses")
+  revalidatePath("/")
+  // 등록이 끝나면 장부(홈)로 돌아간다.
+  redirect("/")
 }
 
 export async function updateExpenseAction(

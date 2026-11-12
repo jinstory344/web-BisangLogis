@@ -2,6 +2,7 @@
  * 모바일 빠른 등록(+ 버튼 시트) · 이전 건 복사 · 최근 구간 칩에서 공통으로 쓰는 순수 함수/상수.
  * 서버 액션("use server" 파일)은 async 함수 외의 값을 export할 수 없으므로 상수·타입은 여기 둔다.
  */
+import { entryTypeOfKind, newEntryHref } from "@/lib/entry-type"
 import type {
   DispatchRow,
   ExpenseRow,
@@ -490,8 +491,9 @@ export function pickFrequentCandidates(
     .map((group) => ({ ...group.latest, count: group.count }))
 }
 
+/** 이전 건 복사 링크: 통합 등록 화면(/new)을 그 종류로 열고 그 건을 채운다. */
 export function getCopyHref(kind: QuickEntryKind, id: string): string {
-  return `/${kind}/new?copy=${encodeURIComponent(id)}`
+  return newEntryHref(entryTypeOfKind(kind), id)
 }
 
 const UUID_PATTERN =

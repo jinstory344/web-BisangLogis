@@ -14,21 +14,17 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet"
-import {
-  MOBILE_TAB_SPLIT_INDEX,
-  primaryNavItems,
-  secondaryNavItems,
-} from "@/lib/constants/nav"
+import { primaryNavItems, secondaryNavItems } from "@/lib/constants/nav"
 
 import { isNavItemActive, NavLink } from "./nav-link"
-import { QuickEntrySheet } from "./quick-entry-sheet"
 
 const TAB_CLASS_NAME =
   "flex flex-1 flex-col items-center justify-center gap-0.5 text-[11px]"
 
 /**
- * 모바일 하단 탭: [매출] [지출] [＋ 빠른 등록] [배차] [더보기].
- * 장부와 나머지 메뉴는 "더보기" 시트에 있다. 데스크톱(md 이상)은 사이드바를 쓴다.
+ * 모바일 하단 탭: [장부] [배차] [통계] [더보기] (가계부 앱 방식).
+ * 매출·지출 목록과 나머지 메뉴는 "더보기" 시트에 있고, 등록은 오른쪽 아래 떠 있는 ＋ 버튼으로 한다.
+ * 데스크톱(md 이상)은 사이드바를 쓴다.
  * 높이 h-16(64px)은 main의 pb-16, 폼 저장 바의 bottom-16과 맞춘 값이다.
  */
 export function MobileTabBar({ userEmail }: { userEmail: string | null }) {
@@ -49,9 +45,7 @@ export function MobileTabBar({ userEmail }: { userEmail: string | null }) {
 
   return (
     <nav className="fixed inset-x-0 bottom-0 z-40 flex h-16 border-t bg-background md:hidden">
-      {primaryNavItems.slice(0, MOBILE_TAB_SPLIT_INDEX).map(renderTab)}
-      <QuickEntrySheet />
-      {primaryNavItems.slice(MOBILE_TAB_SPLIT_INDEX).map(renderTab)}
+      {primaryNavItems.map(renderTab)}
       <Sheet open={moreOpen} onOpenChange={setMoreOpen}>
         <SheetTrigger asChild>
           <button
@@ -67,7 +61,7 @@ export function MobileTabBar({ userEmail }: { userEmail: string | null }) {
           <SheetHeader>
             <SheetTitle>더보기</SheetTitle>
             <SheetDescription className="sr-only">
-              장부와 기타 메뉴
+              매출·지출 목록과 기타 메뉴
             </SheetDescription>
           </SheetHeader>
           <div className="grid grid-cols-3 gap-2 px-4">

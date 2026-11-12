@@ -1,6 +1,6 @@
 "use client"
 
-import { Plus, Search, X } from "lucide-react"
+import { Search, X } from "lucide-react"
 import Link from "next/link"
 import { useMemo, useRef, useState } from "react"
 
@@ -58,7 +58,17 @@ const KIND_FILTER_OPTIONS: ChoiceOption<QuickKindFilter>[] = [
  *   시트를 열 때마다 후보 목록을 서버에서 새로 불러오고(방금 등록한 건도 바로 보이도록),
  *   검색·묶음은 기기에서 처리해 글자를 칠 때마다 결과가 바로 바뀐다.
  */
-export function QuickEntrySheet() {
+interface QuickEntrySheetProps {
+  /** 시트를 여는 버튼 (SheetTrigger asChild로 감싼다) */
+  trigger: React.ReactElement
+  /**
+   * "copy": 이전 건 복사만 보여 준다(오른쪽 아래 회색 복사 버튼).
+   * "all": 새 등록 큰 버튼 3개 + 이전 건 복사.
+   */
+  mode?: "copy" | "all"
+}
+
+export function QuickEntrySheet({ trigger, mode = "all" }: QuickEntrySheetProps) {
   const [open, setOpen] = useState(false)
   const [state, setState] = useState<CandidatesState>({ status: "loading" })
   const [query, setQuery] = useState("")
@@ -121,17 +131,7 @@ export function QuickEntrySheet() {
 
   return (
     <Sheet open={open} onOpenChange={handleOpenChange}>
-      <SheetTrigger asChild>
-        <button
-          type="button"
-          aria-label="빠른 등록"
-          className="group flex flex-1 items-center justify-center outline-none"
-        >
-          <span className="flex size-11 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-md transition-transform group-focus-visible:ring-3 group-focus-visible:ring-ring/50 group-active:scale-95">
-            <Plus className="size-6" aria-hidden />
-          </span>
-        </button>
-      </SheetTrigger>
+      <SheetTrigger asChild>{trigger}</SheetTrigger>
       <SheetContent
         ref={contentRef}
         side="bottom"
@@ -145,12 +145,15 @@ export function QuickEntrySheet() {
         }}
       >
         <SheetHeader className="pb-0">
-          <SheetTitle>빠른 등록</SheetTitle>
+          <SheetTitle>{mode === "copy" ? "이전 건 복사" : "빠른 등록"}</SheetTitle>
           <SheetDescription>
-            새로 등록하거나, 이전 건을 찾아 복사해서 등록해요.
+            {mode === "copy"
+              ? "이전 건을 찾아 복사하면 날짜만 오늘로 바뀐 등록 화면이 열려요."
+              : "새로 등록하거나, 이전 건을 찾아 복사해서 등록해요."}
           </SheetDescription>
         </SheetHeader>
 
+        {mode === "copy" ? null : (
         <div className="grid grid-cols-3 gap-2 px-4">
           {quickCreateNavItems.map((item) => {
             const Icon = item.icon
@@ -167,6 +170,7 @@ export function QuickEntrySheet() {
             )
           })}
         </div>
+        )}
 
         <div className="flex flex-col gap-2 px-4">
           <div className="relative">

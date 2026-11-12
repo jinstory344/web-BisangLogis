@@ -3,14 +3,17 @@ import { LedgerNav } from "@/components/ledger/ledger-nav"
 import { LedgerRangeList } from "@/components/ledger/ledger-range-list"
 import { LedgerSummary } from "@/components/ledger/ledger-summary"
 import { LedgerViewTabs } from "@/components/ledger/ledger-view-tabs"
+import { LedgerKindChips } from "@/components/ledger/ledger-kind-chips"
 import { getTodayInSeoul } from "@/lib/date"
 import {
   buildDayBuckets,
   buildMonthBuckets,
   buildWeekBuckets,
   buildYearBuckets,
+  filterLedgerEntries,
   getLedgerRange,
   parseAnchorDate,
+  parseLedgerKind,
   parseLedgerView,
   sumTotals,
 } from "@/lib/ledger"
@@ -25,6 +28,7 @@ import {
 interface LedgerSearchParams {
   view?: string
   d?: string
+  kind?: string
 }
 
 /**
@@ -42,6 +46,7 @@ export default async function LedgerPage({
   const view = parseLedgerView(params.view)
   const anchor = parseAnchorDate(params.d, today)
   const range = getLedgerRange(view, anchor)
+  const kind = parseLedgerKind(params.kind)
 
   const supabase = await createClient()
 
@@ -64,7 +69,11 @@ export default async function LedgerPage({
                 expense: entry.kind === "expense" ? entry.amount : 0,
               }))
             ),
-            node: <LedgerDayList buckets={buildDayBuckets(entries)} />,
+            node: (
+              <LedgerDayList
+                buckets={buildDayBuckets(filterLedgerEntries(entries, kind))}
+              />
+            ),
           }
         }
 
@@ -104,6 +113,9 @@ export default async function LedgerPage({
         ) : (
           <>
             <LedgerSummary totals={totals} unpaid={unpaid} />
+            {view === "day" ? (
+              <LedgerKindChips anchor={anchor} value={kind} />
+            ) : null}
             {content}
           </>
         )}

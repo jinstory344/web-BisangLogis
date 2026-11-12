@@ -5,10 +5,12 @@ import {
   buildMonthBuckets,
   buildWeekBuckets,
   buildYearBuckets,
+  filterLedgerEntries,
   formatMonthBucketLabel,
   formatWeekBucketLabel,
   getLedgerRange,
   parseAnchorDate,
+  parseLedgerKind,
   parseLedgerView,
   sumTotals,
   type AmountRow,
@@ -209,5 +211,27 @@ describe("parseAnchorDate / getLedgerRange", () => {
     })
     const all = getLedgerRange("year", "2026-11-12")
     expect(all.from < "2000-01-01" && all.to > "2050-01-01").toBe(true)
+  })
+})
+
+describe("일일 장부 거르기", () => {
+  const entries = [
+    { kind: "sale" as const, isUnpaid: true, id: "a" },
+    { kind: "sale" as const, isUnpaid: false, id: "b" },
+    { kind: "expense" as const, id: "c" },
+  ]
+
+  it("전체·매출·지출·미입금으로 거른다", () => {
+    const ids = (f: Parameters<typeof filterLedgerEntries>[1]) =>
+      filterLedgerEntries(entries, f).map((e) => e.id)
+    expect(ids("all")).toEqual(["a", "b", "c"])
+    expect(ids("sale")).toEqual(["a", "b"])
+    expect(ids("expense")).toEqual(["c"])
+    expect(ids("unpaid")).toEqual(["a"])
+  })
+
+  it("알 수 없는 값은 전체", () => {
+    expect(parseLedgerKind("bogus")).toBe("all")
+    expect(parseLedgerKind("unpaid")).toBe("unpaid")
   })
 })

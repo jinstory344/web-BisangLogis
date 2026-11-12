@@ -379,10 +379,10 @@ describe("최근 건 복사 목록", () => {
     expect(searchCandidates([], { limit: 5 })).toEqual({ entries: [], total: 0 })
   })
 
-  it("복사 링크는 /{종류}/new?copy={id}", () => {
-    expect(getCopyHref("sales", "abc")).toBe("/sales/new?copy=abc")
-    expect(getCopyHref("dispatches", "abc")).toBe("/dispatches/new?copy=abc")
-    expect(getCopyHref("expenses", "abc")).toBe("/expenses/new?copy=abc")
+  it("복사 링크는 통합 등록 화면 /new?type={종류}&copy={id}", () => {
+    expect(getCopyHref("sales", "abc")).toBe("/new?type=sale&copy=abc")
+    expect(getCopyHref("dispatches", "abc")).toBe("/new?type=dispatch&copy=abc")
+    expect(getCopyHref("expenses", "abc")).toBe("/new?type=expense&copy=abc")
   })
 })
 

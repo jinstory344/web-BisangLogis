@@ -231,7 +231,9 @@ export async function createSaleAction(
   }
 
   revalidatePath("/sales")
-  redirect("/sales")
+  revalidatePath("/")
+  // 등록이 끝나면 장부(홈)로 돌아간다.
+  redirect("/")
 }
 
 /** 3.7 매출 수정 (update_sale RPC가 부가세 재계산 + 감사 로그를 함께 처리) */

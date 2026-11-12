@@ -1,5 +1,6 @@
 import type { LucideIcon } from "lucide-react"
 import {
+  BarChart3,
   BookOpen,
   Car,
   FileSpreadsheet,
@@ -19,22 +20,20 @@ export interface NavItem {
 }
 
 /**
- * 모바일 하단 탭에 노출되는 핵심 메뉴: [매출] [지출] [＋ 빠른 등록] [배차] [더보기].
- * 가운데 ＋ 버튼은 MobileTabBar가 MOBILE_TAB_SPLIT_INDEX 위치에 끼워 넣는다.
- * (데스크톱 사이드바는 아래 sidebarNavGroups를 따로 쓰므로 여기 변경의 영향을 받지 않는다.)
+ * 모바일 하단 탭: [장부] [배차] [통계] [더보기] (가계부 앱 방식).
+ * 등록은 하단 탭 대신 화면 오른쪽 아래 떠 있는 ＋ 버튼(FloatingActions)으로 한다.
+ * (데스크톱 사이드바는 아래 sidebarNavGroups를 따로 쓴다.)
  */
 export const primaryNavItems: NavItem[] = [
-  { label: "매출", href: "/sales", icon: TrendingUp },
-  { label: "지출", href: "/expenses", icon: Wallet },
+  { label: "장부", href: "/", icon: BookOpen },
   { label: "배차", href: "/dispatches", icon: Truck },
+  { label: "통계", href: "/stats", icon: BarChart3 },
 ]
 
-/** 하단 탭에서 ＋ 버튼이 들어갈 위치 (primaryNavItems의 앞 2개 뒤) */
-export const MOBILE_TAB_SPLIT_INDEX = 2
-
-/** 모바일 "더보기" 시트 메뉴 (장부는 하단 탭 대신 여기로) */
+/** 모바일 "더보기" 시트 메뉴 */
 export const secondaryNavItems: NavItem[] = [
-  { label: "장부", href: "/", icon: BookOpen },
+  { label: "매출 목록", href: "/sales", icon: TrendingUp },
+  { label: "지출 목록", href: "/expenses", icon: Wallet },
   { label: "거래처", href: "/clients", icon: Users },
   { label: "차량·기사", href: "/vehicles", icon: Car },
   { label: "계산서", href: "/tax-invoices", icon: Receipt },
@@ -43,16 +42,19 @@ export const secondaryNavItems: NavItem[] = [
   { label: "설정", href: "/settings", icon: Settings },
 ]
 
-/** 모바일 빠른 등록 시트의 큰 버튼 */
+/** 빠른 등록 시트의 큰 버튼 */
 export const quickCreateNavItems: NavItem[] = [
-  { label: "매출 등록", href: "/sales/new", icon: TrendingUp },
-  { label: "지출 등록", href: "/expenses/new", icon: Wallet },
-  { label: "배차 등록", href: "/dispatches/new", icon: Truck },
+  { label: "매출 등록", href: "/new?type=sale", icon: TrendingUp },
+  { label: "지출 등록", href: "/new?type=expense", icon: Wallet },
+  { label: "배차 등록", href: "/new?type=dispatch", icon: Truck },
 ]
 
 /** 데스크톱 사이드바 전용 — 구분선으로 나뉘는 메뉴 그룹 */
 export const sidebarNavGroups: NavItem[][] = [
-  [{ label: "장부", href: "/", icon: BookOpen }],
+  [
+    { label: "장부", href: "/", icon: BookOpen },
+    { label: "통계", href: "/stats", icon: BarChart3 },
+  ],
   [
     { label: "매출", href: "/sales", icon: TrendingUp },
     { label: "지출", href: "/expenses", icon: Wallet },
