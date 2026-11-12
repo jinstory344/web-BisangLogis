@@ -8,7 +8,6 @@ import { createClient } from "@/lib/supabase/server"
 import type { DispatchRow } from "@/lib/supabase/database.types"
 
 import {
-  DISPATCH_CLIENT_CHIP_LIMIT,
   filterDispatchesByClient,
   summarizeDispatches,
 } from "@/lib/dispatch-list"
@@ -64,15 +63,18 @@ export default async function DispatchesPage({
     .gte("dispatch_date", from)
     .lte("dispatch_date", to)
 
+  // 거래처 이름은 표가 작아서 따로 기다리지 않고 같이 한 번에 읽는다 (순차 왕복 한 번 줄이기).
   const [
     { data, error, count },
     { data: summaryRows },
+    { data: clientRows },
   ] = await Promise.all([
     baseQuery
       .order("dispatch_date", { ascending: false })
       .order("created_at", { ascending: false })
       .range(rangeStart, rangeEnd),
     summaryQuery,
+    supabase.from("clients").select("id, name"),
   ])
 
   const rangeSummary = summarizeDispatches(summaryRows ?? [])
@@ -81,25 +83,9 @@ export default async function DispatchesPage({
   )
 
   // 목록 행과 거래처 칩에 쓸 거래처 이름
-  const clientIds = Array.from(
-    new Set([
-      ...(data ?? []).map((d) => d.client_id).filter((v): v is string => !!v),
-      ...rangeSummary.byClient
-        .slice(0, DISPATCH_CLIENT_CHIP_LIMIT)
-        .map((c) => c.clientId),
-      ...(clientId ? [clientId] : []),
-    ])
+  const clientNameMap: Record<string, string> = Object.fromEntries(
+    (clientRows ?? []).map((c) => [c.id, c.name])
   )
-  let clientNameMap: Record<string, string> = {}
-  if (clientIds.length > 0) {
-    const { data: clientRows } = await supabase
-      .from("clients")
-      .select("id, name")
-      .in("id", clientIds)
-    clientNameMap = Object.fromEntries(
-      (clientRows ?? []).map((c) => [c.id, c.name])
-    )
-  }
 
   const totalPages = Math.max(1, Math.ceil((count ?? 0) / PAGE_SIZE))
 

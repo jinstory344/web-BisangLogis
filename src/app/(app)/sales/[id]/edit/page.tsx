@@ -16,20 +16,18 @@ export default async function EditSalePage({
 }) {
   const { id } = await params
   const supabase = await createClient()
-  const { data: sale } = await supabase
-    .from("sales")
-    .select("*")
-    .eq("id", id)
-    .is("deleted_at", null)
-    .single()
+  // 매출 한 건과 거래처 명단은 서로 기다릴 필요가 없어 함께 읽는다.
+  // 거래처 명단은 부가 기능이라 조회 실패 시 비운다 (수정 화면은 계속 쓸 수 있다).
+  const [{ data: sale }, clientChoices] = await Promise.all([
+    supabase.from("sales").select("*").eq("id", id).is("deleted_at", null).single(),
+    getSaleClientChoices().catch(() => []),
+  ])
 
   if (!sale) {
     notFound()
   }
 
   const defaultValues = saleRowToFormValues(sale)
-  // 거래처 명단은 부가 기능이라 조회 실패 시 비운다 (수정 화면은 계속 쓸 수 있다).
-  const clientChoices = await getSaleClientChoices().catch(() => [])
 
   return (
     <div className="p-4 md:p-6">

@@ -14,19 +14,17 @@ export default async function EditExpensePage({
 }) {
   const { id } = await params
   const supabase = await createClient()
-  const { data: expense } = await supabase
-    .from("expenses")
-    .select("*")
-    .eq("id", id)
-    .is("deleted_at", null)
-    .single()
+  // 지출 한 건과 분류 목록은 서로 기다릴 필요가 없어 함께 읽는다.
+  const [{ data: expense }, categories] = await Promise.all([
+    supabase.from("expenses").select("*").eq("id", id).is("deleted_at", null).single(),
+    getExpenseCategories(),
+  ])
 
   if (!expense) {
     notFound()
   }
 
   const defaultValues = expenseRowToFormValues(expense)
-  const categories = await getExpenseCategories()
 
   return (
     <div className="p-4 md:p-6">

@@ -39,9 +39,11 @@ export async function updateSession(request: NextRequest) {
     }
   )
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  // getClaims는 로그인 토큰을 이 서버에서 직접 검증한다(비대칭 서명 키, 공개키는 캐시).
+  // getUser처럼 매 요청 Supabase 인증 서버(뭄바이)까지 왕복하지 않아 페이지가 빨라진다.
+  // 토큰이 곧 만료되면 먼저 갱신하고 새 쿠키를 응답에 실어 준다.
+  const { data } = await supabase.auth.getClaims()
+  const user = data?.claims ?? null
 
   const { pathname } = request.nextUrl
 
