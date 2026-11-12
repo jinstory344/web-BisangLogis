@@ -1,15 +1,29 @@
 import { ChevronLeft, ChevronRight } from "lucide-react"
 import Link from "next/link"
 
-import { formatYearMonth, getTodayInSeoul, shiftMonthRange } from "@/lib/date"
-import type { LedgerView } from "@/lib/ledger"
+import { formatYearMonth, getTodayInSeoul } from "@/lib/date"
+import {
+  getLedgerNeighborAnchors,
+  ledgerHref,
+  type LedgerKindFilter,
+  type LedgerView,
+} from "@/lib/ledger"
 
 /**
  * 장부 상단 기간 이동. 일일·주별은 `‹ 2026년 11월 ›`(달 단위), 월별은 `‹ 2026년 ›`(해 단위),
  * 연별은 전체라서 이동 없이 "전체"만 보여 준다.
  */
-export function LedgerNav({ view, anchor }: { view: LedgerView; anchor: string }) {
-  if (view === "year") {
+export function LedgerNav({
+  view,
+  anchor,
+  kind = "all",
+}: {
+  view: LedgerView
+  anchor: string
+  kind?: LedgerKindFilter
+}) {
+  const neighbors = getLedgerNeighborAnchors(view, anchor)
+  if (view === "year" || !neighbors) {
     return (
       <div className="flex min-h-11 items-center justify-center">
         <span className="text-lg font-semibold">전체</span>
@@ -21,12 +35,6 @@ export function LedgerNav({ view, anchor }: { view: LedgerView; anchor: string }
   const year = Number(anchor.slice(0, 4))
   const isYearView = view === "month"
 
-  const prevAnchor = isYearView
-    ? `${year - 1}-01-01`
-    : shiftMonthRange(anchor, -1).from
-  const nextAnchor = isYearView
-    ? `${year + 1}-01-01`
-    : shiftMonthRange(anchor, 1).from
   const label = isYearView ? `${year}년` : formatYearMonth(anchor)
 
   const isCurrent = isYearView
@@ -34,12 +42,14 @@ export function LedgerNav({ view, anchor }: { view: LedgerView; anchor: string }
     : anchor.slice(0, 7) === today.slice(0, 7)
   const currentLabel = isYearView ? "올해로" : "이번 달로"
 
-  const href = (d: string) => `/?view=${view}&d=${d}`
+  const href = (d: string) => ledgerHref(view, d, kind)
 
   return (
     <div className="flex items-center justify-between">
       <Link
-        href={href(prevAnchor)}
+        href={href(neighbors.prev)}
+        // 이웃 달을 미리 다 받아 두어 스와이프·화살표로 넘길 때 바로 뜨게 한다.
+        prefetch
         aria-label={isYearView ? "이전 해" : "이전 달"}
         className="flex size-11 items-center justify-center rounded-full text-muted-foreground hover:bg-muted"
       >
@@ -57,7 +67,8 @@ export function LedgerNav({ view, anchor }: { view: LedgerView; anchor: string }
         )}
       </div>
       <Link
-        href={href(nextAnchor)}
+        href={href(neighbors.next)}
+        prefetch
         aria-label={isYearView ? "다음 해" : "다음 달"}
         className="flex size-11 items-center justify-center rounded-full text-muted-foreground hover:bg-muted"
       >

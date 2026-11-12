@@ -3,6 +3,7 @@ import { LedgerNav } from "@/components/ledger/ledger-nav"
 import { LedgerRangeList } from "@/components/ledger/ledger-range-list"
 import { LedgerSummary } from "@/components/ledger/ledger-summary"
 import { LedgerViewTabs } from "@/components/ledger/ledger-view-tabs"
+import { SwipePager } from "@/components/ledger/swipe-pager"
 import { LedgerKindChips } from "@/components/ledger/ledger-kind-chips"
 import { getTodayInSeoul } from "@/lib/date"
 import {
@@ -11,7 +12,9 @@ import {
   buildWeekBuckets,
   buildYearBuckets,
   filterLedgerEntries,
+  getLedgerNeighborAnchors,
   getLedgerRange,
+  ledgerHref,
   parseAnchorDate,
   parseLedgerKind,
   parseLedgerView,
@@ -47,6 +50,7 @@ export default async function LedgerPage({
   const anchor = parseAnchorDate(params.d, today)
   const range = getLedgerRange(view, anchor)
   const kind = parseLedgerKind(params.kind)
+  const neighbors = getLedgerNeighborAnchors(view, anchor)
 
   const supabase = await createClient()
 
@@ -104,21 +108,27 @@ export default async function LedgerPage({
         <h1 className="text-2xl font-semibold tracking-tight">비상</h1>
 
         <LedgerViewTabs view={view} anchor={anchor} />
-        <LedgerNav view={view} anchor={anchor} />
 
-        {errorMessage ? (
-          <p className="text-sm text-destructive">
-            비상을 불러오지 못했습니다: {errorMessage}
-          </p>
-        ) : (
-          <>
-            <LedgerSummary totals={totals} unpaid={unpaid} />
-            {view === "day" ? (
-              <LedgerKindChips anchor={anchor} value={kind} />
-            ) : null}
-            {content}
-          </>
-        )}
+        <SwipePager
+          prevHref={neighbors ? ledgerHref(view, neighbors.prev, kind) : null}
+          nextHref={neighbors ? ledgerHref(view, neighbors.next, kind) : null}
+        >
+          <LedgerNav view={view} anchor={anchor} kind={kind} />
+
+          {errorMessage ? (
+            <p className="text-sm text-destructive">
+              비상을 불러오지 못했습니다: {errorMessage}
+            </p>
+          ) : (
+            <>
+              <LedgerSummary totals={totals} unpaid={unpaid} />
+              {view === "day" ? (
+                <LedgerKindChips anchor={anchor} value={kind} />
+              ) : null}
+              {content}
+            </>
+          )}
+        </SwipePager>
       </div>
     </div>
   )

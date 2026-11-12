@@ -248,3 +248,34 @@ export function filterLedgerEntries<
   }
   return entries.filter((e) => e.kind === filter)
 }
+
+/**
+ * 기간 이동(화살표·좌우 스와이프)의 이전/다음 기준일. 일일·주별은 달 단위, 월별은 해 단위,
+ * 연별은 전체라서 이동이 없다(null).
+ */
+export function getLedgerNeighborAnchors(
+  view: LedgerView,
+  anchor: string
+): { prev: string; next: string } | null {
+  if (view === "year") return null
+  if (view === "month") {
+    const year = Number(anchor.slice(0, 4))
+    return { prev: `${year - 1}-01-01`, next: `${year + 1}-01-01` }
+  }
+  const [year, month] = anchor.split("-").map(Number)
+  const shift = (delta: number) => {
+    const date = new Date(Date.UTC(year, month - 1 + delta, 1))
+    return date.toISOString().slice(0, 10)
+  }
+  return { prev: shift(-1), next: shift(1) }
+}
+
+/** 장부 주소 (보기·기준일, 일일 보기의 거르기는 유지) */
+export function ledgerHref(
+  view: LedgerView,
+  anchor: string,
+  kind: LedgerKindFilter = "all"
+): string {
+  const kindPart = view === "day" && kind !== "all" ? `&kind=${kind}` : ""
+  return `/?view=${view}&d=${anchor}${kindPart}`
+}

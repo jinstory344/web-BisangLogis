@@ -8,7 +8,9 @@ import {
   filterLedgerEntries,
   formatMonthBucketLabel,
   formatWeekBucketLabel,
+  getLedgerNeighborAnchors,
   getLedgerRange,
+  ledgerHref,
   parseAnchorDate,
   parseLedgerKind,
   parseLedgerView,
@@ -233,5 +235,32 @@ describe("일일 장부 거르기", () => {
   it("알 수 없는 값은 전체", () => {
     expect(parseLedgerKind("bogus")).toBe("all")
     expect(parseLedgerKind("unpaid")).toBe("unpaid")
+  })
+})
+
+describe("기간 이동 (화살표·스와이프)", () => {
+  it("일일·주별은 달 단위 (연 경계 포함)", () => {
+    expect(getLedgerNeighborAnchors("day", "2026-11-12")).toEqual({
+      prev: "2026-10-01",
+      next: "2026-12-01",
+    })
+    expect(getLedgerNeighborAnchors("week", "2026-01-31")).toEqual({
+      prev: "2025-12-01",
+      next: "2026-02-01",
+    })
+  })
+
+  it("월별은 해 단위, 연별은 이동 없음", () => {
+    expect(getLedgerNeighborAnchors("month", "2026-11-12")).toEqual({
+      prev: "2025-01-01",
+      next: "2027-01-01",
+    })
+    expect(getLedgerNeighborAnchors("year", "2026-11-12")).toBeNull()
+  })
+
+  it("주소는 일일 보기에서만 거르기를 유지한다", () => {
+    expect(ledgerHref("day", "2026-11-01", "unpaid")).toBe("/?view=day&d=2026-11-01&kind=unpaid")
+    expect(ledgerHref("day", "2026-11-01")).toBe("/?view=day&d=2026-11-01")
+    expect(ledgerHref("week", "2026-11-01", "unpaid")).toBe("/?view=week&d=2026-11-01")
   })
 })
