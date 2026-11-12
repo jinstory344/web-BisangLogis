@@ -156,3 +156,81 @@
     height: 100%;
   }
 }
+/*
+ * 입력 폼의 가계부식 줄 모양 (모바일만, md 미만).
+ * 등록·수정 폼(<form data-touch-form>)의 각 항목을 "라벨 왼쪽 · 값 오른쪽 · 아래 밑줄" 한 줄로 보여 주고,
+ * 입력칸은 테두리 없이 바탕에 녹이며, 입력 중인 칸은 아래 밑줄을 빨갛게 표시한다 (사용자가 쓰는 가계부 앱 방식).
+ * 라벨은 1열, 나머지(입력칸·칩·안내·오류)는 모두 2열에 쌓인다.
+ */
+@media (width < 48rem) {
+  form[data-touch-form] {
+    row-gap: 0;
+  }
+
+  [data-touch-form] [data-slot="form-item"] {
+    grid-template-columns: 4.5rem minmax(0, 1fr);
+    column-gap: 0.75rem;
+    row-gap: 0;
+    align-items: center;
+    padding-block: 0.5rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  [data-touch-form] [data-slot="form-item"] > * {
+    grid-column: 2;
+  }
+
+  [data-touch-form] [data-slot="form-item"] > :nth-child(n + 3) {
+    margin-top: 0.5rem;
+  }
+
+  [data-touch-form] [data-slot="form-item"] > [data-slot="form-label"] {
+    grid-column: 1;
+    grid-row: 1 / span 12;
+    align-self: start;
+    padding-top: 0.75rem;
+    font-weight: 400;
+    color: var(--muted-foreground);
+  }
+
+  [data-touch-form] [data-slot="form-item"] > [data-slot="form-label"][data-error="true"] {
+    color: var(--destructive);
+  }
+
+  [data-touch-form] [data-slot="form-item"] input[data-slot="input"],
+  [data-touch-form] [data-slot="form-item"] input[data-slot="form-control"]:not([type="checkbox"], [type="radio"]),
+  [data-touch-form] [data-slot="form-item"] textarea,
+  [data-touch-form] [data-slot="form-item"] [data-slot="select-trigger"],
+  [data-touch-form] [data-slot="form-item"] button[data-slot="form-control"][role="combobox"],
+  [data-touch-form] [data-slot="form-item"] [data-slot="input-group"] {
+    border-color: transparent;
+    border-bottom-color: var(--border);
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  /* 입력칸 글자를 줄 왼쪽 끝에 맞춘다 (오른쪽 여백은 금액칸의 "원" 단위 자리라 그대로 둔다) */
+  [data-touch-form] [data-slot="form-item"] input[data-slot="input"],
+  [data-touch-form] [data-slot="form-item"] input[data-slot="form-control"]:not([type="checkbox"], [type="radio"]),
+  [data-touch-form] [data-slot="form-item"] textarea,
+  [data-touch-form] [data-slot="form-item"] [data-slot="select-trigger"],
+  [data-touch-form] [data-slot="form-item"] button[data-slot="form-control"][role="combobox"] {
+    padding-left: 0;
+  }
+
+  /* 검색 입력칸(상차지·하차지·담당자·거래처 등 묶음칸 안의 입력)도 왼쪽 끝에 맞춘다 */
+  [data-touch-form] [data-slot="form-item"] [data-slot="input-group"] input[data-slot="input-group-control"] {
+    padding-left: 0;
+  }
+
+  [data-touch-form] [data-slot="form-item"] input:focus-visible,
+  [data-touch-form] [data-slot="form-item"] textarea:focus-visible,
+  [data-touch-form] [data-slot="form-item"] [data-slot="select-trigger"]:focus-visible,
+  [data-touch-form] [data-slot="form-item"] button[data-slot="form-control"][role="combobox"]:focus-visible,
+  [data-touch-form] [data-slot="form-item"] [data-slot="input-group"]:focus-within {
+    border-bottom-color: var(--color-red-400);
+    box-shadow: none;
+    --tw-ring-shadow: 0 0 #0000;
+  }
+}

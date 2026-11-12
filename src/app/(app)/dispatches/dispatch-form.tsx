@@ -314,7 +314,7 @@ export function DispatchForm({
           )}
         />
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid gap-4 md:grid-cols-2">
           <FormField
             control={form.control}
             name="pallet_count"
@@ -394,7 +394,7 @@ export function DispatchForm({
           />
         </FormItem>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid gap-4 md:grid-cols-2">
           <FormField
             control={form.control}
             name="driver_name_snapshot"
@@ -427,7 +427,7 @@ export function DispatchForm({
           지급 정보
         </h2>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid gap-4 md:grid-cols-2">
           <FormField
             control={form.control}
             name="freight_amount"

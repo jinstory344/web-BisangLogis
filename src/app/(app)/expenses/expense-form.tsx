@@ -6,7 +6,7 @@ import { useForm } from "react-hook-form"
 import { toast } from "sonner"
 
 import { AmountInput } from "@/components/form/amount-input"
-import { ChoiceChips, toChoiceOptions } from "@/components/form/choice-chips"
+import { ChoiceChips } from "@/components/form/choice-chips"
 import { DateQuickPicker } from "@/components/form/date-quick-picker"
 import { FormSubmitBar, touchFormProps } from "@/components/form/form-submit-bar"
 import {
@@ -39,9 +39,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { EXPENSE_PAYMENT_METHOD_OPTIONS } from "@/lib/constants/payment-method"
 import {
   CUSTOM_MINOR,
-  getMajors,
   getMinorsOf,
-  isValidCategoryPairIn,
   type DeleteCategoryInput,
   type ExpenseCategoryTree,
 } from "@/lib/constants/expense-categories"
@@ -53,12 +51,11 @@ import {
 } from "@/lib/validations/expense"
 
 import type { ExpenseActionState } from "./actions"
-import { CategoryAdder } from "./category-adder"
+import { CategoryPickerSheet } from "./category-picker-sheet"
 import {
   addExpenseCategoryAction,
   deleteExpenseCategoryAction,
 } from "./category-actions"
-import { RemovableCategoryChips } from "./removable-category-chips"
 
 interface ExpenseFormProps {
   action: (
@@ -96,34 +93,26 @@ export function ExpenseForm({
 
   // 분류 목록은 서버에서 받은 것으로 시작하고, 추가·삭제하면 서버가 돌려준 새 목록으로 바꾼다.
   const [tree, setTree] = useState<ExpenseCategoryTree>(categories)
-  const [isEditingCategories, setIsEditingCategories] = useState(false)
   const [pendingDelete, setPendingDelete] = useState<DeleteCategoryInput | null>(
     null
   )
   const [isDeleting, setIsDeleting] = useState(false)
 
-  // 지운 분류가 붙은 예전 지출을 수정할 때도 지금 고른 대분류 칩은 보이도록 목록 밖의 값을 덧붙인다.
-  const majorNames = getMajors(tree)
-  const visibleMajors =
-    categoryMajor && !majorNames.includes(categoryMajor)
-      ? [...majorNames, categoryMajor]
-      : majorNames
-  const majorChoices = toChoiceOptions(visibleMajors)
-  const minorNames = getMinorsOf(tree, categoryMajor)
-  const minorChoices = toChoiceOptions(minorNames)
   const [isCustomMinor, setIsCustomMinor] = useState(() => {
     const initialMinor = defaultValues.category_minor
     const initialMinors = getMinorsOf(categories, defaultValues.category_major)
     return initialMinor !== "" && !initialMinors.includes(initialMinor)
   })
 
-  /** 대분류를 바꿨을 때, 지금 소분류가 새 대분류에서 쓸 수 없는 값이면 비운다. */
-  function handleMajorChange(next: string) {
-    form.setValue("category_major", next, { shouldValidate: true })
-    const currentMinor = form.getValues("category_minor")
-    if (currentMinor && !isValidCategoryPairIn(tree, next, currentMinor)) {
+  /** 분류 선택판에서 고른 대분류·소분류를 폼에 넣는다. "기타"면 직접 입력칸을 연다. */
+  function pickCategory(major: string, minor: string) {
+    form.setValue("category_major", major, { shouldValidate: true })
+    if (minor === CUSTOM_MINOR) {
+      setIsCustomMinor(true)
       form.setValue("category_minor", "")
+    } else {
       setIsCustomMinor(false)
+      form.setValue("category_minor", minor, { shouldValidate: true })
     }
   }
 
@@ -131,28 +120,13 @@ export function ExpenseForm({
     const result = await addExpenseCategoryAction({ kind: "major", name })
     if (!result.ok) return result.error
     setTree(result.tree)
-    // 방금 만든 대분류를 바로 고른다 (소분류는 새 대분류에서 다시 고른다).
-    form.setValue("category_major", name.trim().replace(/\s+/g, " "), {
-      shouldValidate: true,
-    })
-    form.setValue("category_minor", "")
-    setIsCustomMinor(false)
     return null
   }
 
-  async function addMinor(name: string): Promise<string | null> {
-    const result = await addExpenseCategoryAction({
-      kind: "minor",
-      major: categoryMajor,
-      name,
-    })
+  async function addMinor(major: string, name: string): Promise<string | null> {
+    const result = await addExpenseCategoryAction({ kind: "minor", major, name })
     if (!result.ok) return result.error
     setTree(result.tree)
-    // 방금 만든 소분류를 바로 고른다.
-    setIsCustomMinor(false)
-    form.setValue("category_minor", name.trim().replace(/\s+/g, " "), {
-      shouldValidate: true,
-    })
     return null
   }
 
@@ -301,124 +275,45 @@ export function ExpenseForm({
           ) : null}
         </div>
 
-        {/* 소분류 칩은 대분류에 따라 바뀌고 개수가 많아(최대 9개) 데스크톱에서도 위아래로 둔다. */}
-        <div className="grid gap-4">
-          {categoriesEditable ? (
-            <div className="-mb-2 flex justify-end">
-              <button
-                type="button"
-                aria-pressed={isEditingCategories}
-                className="px-1 py-1 text-xs text-muted-foreground underline underline-offset-2"
-                onClick={() => setIsEditingCategories((editing) => !editing)}
-              >
-                {isEditingCategories ? "편집 끝내기" : "분류 편집"}
-              </button>
-            </div>
-          ) : null}
-
-          <FormField
-            control={form.control}
-            name="category_major"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>대분류 *</FormLabel>
-                {isEditingCategories ? (
-                  <RemovableCategoryChips
-                    aria-label="대분류 편집"
-                    names={visibleMajors}
-                    value={field.value}
-                    onSelect={handleMajorChange}
-                    onRemove={(major) => setPendingDelete({ major })}
-                  />
-                ) : (
-                  <FormControl>
-                    <ChoiceChips
-                      aria-label="대분류"
-                      options={majorChoices}
-                      value={field.value}
-                      onChange={handleMajorChange}
-                    />
-                  </FormControl>
+        {/* 분류: 한 줄을 누르면 아래에서 분류 선택판이 올라온다 (가계부 앱 방식). */}
+        <FormField
+          control={form.control}
+          name="category_minor"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>분류 *</FormLabel>
+              <CategoryPickerSheet
+                tree={tree}
+                major={categoryMajor}
+                minor={field.value}
+                isCustom={isCustomMinor}
+                editable={categoriesEditable}
+                onPick={pickCategory}
+                onAddMajor={addMajor}
+                onAddMinor={addMinor}
+                onRemove={setPendingDelete}
+                invalid={Boolean(
+                  form.formState.errors.category_major ||
+                    form.formState.errors.category_minor
                 )}
-                {categoriesEditable ? (
-                  <CategoryAdder
-                    label="대분류 추가"
-                    placeholder="새 대분류 이름"
-                    onAdd={addMajor}
-                  />
-                ) : null}
+              />
+              {isCustomMinor ? (
+                <Input
+                  placeholder={`${categoryMajor} 소분류 직접 입력`}
+                  value={field.value}
+                  onChange={(e) => field.onChange(e.target.value)}
+                />
+              ) : null}
+              {form.formState.errors.category_major ? (
+                <p className="text-sm text-destructive">
+                  {form.formState.errors.category_major.message}
+                </p>
+              ) : (
                 <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="category_minor"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>소분류 *</FormLabel>
-                {categoryMajor ? (
-                  isEditingCategories ? (
-                    <RemovableCategoryChips
-                      aria-label="소분류 편집"
-                      names={minorNames}
-                      value={isCustomMinor ? CUSTOM_MINOR : field.value}
-                      onSelect={(minor) => {
-                        if (minor === CUSTOM_MINOR) {
-                          setIsCustomMinor(true)
-                          field.onChange("")
-                        } else {
-                          setIsCustomMinor(false)
-                          field.onChange(minor)
-                        }
-                      }}
-                      protectedNames={[CUSTOM_MINOR]}
-                      onRemove={(minor) =>
-                        setPendingDelete({ major: categoryMajor, minor })
-                      }
-                    />
-                  ) : (
-                    <FormControl>
-                      <ChoiceChips
-                        aria-label="소분류"
-                        options={minorChoices}
-                        value={isCustomMinor ? CUSTOM_MINOR : field.value}
-                        onChange={(v) => {
-                          if (v === CUSTOM_MINOR) {
-                            setIsCustomMinor(true)
-                            field.onChange("")
-                          } else {
-                            setIsCustomMinor(false)
-                            field.onChange(v)
-                          }
-                        }}
-                      />
-                    </FormControl>
-                  )
-                ) : (
-                  <p className="text-sm text-muted-foreground">
-                    대분류를 먼저 선택하세요
-                  </p>
-                )}
-                {categoriesEditable && categoryMajor ? (
-                  <CategoryAdder
-                    label="소분류 추가"
-                    placeholder={`${categoryMajor}에 추가할 소분류 이름`}
-                    onAdd={addMinor}
-                  />
-                ) : null}
-                {isCustomMinor ? (
-                  <Input
-                    placeholder="소분류 직접 입력"
-                    value={field.value}
-                    onChange={(e) => field.onChange(e.target.value)}
-                  />
-                ) : null}
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
+              )}
+            </FormItem>
+          )}
+        />
 
         <FormField
           control={form.control}
