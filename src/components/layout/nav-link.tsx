@@ -32,6 +32,8 @@ export function NavLink({
   return (
     <Link
       href={item.href}
+      // 하단 탭·사이드바 메뉴는 항상 보이므로 화면 전체를 미리 받아 두어 누르면 바로 뜨게 한다.
+      prefetch
       onClick={onNavigate}
       data-active={isActive}
       className={cn(

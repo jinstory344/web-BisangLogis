@@ -36,6 +36,8 @@ export function MonthNavigator({ from, to, hrefForRange }: MonthNavigatorProps) 
     <div className="flex items-center justify-between">
       <Link
         href={hrefForRange(shiftMonthRange(from, -1))}
+        // 이웃 달을 미리 받아 두어 화살표·스와이프로 넘길 때 바로 뜨게 한다.
+        prefetch
         aria-label="이전 달"
         className="flex size-11 items-center justify-center rounded-full text-muted-foreground hover:bg-muted"
       >
@@ -54,6 +56,7 @@ export function MonthNavigator({ from, to, hrefForRange }: MonthNavigatorProps) 
       </div>
       <Link
         href={hrefForRange(shiftMonthRange(from, 1))}
+        prefetch
         aria-label="다음 달"
         className="flex size-11 items-center justify-center rounded-full text-muted-foreground hover:bg-muted"
       >

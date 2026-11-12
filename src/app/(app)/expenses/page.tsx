@@ -2,6 +2,7 @@ import Link from "next/link"
 import { Plus } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
+import { MonthSwipe } from "@/components/list/month-swipe"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { getCurrentMonthRangeInSeoul } from "@/lib/date"
 import { createClient } from "@/lib/supabase/server"
@@ -108,7 +109,8 @@ export default async function ExpensesPage({
           <TabsTrigger value="summary">월간 집계</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="list" className="flex flex-col gap-4">
+        <TabsContent value="list">
+          <MonthSwipe className="flex flex-col gap-4">
           <div className="hidden md:block">
             <ExpenseFilters
               from={from}
@@ -142,10 +144,13 @@ export default async function ExpensesPage({
               totalPages={totalPages}
             />
           )}
+          </MonthSwipe>
         </TabsContent>
 
         <TabsContent value="summary">
+          <MonthSwipe>
           <ExpenseSummary from={from} categories={categories} />
+          </MonthSwipe>
         </TabsContent>
       </Tabs>
     </div>

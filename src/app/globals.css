@@ -234,3 +234,13 @@
     --tw-ring-shadow: 0 0 #0000;
   }
 }
+
+/* 화면 이동 중 맨 위 진행 막대 (components/layout/navigation-progress.tsx) */
+@keyframes nav-progress {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(300%);
+  }
+}

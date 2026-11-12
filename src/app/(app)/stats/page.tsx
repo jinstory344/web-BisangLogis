@@ -1,5 +1,7 @@
 import Link from "next/link"
 
+import { MonthSwipe } from "@/components/list/month-swipe"
+
 import { getCurrentMonthRangeInSeoul } from "@/lib/date"
 import { parseAnchorDate } from "@/lib/ledger"
 import { cn } from "@/lib/utils"
@@ -64,6 +66,7 @@ export default async function StatsPage({
           })}
         </nav>
 
+        <MonthSwipe>
         {type === "sales" ? (
           <SalesSummary from={from} />
         ) : type === "expenses" ? (
@@ -74,6 +77,7 @@ export default async function StatsPage({
         ) : (
           <DispatchSummary from={from} />
         )}
+        </MonthSwipe>
       </div>
     </div>
   )

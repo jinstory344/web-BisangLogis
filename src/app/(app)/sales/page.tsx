@@ -2,6 +2,7 @@ import Link from "next/link"
 import { Plus } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
+import { MonthSwipe } from "@/components/list/month-swipe"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { getCurrentMonthRangeInSeoul } from "@/lib/date"
 import { createClient } from "@/lib/supabase/server"
@@ -117,7 +118,8 @@ export default async function SalesPage({
           <TabsTrigger value="summary">월간 집계</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="list" className="flex flex-col gap-4">
+        <TabsContent value="list">
+          <MonthSwipe className="flex flex-col gap-4">
           {reconciliationMismatch ? (
             <div className="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
               검산 경고: 개별 건 합계와 표시된 합계가 일치하지 않습니다. 새로고침
@@ -158,10 +160,13 @@ export default async function SalesPage({
               totalPages={totalPages}
             />
           )}
+          </MonthSwipe>
         </TabsContent>
 
         <TabsContent value="summary">
+          <MonthSwipe>
           <SalesSummary from={from} />
+          </MonthSwipe>
         </TabsContent>
       </Tabs>
     </div>

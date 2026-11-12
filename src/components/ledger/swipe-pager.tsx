@@ -16,6 +16,8 @@ interface SwipePagerProps {
   /** 왼쪽으로 밀면 가는 곳(다음 달) */
   nextHref: string | null
   children: ReactNode
+  /** 내용 배치 (기본: 세로로 쌓고 간격 3) */
+  className?: string
 }
 
 /**
@@ -24,7 +26,12 @@ interface SwipePagerProps {
  * 이웃 달은 위쪽 화살표 링크가 미리 받아 두므로(prefetch) 보통 바로 뜬다.
  * 위아래 스크롤은 브라우저가 그대로 처리한다(touch-action: pan-y).
  */
-export function SwipePager({ prevHref, nextHref, children }: SwipePagerProps) {
+export function SwipePager({
+  prevHref,
+  nextHref,
+  children,
+  className = "flex flex-col gap-3",
+}: SwipePagerProps) {
   const router = useRouter()
   const ref = useRef<HTMLDivElement>(null)
   const gesture = useRef<{
@@ -123,7 +130,7 @@ export function SwipePager({ prevHref, nextHref, children }: SwipePagerProps) {
         gesture.current = null
         setOffset(0, true)
       }}
-      className="flex touch-pan-y flex-col gap-3 will-change-transform"
+      className={`touch-pan-y will-change-transform ${className}`}
     >
       {children}
     </div>
