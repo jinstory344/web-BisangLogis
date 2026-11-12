@@ -164,12 +164,12 @@ export function SalesMobileList({
                   />
                 ) : null}
 
-                <div className="pointer-events-none w-16 shrink-0 pt-0.5 text-xs leading-snug break-keep text-muted-foreground">
+                <div className="pointer-events-none w-16 shrink-0 truncate pt-0.5 text-xs leading-snug text-muted-foreground">
                   {sourceName(sale)}
                 </div>
 
                 <div className="pointer-events-none min-w-0 flex-1">
-                  <p className="leading-snug font-medium break-keep">
+                  <p className="text-sm leading-snug font-medium break-keep">
                     {sale.origin} → {sale.destination}
                   </p>
                   <p className="mt-0.5 text-xs text-muted-foreground">
@@ -179,7 +179,7 @@ export function SalesMobileList({
                 </div>
 
                 <div className="pointer-events-none flex shrink-0 flex-col items-end gap-0.5">
-                  <span className="font-semibold tabular-nums">
+                  <span className="text-sm font-semibold tabular-nums">
                     {formatKRW(sale.supply_amount)}
                   </span>
                   {sale.payment_status === "PAID" ? (

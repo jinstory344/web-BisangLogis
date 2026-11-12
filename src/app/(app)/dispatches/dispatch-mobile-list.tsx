@@ -112,12 +112,12 @@ export function DispatchMobileList({
                 onClick={() => openSheet(dispatch)}
               />
 
-              <div className="pointer-events-none w-16 shrink-0 pt-0.5 text-xs leading-snug break-keep text-muted-foreground">
+              <div className="pointer-events-none w-16 shrink-0 truncate pt-0.5 text-xs leading-snug text-muted-foreground">
                 {clientNameOf(dispatch, clientNameMap)}
               </div>
 
               <div className="pointer-events-none min-w-0 flex-1">
-                <p className="leading-snug font-medium break-keep">
+                <p className="text-sm leading-snug font-medium break-keep">
                   {dispatch.origin} → {dispatch.destination}
                 </p>
                 <p className="mt-0.5 truncate text-xs text-muted-foreground">
@@ -127,7 +127,7 @@ export function DispatchMobileList({
 
               <div className="pointer-events-none flex shrink-0 flex-col items-end gap-0.5">
                 {dispatch.freight_amount != null ? (
-                  <span className="font-semibold tabular-nums">
+                  <span className="text-sm font-semibold tabular-nums">
                     {formatKRW(dispatch.freight_amount)}
                   </span>
                 ) : (

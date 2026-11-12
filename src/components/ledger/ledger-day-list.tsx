@@ -60,11 +60,11 @@ export function LedgerDayList({ buckets }: { buckets: DayBucket<DayLedgerEntry>[
             >
               {entry.kind === "sale" ? (
                 <>
-                  <div className="w-16 shrink-0 pt-0.5 text-xs leading-snug break-keep text-muted-foreground">
+                  <div className="w-16 shrink-0 truncate pt-0.5 text-xs leading-snug text-muted-foreground">
                     {entry.source}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="leading-snug font-medium break-keep">
+                    <p className="text-sm leading-snug font-medium break-keep">
                       {entry.route}
                     </p>
                     <p className="mt-0.5 truncate text-xs text-muted-foreground">
@@ -74,7 +74,7 @@ export function LedgerDayList({ buckets }: { buckets: DayBucket<DayLedgerEntry>[
                   <div className="flex shrink-0 flex-col items-end gap-0.5">
                     <span
                       className={cn(
-                        "font-semibold tabular-nums",
+                        "text-sm font-semibold tabular-nums",
                         INCOME_TEXT_CLASS
                       )}
                     >
@@ -89,11 +89,11 @@ export function LedgerDayList({ buckets }: { buckets: DayBucket<DayLedgerEntry>[
                 </>
               ) : (
                 <>
-                  <div className="w-16 shrink-0 pt-0.5 text-xs leading-snug break-keep text-muted-foreground">
+                  <div className="w-16 shrink-0 truncate pt-0.5 text-xs leading-snug text-muted-foreground">
                     {entry.major}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="leading-snug font-medium break-keep">
+                    <p className="text-sm leading-snug font-medium break-keep">
                       {entry.minor}
                     </p>
                     {entry.note ? (
@@ -105,7 +105,7 @@ export function LedgerDayList({ buckets }: { buckets: DayBucket<DayLedgerEntry>[
                   <div className="flex shrink-0 flex-col items-end gap-0.5">
                     <span
                       className={cn(
-                        "font-semibold tabular-nums",
+                        "text-sm font-semibold tabular-nums",
                         EXPENSE_TEXT_CLASS
                       )}
                     >

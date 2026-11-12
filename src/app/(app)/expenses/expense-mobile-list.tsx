@@ -112,12 +112,12 @@ export function ExpenseMobileList({
                   onClick={() => openSheet(expense)}
                 />
 
-                <div className="pointer-events-none w-16 shrink-0 pt-0.5 text-xs leading-snug break-keep text-muted-foreground">
+                <div className="pointer-events-none w-16 shrink-0 truncate pt-0.5 text-xs leading-snug text-muted-foreground">
                   {expense.category_major}
                 </div>
 
                 <div className="pointer-events-none min-w-0 flex-1">
-                  <p className="leading-snug font-medium break-keep">
+                  <p className="text-sm leading-snug font-medium break-keep">
                     {expense.category_minor}
                   </p>
                   {note ? (
@@ -128,7 +128,7 @@ export function ExpenseMobileList({
                 </div>
 
                 <div className="pointer-events-none flex shrink-0 flex-col items-end gap-0.5">
-                  <span className="font-semibold tabular-nums">
+                  <span className="text-sm font-semibold tabular-nums">
                     {formatKRW(expense.amount)}
                   </span>
                   {payment ? (
