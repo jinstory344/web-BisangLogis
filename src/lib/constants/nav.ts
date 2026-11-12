@@ -20,12 +20,12 @@ export interface NavItem {
 }
 
 /**
- * 모바일 하단 탭: [장부] [배차] [통계] [더보기] (가계부 앱 방식).
+ * 모바일 하단 탭: [오늘 날짜(Flow)] [배차] [통계] [더보기] (가계부 앱 방식).
  * 등록은 하단 탭 대신 화면 오른쪽 아래 떠 있는 ＋ 버튼(FloatingActions)으로 한다.
  * (데스크톱 사이드바는 아래 sidebarNavGroups를 따로 쓴다.)
  */
 export const primaryNavItems: NavItem[] = [
-  { label: "장부", href: "/", icon: BookOpen },
+  { label: "Flow", href: "/", icon: BookOpen },
   { label: "배차", href: "/dispatches", icon: Truck },
   { label: "통계", href: "/stats", icon: BarChart3 },
 ]
@@ -52,7 +52,7 @@ export const quickCreateNavItems: NavItem[] = [
 /** 데스크톱 사이드바 전용 — 구분선으로 나뉘는 메뉴 그룹 */
 export const sidebarNavGroups: NavItem[][] = [
   [
-    { label: "장부", href: "/", icon: BookOpen },
+    { label: "Flow", href: "/", icon: BookOpen },
     { label: "통계", href: "/stats", icon: BarChart3 },
   ],
   [

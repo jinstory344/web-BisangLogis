@@ -13,7 +13,7 @@ export function LedgerViewTabs({
 }) {
   return (
     <nav
-      aria-label="장부 보기"
+      aria-label="Flow 보기"
       className="grid grid-cols-4 gap-1 rounded-lg bg-muted p-[3px]"
     >
       {LEDGER_VIEWS.map((item) => {

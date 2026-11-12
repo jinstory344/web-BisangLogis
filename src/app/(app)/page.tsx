@@ -101,14 +101,14 @@ export default async function LedgerPage({
   return (
     <div className="p-4 md:p-6">
       <div className="mx-auto flex max-w-2xl flex-col gap-3">
-        <h1 className="text-2xl font-semibold">장부</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">Flow</h1>
 
         <LedgerViewTabs view={view} anchor={anchor} />
         <LedgerNav view={view} anchor={anchor} />
 
         {errorMessage ? (
           <p className="text-sm text-destructive">
-            장부를 불러오지 못했습니다: {errorMessage}
+            Flow를 불러오지 못했습니다: {errorMessage}
           </p>
         ) : (
           <>

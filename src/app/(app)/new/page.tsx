@@ -33,7 +33,7 @@ export default async function NewEntryPage({
             className="-ml-2 flex h-11 w-fit items-center gap-0.5 pr-2 text-sm text-muted-foreground"
           >
             <ChevronLeft className="size-5" />
-            장부
+            Flow
           </Link>
           <h1 className="text-lg font-semibold">{label} 등록</h1>
           <Link
