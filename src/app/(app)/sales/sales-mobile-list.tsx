@@ -310,10 +310,10 @@ function SaleActionSheetBody({
 
         <div className="grid grid-cols-3 gap-2">
           <Button variant="outline" className="h-11" asChild>
-            <Link href={`/sales/${sale.id}`}>상세</Link>
+            <Link href={`/sales/${sale.id}`} prefetch>상세</Link>
           </Button>
           <Button variant="outline" className="h-11" asChild>
-            <Link href={`/sales/${sale.id}/edit`}>수정</Link>
+            <Link href={`/sales/${sale.id}/edit`} prefetch>수정</Link>
           </Button>
           <Button variant="outline" className="h-11" asChild>
             <Link href={`/sales/new?copy=${sale.id}`}>복사 등록</Link>

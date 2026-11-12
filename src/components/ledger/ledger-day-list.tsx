@@ -50,6 +50,8 @@ export function LedgerDayList({ buckets }: { buckets: DayBucket<DayLedgerEntry>[
 
           {bucket.entries.map((entry) => (
             <Link
+              // 화면에 보이는 건은 상세·수정 화면을 미리 받아 두어 누르면 바로 뜨게 한다.
+              prefetch
               key={`${entry.kind}-${entry.id}`}
               href={
                 entry.kind === "sale"

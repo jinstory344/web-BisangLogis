@@ -244,3 +244,52 @@
     transform: translateX(300%);
   }
 }
+
+/*
+ * 등록 화면 글자 균형 (모바일만). 가계부 앱처럼 라벨은 조금 작고 흐리게, 값은 또렷하게,
+ * 고르는 칩은 굵은 흰 덩어리 대신 빨간 테두리로 선택을 표시해 화면이 한쪽으로 무거워 보이지 않게 한다.
+ * 입력칸 글자는 16px 아래로 내리면 아이폰이 입력할 때 화면을 확대하므로 16px를 유지한다.
+ */
+@media (width < 48rem) {
+  [data-touch-form] [data-slot="form-item"] > [data-slot="form-label"] {
+    font-size: 0.9375rem; /* 15px */
+  }
+
+  [data-touch-form] [data-slot="form-item"] input,
+  [data-touch-form] [data-slot="form-item"] textarea,
+  [data-touch-form] [data-slot="form-item"] [data-slot="select-trigger"],
+  [data-touch-form] [data-slot="form-item"] button[role="combobox"] {
+    font-size: 1rem; /* 16px */
+    font-weight: 400;
+  }
+
+  /* 금액은 조금만 강조 (17px, 중간 굵기) */
+  [data-touch-form] [data-slot="form-item"] input[inputmode="numeric"] {
+    font-size: 1.0625rem;
+    font-weight: 500;
+  }
+
+  /* 고르는 칩(날짜·결제방법·하차일·출처 등): 보통 굵기, 선택은 빨간 테두리 */
+  [data-touch-form] [role="radio"],
+  [data-touch-form] button[aria-pressed] {
+    font-size: 0.875rem;
+    font-weight: 400;
+    padding-inline: 0.75rem;
+  }
+
+  [data-touch-form] [role="radio"][aria-checked="true"],
+  [data-touch-form] button[aria-pressed="true"] {
+    border-color: var(--color-red-400);
+    background: transparent;
+    color: var(--color-red-400);
+    font-weight: 500;
+  }
+
+  /* 폼 안 묶음 제목(거래처 정보·운임·출처 등)은 작은 소제목으로 */
+  [data-touch-form] h2 {
+    margin-top: 1rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+  }
+}

@@ -211,7 +211,7 @@ function ExpenseActionSheetBody({
 
         <div className="grid grid-cols-2 gap-2">
           <Button variant="outline" className="h-11" asChild>
-            <Link href={`/expenses/${expense.id}/edit`}>수정</Link>
+            <Link href={`/expenses/${expense.id}/edit`} prefetch>수정</Link>
           </Button>
           <Button variant="outline" className="h-11" asChild>
             <Link href={`/expenses/new?copy=${expense.id}`}>복사 등록</Link>
