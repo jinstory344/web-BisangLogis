@@ -210,7 +210,7 @@ export function DispatchForm({
           name="contact_phone"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>담당자 연락처</FormLabel>
+              <FormLabel>연락처</FormLabel>
               <FormControl>
                 <Input {...field} type="tel" placeholder="010-0000-0000" />
               </FormControl>
