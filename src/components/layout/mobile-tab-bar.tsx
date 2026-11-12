@@ -23,7 +23,7 @@ const TAB_CLASS_NAME =
   "flex flex-1 flex-col items-center justify-center gap-0.5 text-[11px]"
 
 /**
- * 모바일 하단 탭: [오늘 날짜(Flow)] [배차] [통계] [더보기] (가계부 앱 방식).
+ * 모바일 하단 탭: [오늘 날짜(비상)] [배차] [통계] [더보기] (가계부 앱 방식).
  * 매출·지출 목록과 나머지 메뉴는 "더보기" 시트에 있고, 등록은 오른쪽 아래 떠 있는 ＋ 버튼으로 한다.
  * 데스크톱(md 이상)은 사이드바를 쓴다.
  * 높이 h-16(64px)은 main의 pb-16, 폼 저장 바의 bottom-16과 맞춘 값이다.
@@ -35,7 +35,7 @@ export function MobileTabBar({ userEmail }: { userEmail: string | null }) {
     isNavItemActive(item, pathname)
   )
 
-  // 홈(Flow) 탭은 이름 대신 오늘 날짜(서울 기준, 예: "11.12.")를 보여 준다 (가계부 앱 방식).
+  // 홈(비상) 탭은 이름 대신 오늘 날짜(서울 기준, 예: "11.12.")를 보여 준다 (가계부 앱 방식).
   const today = getTodayInSeoul()
   const todayLabel = `${Number(today.slice(5, 7))}.${Number(today.slice(8, 10))}.`
 
