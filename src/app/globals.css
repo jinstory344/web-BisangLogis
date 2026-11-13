@@ -302,3 +302,38 @@
     letter-spacing: 0.02em;
   }
 }
+
+/*
+ * 로그인 화면 뒤의 흐린 '비상' 로고 위로 몇 초마다 빛이 스쳐 지나간다 (login/page.tsx).
+ * 빛은 로고 모양 안에서만 보이도록 로고 그림으로 가린다(mask).
+ */
+@keyframes login-shine {
+  0% {
+    background-position: 130% 0;
+  }
+  45%,
+  100% {
+    background-position: -30% 0;
+  }
+}
+
+.login-shine {
+  background-image: linear-gradient(
+    115deg,
+    transparent 40%,
+    rgb(147 197 253 / 0.32) 50%,
+    transparent 60%
+  );
+  background-size: 250% 100%;
+  background-repeat: no-repeat;
+  -webkit-mask: url("/brand/logo-white.png") center / contain no-repeat;
+  mask: url("/brand/logo-white.png") center / contain no-repeat;
+  animation: login-shine 6s ease-in-out 1s infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .login-shine {
+    animation: none;
+    background-image: none;
+  }
+}
