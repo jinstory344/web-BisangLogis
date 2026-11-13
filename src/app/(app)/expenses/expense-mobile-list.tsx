@@ -58,7 +58,6 @@ function noteLine(expense: ExpenseRow): string {
  */
 export function ExpenseMobileList({
   expenses,
-  count,
   total,
   isFiltered,
   onDelete,
@@ -85,9 +84,14 @@ export function ExpenseMobileList({
 
   return (
     <div className="flex flex-col gap-3">
-      <p className="flex min-h-9 items-center text-xs text-muted-foreground">
-        {count}건{isFiltered ? ` · 합계 ${formatKRW(total)}` : ""}
-      </p>
+      {/* 건수는 보여 주지 않는다. 분류를 골랐을 때만 그 분류의 합계를 한 줄로 */}
+      {isFiltered ? (
+        <p className="flex min-h-9 items-center text-xs text-muted-foreground tabular-nums">
+          합계 {formatKRW(total)}
+        </p>
+      ) : (
+        <div aria-hidden className="h-1" />
+      )}
 
       {groups.map((group) => (
         <section key={group.date} className="-mx-4 -mt-3 overflow-hidden border-b">

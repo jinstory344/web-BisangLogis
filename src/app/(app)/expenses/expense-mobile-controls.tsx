@@ -110,7 +110,7 @@ export function ExpenseMobileControls({
               aria-current={categoryMajor === chip.value ? "true" : undefined}
               className={cn(chipVariants({ selected: categoryMajor === chip.value }), LIST_CHIP_CLASS)}
             >
-              {chip.label} {chip.count}
+              {chip.label}
             </Link>
           ))}
         </div>
