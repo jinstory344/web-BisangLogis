@@ -1,5 +1,6 @@
 "use client"
 
+import { SaleSourceCell } from "@/components/ledger/sale-source-cell"
 import { useRouter } from "next/navigation"
 import { useState, useTransition, type ReactNode } from "react"
 import { toast } from "sonner"
@@ -45,7 +46,7 @@ function ResultRow({
 }: {
   onOpen: () => void
   date: string
-  side: string
+  side: ReactNode
   title: string
   sub: string
   amount: string
@@ -61,7 +62,7 @@ function ResultRow({
       >
         <div className="w-[4.75rem] shrink-0 text-xs leading-snug text-muted-foreground">
           <p className="tabular-nums">{formatSearchDate(date)}</p>
-          <p className="mt-0.5 truncate">{side}</p>
+          <div className="mt-0.5 truncate">{side}</div>
         </div>
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm leading-snug font-medium">{title}</p>
@@ -121,7 +122,7 @@ export function SearchLedgerList({
               key={`sale-${entry.id}`}
               onOpen={() => open(entry)}
               date={entry.date}
-              side={entry.source}
+              side={<SaleSourceCell sale={entry.row} />}
               title={entry.route}
               sub={`매출 · ${entry.sourceMajor}`}
               amount={formatKRW(entry.amount)}

@@ -1,5 +1,6 @@
 "use client"
 
+import { SaleSourceCell } from "@/components/ledger/sale-source-cell"
 import { Check, Phone } from "lucide-react"
 import Link from "next/link"
 import { useMemo, useState } from "react"
@@ -37,11 +38,6 @@ interface SalesMobileListProps {
   /** 실수로 입금 처리했을 때 되돌린다 (작업 시트의 작은 "입금 취소") */
   onCancelPaid: (sale: SaleRow) => void
   onDelete: (sale: SaleRow) => void
-}
-
-/** 출처 한 줄: 소분류(이름·업체)가 있으면 그것, 없으면 대분류 */
-function sourceName(sale: SaleRow): string {
-  return sale.source_minor || sale.source_major || "-"
 }
 
 function PaidLabel({ sale }: { sale: SaleRow }) {
@@ -167,7 +163,7 @@ export function SalesMobileList({
                 ) : null}
 
                 <div className="pointer-events-none w-16 shrink-0 truncate pt-0.5 text-xs leading-snug text-muted-foreground">
-                  {sourceName(sale)}
+                  <SaleSourceCell sale={sale} />
                 </div>
 
                 <div className="pointer-events-none min-w-0 flex-1">

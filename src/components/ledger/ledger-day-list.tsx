@@ -12,6 +12,7 @@ import type { DayLedgerEntry } from "@/app/(app)/ledger-data"
 
 import { EXPENSE_TEXT_CLASS, INCOME_TEXT_CLASS } from "./colors"
 import { LedgerEntryActions } from "./ledger-entry-actions"
+import { SaleSourceCell } from "./sale-source-cell"
 
 /**
  * 일일 장부: 날짜별로 그날의 매출(파랑)과 지출(빨강)을 한 목록에 보여 준다.
@@ -76,7 +77,7 @@ export function LedgerDayList({
               {entry.kind === "sale" ? (
                 <>
                   <div className="w-16 shrink-0 truncate pt-0.5 text-xs leading-snug text-muted-foreground">
-                    {entry.source}
+                    <SaleSourceCell sale={entry.row} />
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="text-sm leading-snug font-medium break-keep wrap-anywhere">
