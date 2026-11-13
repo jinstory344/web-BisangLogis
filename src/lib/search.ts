@@ -55,3 +55,9 @@ export function sumDispatchTotals(
     { freight: 0, fee: 0 }
   )
 }
+
+/** 검색 결과 한 줄의 날짜: "2026-10-02" → "2026. 10. 2." (가계부 앱처럼 연도까지) */
+export function formatSearchDate(date: string): string {
+  const [year, month, day] = date.split("-")
+  return `${year}. ${Number(month)}. ${Number(day)}.`
+}

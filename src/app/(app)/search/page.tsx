@@ -3,9 +3,8 @@ import Link from "next/link"
 import type { ReactNode } from "react"
 
 import { EXPENSE_TEXT_CLASS, INCOME_TEXT_CLASS } from "@/components/ledger/colors"
-import { LedgerDayList } from "@/components/ledger/ledger-day-list"
 import { Input } from "@/components/ui/input"
-import { buildDayBuckets, sumTotals } from "@/lib/ledger"
+import { sumTotals } from "@/lib/ledger"
 import { formatKRW } from "@/lib/money"
 import {
   normalizeSearchQuery,
@@ -20,7 +19,7 @@ import { cn } from "@/lib/utils"
 import { SEARCH_RESULT_LIMIT, searchLedgerEntries } from "../ledger-data"
 
 import { searchClientIds, searchDispatches } from "./search-data"
-import { SearchDispatchList } from "./search-dispatch-list"
+import { SearchDispatchList, SearchLedgerList } from "./search-result-list"
 
 /**
  * 검색: 기간과 상관없이 매출·지출·배차를 글자로 찾는다 (비상 화면 왼쪽 위 돋보기).
@@ -155,10 +154,7 @@ export default async function SearchPage({
 
       list =
         tab === "ledger" ? (
-          <LedgerDayList
-            buckets={buildDayBuckets(ledger.entries)}
-            emptyMessage={emptyMessage}
-          />
+          <SearchLedgerList entries={ledger.entries} emptyMessage={emptyMessage} />
         ) : (
           <SearchDispatchList
             dispatches={dispatch.dispatches}

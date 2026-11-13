@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest"
 import {
   appendClientIdFilter,
   buildIlikeOrFilter,
+  formatSearchDate,
   normalizeSearchQuery,
   pickSearchTab,
   SEARCH_MAX_LENGTH,
@@ -80,5 +81,12 @@ describe("sumDispatchTotals", () => {
 
   it("없으면 0", () => {
     expect(sumDispatchTotals([])).toEqual({ freight: 0, fee: 0 })
+  })
+})
+
+describe("formatSearchDate", () => {
+  it("연도까지, 월·일 앞의 0은 뺀다", () => {
+    expect(formatSearchDate("2026-10-02")).toBe("2026. 10. 2.")
+    expect(formatSearchDate("2025-01-15")).toBe("2025. 1. 15.")
   })
 })
