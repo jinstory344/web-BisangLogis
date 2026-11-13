@@ -21,3 +21,24 @@ export function normalizeSearchQuery(raw: string | string[] | undefined): string
 export function buildIlikeOrFilter(columns: readonly string[], query: string): string {
   return columns.map((column) => `${column}.ilike.%${query}%`).join(",")
 }
+
+/** 거래처 이름으로 찾은 id가 있으면 그 거래처에 연결된 건도 맞게 or 필터 끝에 붙인다. */
+export function appendClientIdFilter(filter: string, clientIds: readonly string[]): string {
+  return clientIds.length > 0 ? `${filter},client_id.in.(${clientIds.join(",")})` : filter
+}
+
+export type SearchTab = "ledger" | "dispatch"
+
+/**
+ * 검색 결과 탭: 주소에 고른 탭이 있으면 그것, 없으면 매출·지출에 결과가 있으면 매출·지출,
+ * 매출·지출은 없고 배차만 있으면 배차를 먼저 보여 준다.
+ */
+export function pickSearchTab(
+  raw: string | string[] | undefined,
+  ledgerCount: number,
+  dispatchCount: number
+): SearchTab {
+  const value = Array.isArray(raw) ? raw[0] : raw
+  if (value === "ledger" || value === "dispatch") return value
+  return ledgerCount === 0 && dispatchCount > 0 ? "dispatch" : "ledger"
+}

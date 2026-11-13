@@ -1,6 +1,6 @@
 import { EXPENSE_PAYMENT_METHOD_LABELS } from "@/lib/constants/payment-method"
 import type { AmountRow, LedgerEntry } from "@/lib/ledger"
-import { buildIlikeOrFilter } from "@/lib/search"
+import { appendClientIdFilter, buildIlikeOrFilter } from "@/lib/search"
 import type { ExpenseRow, SaleRow } from "@/lib/supabase/database.types"
 import { createClient } from "@/lib/supabase/server"
 
@@ -199,11 +199,13 @@ export const SEARCH_RESULT_LIMIT = 100
 /**
  * 기간과 상관없이 매출·지출을 글자로 찾는다 (최근 날짜부터, 종류마다 최대 SEARCH_RESULT_LIMIT건).
  * 매출: 상차지·하차지·출처·계산서정보·비고 / 지출: 대분류·소분류·사용처·비고.
+ * clientIds가 있으면 그 거래처에 연결된 매출도 함께 찾는다(거래처 이름 검색).
  * query는 normalizeSearchQuery로 다듬은 값이어야 한다.
  */
 export async function searchLedgerEntries(
   supabase: Supabase,
-  query: string
+  query: string,
+  clientIds: readonly string[] = []
 ): Promise<{ entries: DayLedgerEntry[]; isTruncated: boolean }> {
   const [sales, expenses] = await Promise.all([
     supabase
@@ -211,16 +213,19 @@ export async function searchLedgerEntries(
       .select(SALE_ENTRY_COLUMNS)
       .is("deleted_at", null)
       .or(
-        buildIlikeOrFilter(
-          [
-            "origin",
-            "destination",
-            "source_major",
-            "source_minor",
-            "billing_entity_name",
-            "memo",
-          ],
-          query
+        appendClientIdFilter(
+          buildIlikeOrFilter(
+            [
+              "origin",
+              "destination",
+              "source_major",
+              "source_minor",
+              "billing_entity_name",
+              "memo",
+            ],
+            query
+          ),
+          clientIds
         )
       )
       .order("sale_date", { ascending: false })

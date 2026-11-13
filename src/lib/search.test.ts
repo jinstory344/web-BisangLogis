@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest"
 
-import { buildIlikeOrFilter, normalizeSearchQuery, SEARCH_MAX_LENGTH } from "./search"
+import {
+  appendClientIdFilter,
+  buildIlikeOrFilter,
+  normalizeSearchQuery,
+  pickSearchTab,
+  SEARCH_MAX_LENGTH,
+} from "./search"
 
 describe("normalizeSearchQuery", () => {
   it("비어 있거나 없으면 빈 글자", () => {
@@ -32,5 +38,30 @@ describe("buildIlikeOrFilter", () => {
     expect(buildIlikeOrFilter(["origin", "memo"], "평택")).toBe(
       "origin.ilike.%평택%,memo.ilike.%평택%"
     )
+  })
+})
+
+describe("appendClientIdFilter", () => {
+  it("거래처 id가 없으면 그대로", () => {
+    expect(appendClientIdFilter("memo.ilike.%a%", [])).toBe("memo.ilike.%a%")
+  })
+
+  it("거래처 id가 있으면 client_id.in을 붙인다", () => {
+    expect(appendClientIdFilter("memo.ilike.%a%", ["id1", "id2"])).toBe(
+      "memo.ilike.%a%,client_id.in.(id1,id2)"
+    )
+  })
+})
+
+describe("pickSearchTab", () => {
+  it("주소에 고른 탭이 있으면 그것", () => {
+    expect(pickSearchTab("dispatch", 5, 0)).toBe("dispatch")
+    expect(pickSearchTab("ledger", 0, 5)).toBe("ledger")
+  })
+
+  it("모르는 값이면 결과에 따라 고른다", () => {
+    expect(pickSearchTab("x", 0, 3)).toBe("dispatch")
+    expect(pickSearchTab(undefined, 2, 3)).toBe("ledger")
+    expect(pickSearchTab(undefined, 0, 0)).toBe("ledger")
   })
 })
