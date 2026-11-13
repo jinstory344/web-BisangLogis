@@ -1,8 +1,8 @@
 import { createServerClient } from "@supabase/ssr"
 import { NextResponse, type NextRequest } from "next/server"
 
-// /api/backup은 로그인 쿠키 대신 자체 비밀 토큰으로 지킨다(구글 시트가 부른다).
-const PUBLIC_PATHS = ["/login", "/api/backup"]
+// /api/backup·/api/telegram은 로그인 쿠키 대신 자체 비밀 토큰으로 지킨다(구글 시트·텔레그램이 부른다).
+const PUBLIC_PATHS = ["/login", "/api/backup", "/api/telegram"]
 
 function isPublicPath(pathname: string) {
   return PUBLIC_PATHS.some(
