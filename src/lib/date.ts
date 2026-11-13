@@ -128,3 +128,13 @@ export function getWeekdayLabel(dateStr: string): string {
   const [year, month, day] = dateStr.split("-").map(Number)
   return WEEKDAY_LABELS[new Date(Date.UTC(year, month - 1, day)).getUTCDay()]
 }
+
+/**
+ * "전체 기간": HOME의 미입금 줄처럼 기간과 상관없이 모두 볼 때 쓰는 아주 넓은 기간.
+ * 화면에서는 날짜 대신 "전체 기간"으로 보여 주고, 달 넘기기는 하지 않는다.
+ */
+export const ALL_PERIOD: DateRange = { from: "1970-01-01", to: "2099-12-31" }
+
+export function isAllPeriod(range: DateRange): boolean {
+  return range.from === ALL_PERIOD.from && range.to === ALL_PERIOD.to
+}

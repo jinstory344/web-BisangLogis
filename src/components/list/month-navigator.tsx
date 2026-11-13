@@ -8,6 +8,7 @@ import {
   formatYearMonth,
   getCurrentMonthRangeInSeoul,
   getMonthRange,
+  isAllPeriod,
   isFullMonthRange,
   shiftMonthRange,
   type DateRange,
@@ -31,12 +32,24 @@ export function MonthNavigator({ from, to, hrefForRange }: MonthNavigatorProps) 
   const isMonth = isFullMonthRange({ from, to })
   const currentMonth = getCurrentMonthRangeInSeoul()
   const isCurrentMonth = from === currentMonth.from && to === currentMonth.to
-  const label = isMonth
-    ? formatYearMonth(from)
-    : `${formatMonthDay(from)} ~ ${formatMonthDay(to)}`
+  const allPeriod = isAllPeriod({ from, to })
+  // 한 해 전체(HOME 월별 보기의 미입금 줄에서 들어옴)는 "2026년"으로
+  const isFullYear =
+    from.slice(5) === "01-01" && to === `${from.slice(0, 4)}-12-31`
+  const label = allPeriod
+    ? "전체 기간"
+    : isFullYear
+      ? `${from.slice(0, 4)}년`
+      : isMonth
+      ? formatYearMonth(from)
+      : `${formatMonthDay(from)} ~ ${formatMonthDay(to)}`
+
+  // 전체 기간은 넘길 이전·다음 달이 없으므로 화살표 대신 같은 너비의 빈칸
+  const arrowSpacer = <span aria-hidden className="size-10" />
 
   return (
     <div className="flex items-center justify-between">
+      {allPeriod ? arrowSpacer : (
       <Link
         href={hrefForRange(shiftMonthRange(from, -1))}
         // 이웃 달을 미리 받아 두어 화살표·스와이프로 넘길 때 바로 뜨게 한다.
@@ -46,6 +59,7 @@ export function MonthNavigator({ from, to, hrefForRange }: MonthNavigatorProps) 
       >
         <ChevronLeft className="size-5" />
       </Link>
+      )}
       <div className="flex items-baseline gap-2">
         {isMonth ? (
           <PeriodPicker
@@ -66,6 +80,7 @@ export function MonthNavigator({ from, to, hrefForRange }: MonthNavigatorProps) 
           </Link>
         )}
       </div>
+      {allPeriod ? arrowSpacer : (
       <Link
         href={hrefForRange(shiftMonthRange(from, 1))}
         prefetch
@@ -74,6 +89,7 @@ export function MonthNavigator({ from, to, hrefForRange }: MonthNavigatorProps) 
       >
         <ChevronRight className="size-5" />
       </Link>
+      )}
     </div>
   )
 }

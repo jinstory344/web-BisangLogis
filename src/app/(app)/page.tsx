@@ -65,7 +65,8 @@ const loadLedger = cache(
       const supabase = await createClient()
       const range = getLedgerRange(view, anchor)
       const [unpaid, body] = await Promise.all([
-        fetchUnpaidSummary(supabase),
+        // HOME에서 보고 있는 기간(일일·달력·주별은 그 달)의 미입금
+        fetchUnpaidSummary(supabase, range.from, range.to),
         (async () => {
           if (view === "day" || view === "calendar") {
             const entries = await fetchLedgerEntries(supabase, range.from, range.to)
@@ -127,7 +128,10 @@ async function SummarySlot(props: SlotProps) {
   return (
     <>
       <LedgerSummary totals={result.totals} />
-      <UnpaidLine unpaid={result.unpaid} />
+      <UnpaidLine
+        unpaid={result.unpaid}
+        range={getLedgerRange(props.view, props.anchor)}
+      />
     </>
   )
 }

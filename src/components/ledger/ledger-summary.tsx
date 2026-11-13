@@ -32,14 +32,20 @@ export function LedgerSummary({ totals }: { totals: LedgerTotals }) {
 }
 
 /**
- * 미입금 한 줄: 기간과 상관없이 아직 입금되지 않은 매출 전체.
- * 누르면 매출 목록의 미입금 보기로 간다. 미입금이 없으면 보이지 않는다.
+ * 미입금 한 줄: HOME에서 보고 있는 기간(일일·달력·주별은 그 달, 월별은 그 해, 연별은 전체)의 미입금 매출.
+ * 누르면 같은 기간의 매출 목록을 미입금만 걸러서 연다. 미입금이 없으면 보이지 않는다.
  */
-export function UnpaidLine({ unpaid }: { unpaid: { count: number; supplyAmount: number } }) {
+export function UnpaidLine({
+  unpaid,
+  range,
+}: {
+  unpaid: { count: number; supplyAmount: number }
+  range: { from: string; to: string }
+}) {
   if (unpaid.count === 0) return null
   return (
     <Link
-      href="/sales?from=1970-01-01&to=2099-12-31&payment_status=UNPAID"
+      href={`/sales?from=${range.from}&to=${range.to}&payment_status=UNPAID`}
       className="-mx-4 flex items-center justify-between gap-3 border-b px-4 py-2 text-[13px] transition-colors hover:bg-muted/40 active:bg-muted/60 md:mx-0 md:px-0"
     >
       <span className="text-muted-foreground">미입금 {unpaid.count}건</span>

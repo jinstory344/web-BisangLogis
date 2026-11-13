@@ -242,7 +242,9 @@ export async function searchLedgerEntries(
 
 /** 아직 입금되지 않은 매출 전체(기간과 상관없이)의 건수와 공급가액 합계 — 미수금 */
 export async function fetchUnpaidSummary(
-  supabase: Supabase
+  supabase: Supabase,
+  from: string,
+  to: string
 ): Promise<{ count: number; supplyAmount: number }> {
   const rows = await fetchAllRows((a, b) =>
     supabase
@@ -250,6 +252,8 @@ export async function fetchUnpaidSummary(
       .select("supply_amount")
       .is("deleted_at", null)
       .eq("payment_status", "UNPAID")
+      .gte("sale_date", from)
+      .lte("sale_date", to)
       .order("id")
       .range(a, b)
   )

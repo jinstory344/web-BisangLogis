@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/select"
 import { PAYMENT_METHOD_OPTIONS } from "@/lib/constants/payment-method"
 import { SOURCE_MAJOR_OPTIONS } from "@/lib/constants/source"
-import { isFullMonthRange } from "@/lib/date"
+import { isAllPeriod, isFullMonthRange } from "@/lib/date"
 import { formatKRW } from "@/lib/money"
 import type { StatusSummary } from "@/lib/sales-list"
 import { cn } from "@/lib/utils"
@@ -57,7 +57,8 @@ export function SalesMobileControls({
   const pathname = usePathname()
   const searchParams = useSearchParams()
 
-  const isMonth = isFullMonthRange({ from, to })
+  // 전체 기간(HOME 미입금 줄에서 들어옴)은 직접 지정한 기간 필터로 세지 않는다
+  const isMonth = isFullMonthRange({ from, to }) || isAllPeriod({ from, to })
   // 기간 직접 지정, 출처, 지불방법 중 하나라도 걸려 있으면 필터 버튼에 표시한다.
   const activeFilterCount =
     (isMonth ? 0 : 1) + (sourceMajor ? 1 : 0) + (paymentMethod ? 1 : 0)
@@ -181,8 +182,8 @@ export function SalesMobileControls({
           {/* 달을 넘기면 입력값도 새 기간으로 바뀌도록 기간이 바뀔 때 새로 만든다. */}
           <DateRangeInputs
             key={`${from}_${to}`}
-            from={from}
-            to={to}
+            from={isAllPeriod({ from, to }) ? "" : from}
+            to={isAllPeriod({ from, to }) ? "" : to}
             onApply={(range) => pushParams(range)}
           />
         </div>

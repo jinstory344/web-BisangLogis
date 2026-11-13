@@ -5,7 +5,7 @@ import { ListPageHead } from "@/components/list/list-page-head"
 import { SummaryMonthNav } from "@/components/list/summary-month-nav"
 import { Button } from "@/components/ui/button"
 import { MonthSwipe } from "@/components/list/month-swipe"
-import { getCurrentMonthRangeInSeoul } from "@/lib/date"
+import { getCurrentMonthRangeInSeoul, isAllPeriod } from "@/lib/date"
 import { createClient } from "@/lib/supabase/server"
 import type { ExpenseRow } from "@/lib/supabase/database.types"
 
@@ -106,7 +106,7 @@ export default async function ExpensesPage({
             </Button>
           }
           monthNav={<SummaryMonthNav from={from} to={to} />}
-          statsHref={`/stats?type=expenses&from=${from}`}
+          statsHref={`/stats?type=expenses&from=${isAllPeriod({ from, to }) ? defaultRange.from : from}`}
         />
 
           <MonthSwipe className="flex flex-col gap-3 md:gap-4">

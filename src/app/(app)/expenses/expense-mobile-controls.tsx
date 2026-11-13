@@ -21,7 +21,7 @@ import {
   getMinorsOf,
   type ExpenseCategoryTree,
 } from "@/lib/constants/expense-categories"
-import { isFullMonthRange } from "@/lib/date"
+import { isAllPeriod, isFullMonthRange } from "@/lib/date"
 import type { ExpenseSummary } from "@/lib/expense-list"
 import { formatKRW } from "@/lib/money"
 import { cn } from "@/lib/utils"
@@ -54,7 +54,8 @@ export function ExpenseMobileControls({
   const pathname = usePathname()
   const searchParams = useSearchParams()
 
-  const isMonth = isFullMonthRange({ from, to })
+  // 전체 기간(HOME 미입금 줄에서 들어옴)은 직접 지정한 기간 필터로 세지 않는다
+  const isMonth = isFullMonthRange({ from, to }) || isAllPeriod({ from, to })
   // 기간 직접 지정이나 소분류가 걸려 있으면 필터 버튼에 표시한다.
   const activeFilterCount = (isMonth ? 0 : 1) + (categoryMinor ? 1 : 0)
   const [isFilterOpen, setIsFilterOpen] = useState(activeFilterCount > 0)
@@ -162,8 +163,8 @@ export function ExpenseMobileControls({
           {/* 달을 넘기면 입력값도 새 기간으로 바뀌도록 기간이 바뀔 때 새로 만든다. */}
           <DateRangeInputs
             key={`${from}_${to}`}
-            from={from}
-            to={to}
+            from={isAllPeriod({ from, to }) ? "" : from}
+            to={isAllPeriod({ from, to }) ? "" : to}
             onApply={(range) => pushParams(range)}
           />
         </div>
