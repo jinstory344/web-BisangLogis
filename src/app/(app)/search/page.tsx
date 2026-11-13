@@ -90,14 +90,14 @@ export default async function SearchPage({
                   replace
                   aria-current={isActive ? "page" : undefined}
                   className={cn(
-                    "relative flex min-h-11 items-center justify-center gap-1 px-3 text-[15px] whitespace-nowrap",
+                    "relative flex min-h-9 items-center justify-center gap-1 px-3 text-sm whitespace-nowrap",
                     isActive
                       ? "font-semibold text-foreground"
                       : "text-muted-foreground hover:text-foreground"
                   )}
                 >
                   {item.label}
-                  <span className="text-xs tabular-nums text-muted-foreground">
+                  <span className="text-[11px] tabular-nums text-muted-foreground">
                     {item.count}
                   </span>
                   {isActive ? (
@@ -144,7 +144,7 @@ export default async function SearchPage({
           )}
 
           {isTruncated ? (
-            <p className="py-1.5 text-center text-xs text-muted-foreground">
+            <p className="py-1 text-center text-[11px] text-muted-foreground">
               최근 {SEARCH_RESULT_LIMIT}건까지만 보여요(합계도 이 건들 기준). 검색어를
               더 자세히 넣어 보세요.
             </p>
@@ -189,7 +189,7 @@ export default async function SearchPage({
             <span aria-hidden />
           </header>
 
-          <form action="/search" role="search" className="relative mt-2 mb-1">
+          <form action="/search" role="search" className="relative mt-1 mb-1">
             <Search
               aria-hidden
               className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
@@ -204,7 +204,7 @@ export default async function SearchPage({
               enterKeyHint="search"
               placeholder="예: 평택, 주유, 거래처, 차량번호"
               aria-label="검색어"
-              className="h-11 pl-9 text-base"
+              className="h-10 pl-9 text-base"
             />
           </form>
 
@@ -224,13 +224,13 @@ function SearchTotals({
   items: { label: string; value: string; className?: string }[]
 }) {
   return (
-    <dl className="-mx-4 grid grid-cols-3 border-b px-2 py-2.5 md:mx-0 md:px-0">
+    <dl className="-mx-4 grid grid-cols-3 border-b px-2 py-1.5 md:mx-0 md:px-0">
       {items.map((item) => (
-        <div key={item.label} className="flex min-w-0 flex-col items-center gap-0.5">
-          <dt className="text-xs text-muted-foreground">{item.label}</dt>
+        <div key={item.label} className="flex min-w-0 flex-col items-center">
+          <dt className="text-[11px] leading-4 text-muted-foreground">{item.label}</dt>
           <dd
             className={cn(
-              "max-w-full truncate text-[15px] font-semibold tabular-nums",
+              "max-w-full truncate text-sm leading-5 font-medium tabular-nums",
               item.className
             )}
           >
