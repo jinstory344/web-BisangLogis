@@ -126,7 +126,7 @@ export default async function SearchPage({
                   className: EXPENSE_TEXT_CLASS,
                 },
                 {
-                  label: "합계",
+                  label: "수익",
                   value: formatKRW(ledgerTotals.net),
                   className:
                     ledgerTotals.net < 0 ? EXPENSE_TEXT_CLASS : INCOME_TEXT_CLASS,

@@ -24,7 +24,7 @@ export function LedgerSummary({ totals }: { totals: LedgerTotals }) {
           value: formatKRW(totals.expense),
           className: EXPENSE_TEXT_CLASS,
         },
-        { label: "합계", value: formatKRW(totals.net), className: netTextClass(totals.net) },
+        { label: "수익", value: formatKRW(totals.net), className: netTextClass(totals.net) },
       ]}
     />
   )
