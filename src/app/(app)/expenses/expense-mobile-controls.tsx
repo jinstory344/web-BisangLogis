@@ -92,7 +92,6 @@ export function ExpenseMobileControls({
       <div className={LIST_SUB_STICKY_CLASS}>
         <TotalsRow
           items={[
-            { label: "건수", value: `${summary.count}건` },
             {
               label: "지출 합계",
               value: formatKRW(summary.total),
