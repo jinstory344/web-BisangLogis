@@ -17,10 +17,13 @@ export function TotalsRow({
   size = "md",
 }: {
   items: TotalsRowItem[]
-  /** lg: HOME·검색의 매출·지출·수익 요약처럼 크게 (이름 13px, 금액 16px) */
-  size?: "md" | "lg"
+  /**
+   * lg: HOME·검색의 매출·지출·수익 요약처럼 크게 (이름 13px, 금액 16px)
+   * xl: 한 단계 더 (이름 14px, 금액 18px) — 매출 목록
+   */
+  size?: "md" | "lg" | "xl"
 }) {
-  const large = size === "lg"
+  const large = size !== "md"
   return (
     <dl
       className={cn(
@@ -34,14 +37,22 @@ export function TotalsRow({
           <dt
             className={cn(
               "text-muted-foreground",
-              large ? "text-[13px] leading-5" : "text-[11px] leading-4",
+              size === "xl"
+                ? "text-sm leading-5"
+                : large
+                  ? "text-[13px] leading-5"
+                  : "text-[11px] leading-4",
               item.labelClassName
             )}
           >{item.label}</dt>
           <dd
             className={cn(
               "max-w-full truncate font-medium tabular-nums",
-              large ? "text-base leading-6" : "text-sm leading-5",
+              size === "xl"
+                ? "text-lg leading-7"
+                : large
+                  ? "text-base leading-6"
+                  : "text-sm leading-5",
               item.className
             )}
           >

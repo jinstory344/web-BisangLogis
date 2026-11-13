@@ -98,7 +98,7 @@ export function SalesMobileControls({
               className: unpaid > 0 ? "text-destructive" : undefined,
             },
           ]}
-          size="lg"
+          size="xl"
         />
       </div>
 
