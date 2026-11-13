@@ -2,6 +2,7 @@ import Link from "next/link"
 import { Plus } from "lucide-react"
 
 import { ListPageHead } from "@/components/list/list-page-head"
+import { SummaryMonthNav } from "@/components/list/summary-month-nav"
 import { Button } from "@/components/ui/button"
 import { MonthSwipe } from "@/components/list/month-swipe"
 import { Tabs, TabsContent } from "@/components/ui/tabs"
@@ -105,6 +106,7 @@ export default async function DispatchesPage({
               </Link>
             </Button>
           }
+          monthNav={<SummaryMonthNav from={from} to={to} />}
           tabs={[
             { value: "list", label: "목록" },
             { value: "summary", label: "월간 집계" },
@@ -152,7 +154,7 @@ export default async function DispatchesPage({
 
         <TabsContent value="summary" className="pt-3 md:pt-0">
           <MonthSwipe>
-          <DispatchSummary from={from} />
+          <DispatchSummary from={from} monthNav="desktop" />
           </MonthSwipe>
         </TabsContent>
       </Tabs>

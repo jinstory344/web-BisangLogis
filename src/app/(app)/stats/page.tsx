@@ -3,8 +3,9 @@ import Link from "next/link"
 import { SearchButton } from "@/components/layout/search-button"
 
 import { MonthSwipe } from "@/components/list/month-swipe"
+import { SummaryMonthNav } from "@/components/list/summary-month-nav"
 
-import { getCurrentMonthRangeInSeoul } from "@/lib/date"
+import { getCurrentMonthRangeInSeoul, getMonthRange } from "@/lib/date"
 import { parseAnchorDate } from "@/lib/ledger"
 import { cn } from "@/lib/utils"
 
@@ -38,6 +39,7 @@ export default async function StatsPage({
   const params = await searchParams
   const type = parseStatType(params.type)
   const from = parseAnchorDate(params.from, getCurrentMonthRangeInSeoul().from)
+  const month = getMonthRange(from)
 
   return (
     <div className="px-4 pb-4 md:p-6">
@@ -49,6 +51,9 @@ export default async function StatsPage({
             <h1 className="text-center text-lg font-semibold tracking-tight">통계</h1>
             <span aria-hidden />
           </header>
+
+          {/* HOME과 같은 순서: 제목 → ‹ 달 › → 종류 탭 */}
+          <SummaryMonthNav from={month.from} to={month.to} />
 
           <nav
             aria-label="통계 종류"
@@ -85,14 +90,15 @@ export default async function StatsPage({
 
         <MonthSwipe>
         {type === "sales" ? (
-          <SalesSummary from={from} />
+          <SalesSummary from={from} monthNav="hidden" />
         ) : type === "expenses" ? (
           <ExpenseSummary
             from={from}
             categories={(await getExpenseCategories()).tree}
+            monthNav="hidden"
           />
         ) : (
-          <DispatchSummary from={from} />
+          <DispatchSummary from={from} monthNav="hidden" />
         )}
         </MonthSwipe>
       </div>

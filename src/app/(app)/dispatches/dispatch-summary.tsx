@@ -14,7 +14,14 @@ import { createClient } from "@/lib/supabase/server"
  * 건수 · 운임 · 수수료 합계, 전월 대비, 거래처별, 차량별(기사 이름 + 차량번호)로 보여 준다.
  * 운임·수수료는 기사에게 지급하는 비용과 중개 수수료 기록이라 매출과 합치지 않는다.
  */
-export async function DispatchSummary({ from }: { from: string }) {
+export async function DispatchSummary({
+  from,
+  monthNav = "all",
+}: {
+  from: string
+  /** 위쪽 달 이동: 모두 보임(기본) · desktop(모바일은 화면 머리에 따로 있음) · hidden(화면이 따로 그림) */
+  monthNav?: "all" | "desktop" | "hidden"
+}) {
   const supabase = await createClient()
   const month = getMonthRange(from)
   const previous = shiftMonthRange(from, -1)
@@ -64,7 +71,11 @@ export async function DispatchSummary({ from }: { from: string }) {
 
   return (
     <div className="flex flex-col gap-4">
-      <SummaryMonthNav from={month.from} to={month.to} />
+      {monthNav === "hidden" ? null : (
+        <div className={monthNav === "desktop" ? "hidden md:block" : undefined}>
+          <SummaryMonthNav from={month.from} to={month.to} />
+        </div>
+      )}
 
       <div className="rounded-md border p-4">
         <p className="text-sm text-muted-foreground">

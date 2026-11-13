@@ -6,17 +6,17 @@ import { TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 /**
  * 모바일에서 첫째 고정 줄(ListPageHead) 바로 아래에 붙는 둘째 고정 영역의 top.
- * ListPageHead의 모바일 높이 = 위 여백 8px + 제목 줄 40px + 탭 36px = 84px(5.25rem).
+ * ListPageHead의 모바일 높이 = 위 여백 8px + 제목 줄 40px + 달 이동 40px + 탭 36px = 124px(7.75rem).
  */
 export const LIST_SUB_STICKY_CLASS =
-  "sticky top-[5.25rem] z-20 -mx-4 bg-background px-4 md:static md:mx-0 md:px-0"
+  "sticky top-[7.75rem] z-20 -mx-4 bg-background px-4 md:static md:mx-0 md:px-0"
 
 /** 목록 위 거르기 칩을 조금 작게 (36px) — 비상 화면 칩과 같은 크기 */
 export const LIST_CHIP_CLASS = "min-h-9 px-3.5 text-[13px] md:min-h-8"
 
 /**
  * 매출·지출·배차 목록 화면의 머리 (Tabs 안에 둔다).
- * 모바일: 비상 화면과 같은 모양(왼쪽 검색 · 가운데 제목) + 밑줄 탭, 위에 고정되어 스크롤해도 보인다.
+ * 모바일: HOME 화면과 같은 순서(왼쪽 검색 · 가운데 제목 → ‹ 달 › → 밑줄 탭), 위에 고정되어 스크롤해도 보인다.
  * 데스크톱: 왼쪽 큰 제목 + 오른쪽 등록 버튼(기존 모양), 고정하지 않는다.
  */
 export function ListPageHead({
@@ -24,11 +24,14 @@ export function ListPageHead({
   desktopTitle,
   desktopAction,
   tabs,
+  monthNav,
 }: {
   title: string
   desktopTitle: string
   desktopAction?: ReactNode
   tabs: { value: string; label: string }[]
+  /** 제목과 탭 사이의 ‹ 2026년 11월 › (모바일만, HOME과 같은 자리) */
+  monthNav?: ReactNode
 }) {
   return (
     <div className="sticky top-0 z-30 -mx-4 bg-background px-4 pt-2 md:static md:mx-0 md:px-0 md:pt-0">
@@ -37,6 +40,8 @@ export function ListPageHead({
         <h1 className="text-center text-lg font-semibold tracking-tight">{title}</h1>
         <span aria-hidden />
       </header>
+
+      {monthNav ? <div className="md:hidden">{monthNav}</div> : null}
 
       <div className="hidden items-center justify-between gap-4 md:flex">
         <h1 className="text-2xl font-semibold">{desktopTitle}</h1>

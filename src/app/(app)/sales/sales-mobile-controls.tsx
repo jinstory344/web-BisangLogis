@@ -9,7 +9,6 @@ import { PAID_TEXT_CLASS } from "@/components/dispatches/payment-badge"
 import { chipVariants } from "@/components/form/choice-chips"
 import { DateRangeInputs } from "@/components/list/date-range-inputs"
 import { LIST_CHIP_CLASS, LIST_SUB_STICKY_CLASS } from "@/components/list/list-page-head"
-import { MonthNavigator } from "@/components/list/month-navigator"
 import { TotalsRow } from "@/components/list/totals-row"
 import {
   Select,
@@ -85,7 +84,6 @@ export function SalesMobileControls({
     <div className="contents">
       {/* 위에 고정: 달 이동 + 합계 줄 (공급가액 기준) */}
       <div className={LIST_SUB_STICKY_CLASS}>
-        <MonthNavigator from={from} to={to} hrefForRange={(range) => hrefWith({ ...range })} />
         <TotalsRow
           items={[
             { label: "매출", value: formatKRW(summary.all.supplyAmount) },
@@ -100,6 +98,7 @@ export function SalesMobileControls({
               className: unpaid > 0 ? "text-destructive" : undefined,
             },
           ]}
+          size="lg"
         />
       </div>
 

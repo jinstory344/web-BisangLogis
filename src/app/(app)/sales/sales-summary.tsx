@@ -12,7 +12,14 @@ import { cn } from "@/lib/utils"
  * 매출 월간 집계 탭: 목록 탭에서 보고 있는 달(from이 속한 달)의 매출을
  * 공급가액 기준으로 합계 · 전월 대비 · 입금/미입금 · 출처별(대분류 → 소분류)로 보여 준다.
  */
-export async function SalesSummary({ from }: { from: string }) {
+export async function SalesSummary({
+  from,
+  monthNav = "all",
+}: {
+  from: string
+  /** 위쪽 달 이동: 모두 보임(기본) · desktop(모바일은 화면 머리에 따로 있음) · hidden(화면이 따로 그림) */
+  monthNav?: "all" | "desktop" | "hidden"
+}) {
   const supabase = await createClient()
   const month = getMonthRange(from)
   const previous = shiftMonthRange(from, -1)
@@ -51,7 +58,11 @@ export async function SalesSummary({ from }: { from: string }) {
 
   return (
     <div className="flex flex-col gap-4">
-      <SummaryMonthNav from={month.from} to={month.to} />
+      {monthNav === "hidden" ? null : (
+        <div className={monthNav === "desktop" ? "hidden md:block" : undefined}>
+          <SummaryMonthNav from={month.from} to={month.to} />
+        </div>
+      )}
 
       <div className="rounded-md border p-4">
         <p className="text-sm text-muted-foreground">

@@ -15,9 +15,12 @@ import { createClient } from "@/lib/supabase/server"
 export async function ExpenseSummary({
   from,
   categories,
+  monthNav = "all",
 }: {
   from: string
   categories: ExpenseCategoryTree
+  /** 위쪽 달 이동: 모두 보임(기본) · desktop(모바일은 화면 머리에 따로 있음) · hidden(화면이 따로 그림) */
+  monthNav?: "all" | "desktop" | "hidden"
 }) {
   const supabase = await createClient()
   const current = getMonthRange(from)
@@ -57,7 +60,11 @@ export async function ExpenseSummary({
 
   return (
     <div className="flex flex-col gap-4">
-      <SummaryMonthNav from={current.from} to={current.to} />
+      {monthNav === "hidden" ? null : (
+        <div className={monthNav === "desktop" ? "hidden md:block" : undefined}>
+          <SummaryMonthNav from={current.from} to={current.to} />
+        </div>
+      )}
 
       <div className="rounded-md border p-4">
         <p className="text-sm text-muted-foreground">
