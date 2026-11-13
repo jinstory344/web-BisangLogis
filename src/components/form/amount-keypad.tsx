@@ -36,15 +36,15 @@ const KEYS: { key: KeypadKey | "next"; label: ReactNode; tone?: "op" | "ok" }[] 
   { key: "7", label: "7" },
   { key: "8", label: "8" },
   { key: "9", label: "9" },
-  { key: "back", label: <Delete className="size-6" aria-label="지우기" />, tone: "op" },
+  { key: "clear", label: "C", tone: "op" },
   { key: "4", label: "4" },
   { key: "5", label: "5" },
   { key: "6", label: "6" },
-  { key: "clear", label: "C", tone: "op" },
+  { key: "plus", label: "+", tone: "op" },
   { key: "1", label: "1" },
   { key: "2", label: "2" },
   { key: "3", label: "3" },
-  { key: "plus", label: "+", tone: "op" },
+  { key: "back", label: <Delete className="size-6" aria-label="지우기" />, tone: "op" },
   { key: "00", label: "00" },
   { key: "0", label: "0" },
   { key: "000", label: "000" },
@@ -53,8 +53,8 @@ const KEYS: { key: KeypadKey | "next"; label: ReactNode; tone?: "op" | "ok" }[] 
 
 /**
  * 모바일 등록 화면의 금액 한 줄 + 계산기 키패드 (가계부 앱 방식).
- * 줄을 누르면 폰 키보드 대신 아래에서 키패드가 올라온다: 숫자, 00·000, ⌫, C(전체 지우기),
- * +(여러 금액 더하기), 다음/확인. 누를 때마다 값이 바로 폼에 들어가 세액·합계가 즉시 바뀐다.
+ * 줄을 누르면 폰 키보드 대신 아래에서 키패드가 올라온다: 숫자, 00·000, 오른쪽 줄은 위에서부터
+ * C(전체 지우기) · +(여러 금액 더하기) · ⌫(지우기, 다음 바로 위) · 다음/확인. 누를 때마다 값이 바로 폼에 들어가 세액·합계가 즉시 바뀐다.
  * 키패드 밖을 누르면 닫히고 그 누른 칸으로 그대로 넘어간다.
  * 데스크톱(md 이상)은 이 부품 대신 기존 AmountInput을 쓴다 (폼에서 md:hidden으로 나눔).
  */
