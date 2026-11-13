@@ -1,7 +1,7 @@
-import { Search } from "lucide-react"
-import Link from "next/link"
+
 import type { ReactNode } from "react"
 
+import { SearchButton } from "@/components/layout/search-button"
 import { TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 /**
@@ -33,13 +33,7 @@ export function ListPageHead({
   return (
     <div className="sticky top-0 z-30 -mx-4 bg-background px-4 pt-2 md:static md:mx-0 md:px-0 md:pt-0">
       <header className="grid h-10 grid-cols-[2.5rem_1fr_2.5rem] items-center md:hidden">
-        <Link
-          href="/search"
-          aria-label="검색"
-          className="flex size-10 items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground"
-        >
-          <Search className="size-5" />
-        </Link>
+        <SearchButton />
         <h1 className="text-center text-lg font-semibold tracking-tight">{title}</h1>
         <span aria-hidden />
       </header>

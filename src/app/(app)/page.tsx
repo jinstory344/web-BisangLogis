@@ -1,6 +1,5 @@
-import { Search } from "lucide-react"
-import Link from "next/link"
 
+import { SearchButton } from "@/components/layout/search-button"
 import { LedgerDayList } from "@/components/ledger/ledger-day-list"
 import { LedgerNav } from "@/components/ledger/ledger-nav"
 import { LedgerRangeList } from "@/components/ledger/ledger-range-list"
@@ -117,13 +116,7 @@ export default async function LedgerPage({
           <div className="sticky top-0 z-20 -mx-4 bg-background px-4 pt-2 md:-mx-6 md:px-6 md:pt-6">
             {/* 가계부 앱처럼: 왼쪽 검색 · 가운데 제목 */}
             <header className="grid grid-cols-[2.5rem_1fr_2.5rem] items-center">
-              <Link
-                href="/search"
-                aria-label="검색"
-                className="flex size-10 items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground"
-              >
-                <Search className="size-5" />
-              </Link>
+              <SearchButton />
               <h1 className="text-center text-lg font-semibold tracking-tight">비상</h1>
               <span aria-hidden />
             </header>

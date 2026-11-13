@@ -1,16 +1,14 @@
-import { ChevronLeft, Search } from "lucide-react"
+import { ChevronLeft } from "lucide-react"
 import Link from "next/link"
 import type { ReactNode } from "react"
 
 import { EXPENSE_TEXT_CLASS, INCOME_TEXT_CLASS } from "@/components/ledger/colors"
 import { TotalsRow } from "@/components/list/totals-row"
-import { Input } from "@/components/ui/input"
 import { sumTotals } from "@/lib/ledger"
 import { formatKRW } from "@/lib/money"
 import {
   normalizeSearchQuery,
   pickSearchTab,
-  SEARCH_MAX_LENGTH,
   sumDispatchTotals,
   type SearchTab,
 } from "@/lib/search"
@@ -19,6 +17,7 @@ import { cn } from "@/lib/utils"
 
 import { SEARCH_RESULT_LIMIT, searchLedgerEntries } from "../ledger-data"
 
+import { SearchBox } from "./search-box"
 import { searchClientIds, searchDispatches } from "./search-data"
 import { SearchDispatchList, SearchLedgerList } from "./search-result-list"
 
@@ -190,24 +189,7 @@ export default async function SearchPage({
             <span aria-hidden />
           </header>
 
-          <form action="/search" role="search" className="relative mt-1 mb-1">
-            <Search
-              aria-hidden
-              className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
-            />
-            <Input
-              type="search"
-              name="q"
-              defaultValue={query}
-              // 처음 들어왔을 때만 바로 입력할 수 있게 (결과를 볼 때 키보드가 가리지 않도록)
-              autoFocus={!query}
-              maxLength={SEARCH_MAX_LENGTH}
-              enterKeyHint="search"
-              placeholder="예: 평택, 주유, 거래처, 차량번호"
-              aria-label="검색어"
-              className="h-10 pl-9 text-base"
-            />
-          </form>
+          <SearchBox query={query} />
 
           {fixedPart}
         </div>

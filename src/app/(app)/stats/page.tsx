@@ -1,5 +1,6 @@
-import { Search } from "lucide-react"
 import Link from "next/link"
+
+import { SearchButton } from "@/components/layout/search-button"
 
 import { MonthSwipe } from "@/components/list/month-swipe"
 
@@ -44,13 +45,7 @@ export default async function StatsPage({
         {/* 위에 고정: 제목 + 종류 탭 (비상 화면과 같은 모양) */}
         <div className="sticky top-0 z-30 -mx-4 bg-background px-4 pt-2 md:static md:mx-0 md:px-0 md:pt-0">
           <header className="grid h-10 grid-cols-[2.5rem_1fr_2.5rem] items-center">
-            <Link
-              href="/search"
-              aria-label="검색"
-              className="flex size-10 items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground"
-            >
-              <Search className="size-5" />
-            </Link>
+            <SearchButton />
             <h1 className="text-center text-lg font-semibold tracking-tight">통계</h1>
             <span aria-hidden />
           </header>
