@@ -42,6 +42,7 @@ import { EXPENSE_PAYMENT_METHOD_OPTIONS } from "@/lib/constants/payment-method"
 import {
   CUSTOM_MINOR,
   getMinorsOf,
+  normalizeCategoryName,
   type DeleteCategoryInput,
   type ExpenseCategoryTree,
 } from "@/lib/constants/expense-categories"
@@ -57,6 +58,7 @@ import { CategoryPickerSheet } from "./category-picker-sheet"
 import {
   addExpenseCategoryAction,
   deleteExpenseCategoryAction,
+  renameExpenseCategoryAction,
 } from "./category-actions"
 
 interface ExpenseFormProps {
@@ -131,6 +133,26 @@ export function ExpenseForm({
     const result = await addExpenseCategoryAction({ kind: "minor", major, name })
     if (!result.ok) return result.error
     setTree(result.tree)
+    return null
+  }
+
+  async function renameCategory(
+    target: { major: string; minor?: string },
+    name: string
+  ): Promise<string | null> {
+    const result = await renameExpenseCategoryAction({ ...target, name })
+    if (!result.ok) return result.error
+    setTree(result.tree)
+    // 지금 고른 분류의 이름을 바꿨다면 폼 값도 새 이름으로 바꾼다.
+    const newName = normalizeCategoryName(name)
+    if (categoryMajor === target.major) {
+      if (target.minor === undefined) {
+        form.setValue("category_major", newName, { shouldValidate: true })
+      } else if (!isCustomMinor && form.getValues("category_minor") === target.minor) {
+        form.setValue("category_minor", newName, { shouldValidate: true })
+      }
+    }
+    toast.success("분류 이름을 바꿨습니다")
     return null
   }
 
@@ -241,6 +263,7 @@ export function ExpenseForm({
                 onAddMajor={addMajor}
                 onAddMinor={addMinor}
                 onRemove={setPendingDelete}
+                onRename={renameCategory}
                 invalid={Boolean(
                   form.formState.errors.category_major ||
                     form.formState.errors.category_minor

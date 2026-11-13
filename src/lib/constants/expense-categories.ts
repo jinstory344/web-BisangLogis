@@ -201,6 +201,50 @@ export function checkDeleteCategory(
   return { ok: true }
 }
 
+/** 이름을 바꿀 분류: minor가 없으면 대분류 이름을, 있으면 그 소분류 이름을 바꾼다. */
+export type RenameCategoryInput = { major: string; minor?: string; name: string }
+
+/**
+ * 분류 이름을 바꿔도 되는지 검사한다 (이름 길이·같은 단계 중복·"기타" 예약).
+ * "기타"는 직접 입력용이라 이름을 바꿀 수도, 다른 소분류를 "기타"로 바꿀 수도 없다.
+ */
+export function checkRenameCategory(
+  tree: ExpenseCategoryTree,
+  input: RenameCategoryInput
+): CategoryCheck {
+  const name = normalizeCategoryName(input.name)
+  if (!name) return { ok: false, error: "이름을 입력하세요" }
+  if (name.length > MAX_CATEGORY_NAME_LENGTH) {
+    return {
+      ok: false,
+      error: `이름은 ${MAX_CATEGORY_NAME_LENGTH}자 이하로 입력하세요`,
+    }
+  }
+
+  const node = tree.find((n) => n.major === input.major)
+  if (!node) return { ok: false, error: "분류를 찾을 수 없어요" }
+
+  if (input.minor === undefined) {
+    if (name === input.major) return { ok: false, error: "지금 이름과 같아요" }
+    if (tree.some((n) => n.major === name)) {
+      return { ok: false, error: "이미 있는 대분류예요" }
+    }
+    return { ok: true, name }
+  }
+
+  if (input.minor === CUSTOM_MINOR) {
+    return { ok: false, error: "'기타'는 이름을 바꿀 수 없어요" }
+  }
+  if (!node.minors.includes(input.minor)) {
+    return { ok: false, error: "분류를 찾을 수 없어요" }
+  }
+  if (name === input.minor) return { ok: false, error: "지금 이름과 같아요" }
+  if (name === CUSTOM_MINOR || node.minors.includes(name)) {
+    return { ok: false, error: "이미 있는 소분류예요" }
+  }
+  return { ok: true, name }
+}
+
 /** 새로 추가하는 행의 정렬값: 지금 있는 값(기타 제외) 중 가장 큰 값 + 10 */
 export function nextSortOrder(existing: readonly number[]): number {
   const regular = existing.filter((value) => value < CUSTOM_MINOR_SORT_ORDER)

@@ -4,6 +4,7 @@ import {
   buildCategoryTree,
   checkDeleteCategory,
   checkNewCategory,
+  checkRenameCategory,
   DEFAULT_EXPENSE_CATEGORY_TREE,
   getMinorsOf,
   isValidCategoryPairIn,
@@ -188,5 +189,45 @@ describe("normalizeCategoryName / nextSortOrder", () => {
     expect(nextSortOrder([10, 20, 9999])).toBe(30)
     expect(nextSortOrder([9999])).toBe(10)
     expect(nextSortOrder([])).toBe(10)
+  })
+})
+
+describe("checkRenameCategory", () => {
+  const tree = DEFAULT_EXPENSE_CATEGORY_TREE
+
+  it("대분류·소분류 이름을 바꿀 수 있고 공백을 정리한다", () => {
+    expect(checkRenameCategory(tree, { major: "차량", name: "  차  량비 " })).toEqual({
+      ok: true,
+      name: "차 량비",
+    })
+    expect(checkRenameCategory(tree, { major: "차량", minor: "유류", name: "주유" })).toEqual({
+      ok: true,
+      name: "주유",
+    })
+  })
+
+  it("같은 단계에 이미 있는 이름, 지금과 같은 이름, 빈 이름, 긴 이름은 막는다", () => {
+    expect(checkRenameCategory(tree, { major: "차량", name: "생활" }).ok).toBe(false)
+    expect(checkRenameCategory(tree, { major: "차량", name: "차량" }).ok).toBe(false)
+    expect(checkRenameCategory(tree, { major: "차량", minor: "유류", name: "요소수" }).ok).toBe(false)
+    expect(checkRenameCategory(tree, { major: "차량", minor: "유류", name: "유류" }).ok).toBe(false)
+    expect(checkRenameCategory(tree, { major: "차량", minor: "유류", name: " " }).ok).toBe(false)
+    expect(
+      checkRenameCategory(tree, { major: "차량", minor: "유류", name: "가".repeat(21) }).ok
+    ).toBe(false)
+  })
+
+  it("다른 대분류에 있는 소분류 이름은 써도 된다", () => {
+    expect(checkRenameCategory(tree, { major: "차량", minor: "유류", name: "식비" }).ok).toBe(true)
+  })
+
+  it("'기타'는 바꿀 수 없고, 다른 소분류를 '기타'로 바꿀 수도 없다", () => {
+    expect(checkRenameCategory(tree, { major: "차량", minor: "기타", name: "잡비" }).ok).toBe(false)
+    expect(checkRenameCategory(tree, { major: "차량", minor: "유류", name: "기타" }).ok).toBe(false)
+  })
+
+  it("없는 분류는 막는다", () => {
+    expect(checkRenameCategory(tree, { major: "없음", name: "새이름" }).ok).toBe(false)
+    expect(checkRenameCategory(tree, { major: "차량", minor: "없음", name: "새이름" }).ok).toBe(false)
   })
 })

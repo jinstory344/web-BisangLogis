@@ -20,6 +20,10 @@ import {
 import { cn } from "@/lib/utils"
 
 import { CategoryAdder } from "./category-adder"
+import { CategoryRenamer } from "./category-renamer"
+
+/** 이름을 바꾸는 중인 분류 (minor가 없으면 대분류) */
+type RenameTarget = { major: string; minor?: string }
 
 interface CategoryPickerSheetProps {
   tree: ExpenseCategoryTree
@@ -36,13 +40,16 @@ interface CategoryPickerSheetProps {
   onAddMinor: (major: string, name: string) => Promise<string | null>
   /** 삭제 확인 창을 연다 (확인·삭제는 폼이 한다) */
   onRemove: (target: DeleteCategoryInput) => void
+  /** 이름 바꾸기. 성공하면 null, 실패하면 오류 문장 */
+  onRename: (target: RenameTarget, name: string) => Promise<string | null>
   invalid?: boolean
 }
 
 /**
  * 지출 "분류" 한 줄과, 누르면 아래에서 올라오는 분류 선택판 (사용자가 쓰는 가계부 앱 방식).
  * 위쪽 대분류 칩으로 고르고, 아래 3열 격자에서 소분류를 누르면 바로 정해진다.
- * 연필을 누르면 편집 모드: 칸마다 ✕(삭제, "기타" 제외)와 대분류·소분류 추가가 나온다.
+ * 연필을 누르면 편집 모드: 칸마다 ✕(삭제, "기타" 제외)와 대분류·소분류 추가가 나오고,
+ * 소분류 이름이나 고른 대분류 칩을 누르면 이름을 바꿀 수 있다.
  */
 export function CategoryPickerSheet({
   tree,
@@ -54,10 +61,12 @@ export function CategoryPickerSheet({
   onAddMajor,
   onAddMinor,
   onRemove,
+  onRename,
   invalid = false,
 }: CategoryPickerSheetProps) {
   const [open, setOpen] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
+  const [renaming, setRenaming] = useState<RenameTarget | null>(null)
   const majors = getMajors(tree)
   const [tab, setTab] = useState(major || majors[0] || "")
   const activeTab = majors.includes(tab) ? tab : majors[0] ?? ""
@@ -70,6 +79,7 @@ export function CategoryPickerSheet({
   function openSheet() {
     setTab(major && majors.includes(major) ? major : majors[0] ?? "")
     setIsEditing(false)
+    setRenaming(null)
     setOpen(true)
   }
 
@@ -110,7 +120,10 @@ export function CategoryPickerSheet({
                   type="button"
                   aria-pressed={isEditing}
                   aria-label={isEditing ? "편집 끝내기" : "분류 편집"}
-                  onClick={() => setIsEditing((value) => !value)}
+                  onClick={() => {
+                    setIsEditing((value) => !value)
+                    setRenaming(null)
+                  }}
                   className={cn(
                     "flex size-10 items-center justify-center rounded-full",
                     isEditing ? "text-red-400" : "text-muted-foreground"
@@ -152,7 +165,14 @@ export function CategoryPickerSheet({
                     type="button"
                     role="tab"
                     aria-selected={isActive}
-                    onClick={() => setTab(name)}
+                    onClick={() => {
+                      // 편집 중에 이미 고른 대분류를 한 번 더 누르면 이름 바꾸기
+                      if (isEditing && isActive) setRenaming({ major: name })
+                      else {
+                        setTab(name)
+                        setRenaming(null)
+                      }
+                    }}
                     className={cn("min-h-10 pl-4", isEditing ? "pr-1" : "pr-4")}
                   >
                     {name}
@@ -186,12 +206,19 @@ export function CategoryPickerSheet({
                 >
                   <button
                     type="button"
-                    onClick={() => (isEditing ? undefined : pick(name))}
+                    onClick={() => {
+                      if (!isEditing) pick(name)
+                      else if (!isProtected) setRenaming({ major: activeTab, minor: name })
+                    }}
                     aria-pressed={isSelected}
                     className={cn(
                       "flex h-14 w-full items-center justify-center px-2 text-center text-sm break-keep wrap-anywhere",
                       isSelected ? "font-semibold text-red-400" : "text-foreground",
-                      isEditing && "cursor-default"
+                      isEditing && isProtected && "cursor-default",
+                      isEditing &&
+                        renaming?.major === activeTab &&
+                        renaming.minor === name &&
+                        "bg-muted"
                     )}
                   >
                     {name === CUSTOM_MINOR ? "기타(직접 입력)" : name}
@@ -211,8 +238,28 @@ export function CategoryPickerSheet({
             })}
           </div>
 
-          {isEditing ? (
+          {isEditing && renaming ? (
+            <div className="p-4">
+              <CategoryRenamer
+                key={`${renaming.major}/${renaming.minor ?? ""}`}
+                current={renaming.minor ?? renaming.major}
+                label={`'${renaming.minor ?? renaming.major}' ${renaming.minor ? "소분류" : "대분류"} 이름 바꾸기`}
+                onCancel={() => setRenaming(null)}
+                onSave={async (name) => {
+                  const error = await onRename(renaming, name)
+                  if (!error) {
+                    if (renaming.minor === undefined) setTab(normalizeCategoryName(name))
+                    setRenaming(null)
+                  }
+                  return error
+                }}
+              />
+            </div>
+          ) : isEditing ? (
             <div className="flex flex-col gap-3 p-4">
+              <p className="text-xs text-muted-foreground">
+                이름을 누르면 바꿀 수 있어요. 대분류는 고른 칩을 한 번 더 누르세요.
+              </p>
               {activeTab ? (
                 <CategoryAdder
                   label={`${activeTab}에 소분류 추가`}
@@ -236,7 +283,7 @@ export function CategoryPickerSheet({
           ) : (
             <p className="px-4 py-3 text-xs text-muted-foreground">
               {editable
-                ? "연필을 누르면 분류를 추가하거나 지울 수 있어요."
+                ? "연필을 누르면 분류를 추가하거나 지우고, 이름을 바꿀 수 있어요."
                 : "소분류를 누르면 정해져요."}
             </p>
           )}
