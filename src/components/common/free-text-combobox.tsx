@@ -18,6 +18,8 @@ interface FreeTextComboboxProps {
   fetchSuggestions: () => Promise<string[]>
   placeholder?: string
   disabled?: boolean
+  /** 입력칸 id (키패드 "다음"에서 이 칸으로 커서를 옮길 때 쓴다) */
+  inputId?: string
 }
 
 /**
@@ -33,6 +35,7 @@ export function FreeTextCombobox({
   fetchSuggestions,
   placeholder,
   disabled,
+  inputId,
 }: FreeTextComboboxProps) {
   const [pool, setPool] = useState<string[]>([])
 
@@ -63,7 +66,7 @@ export function FreeTextCombobox({
       filter={null}
       disabled={disabled}
     >
-      <ComboboxInput placeholder={placeholder} />
+      <ComboboxInput id={inputId} placeholder={placeholder} />
       {/* 추천할 최근 입력값이 없으면 목록 상자를 아예 띄우지 않는다
           ("없습니다" 상자가 아래 칩·칸을 가려서 잘못 누르게 되는 문제) */}
       {items.length > 0 ? (

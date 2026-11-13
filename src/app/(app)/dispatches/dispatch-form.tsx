@@ -1,17 +1,19 @@
 "use client"
 
 import { zodResolver } from "@hookform/resolvers/zod"
-import { startTransition, useActionState, useState } from "react"
+import { ChevronDown } from "lucide-react"
+import { startTransition, useActionState, useId, useState } from "react"
 import { useForm } from "react-hook-form"
 
 import type { ClientSearchResult } from "@/app/(app)/clients/actions"
 import { ClientCombobox } from "@/components/clients/client-combobox"
 import { AmountInput } from "@/components/form/amount-input"
-import { ChoiceChips } from "@/components/form/choice-chips"
-import { DateQuickPicker } from "@/components/form/date-quick-picker"
+import { AmountKeypadField } from "@/components/form/amount-keypad"
+import { DateRow } from "@/components/form/date-row"
 import { FormSubmitBar, touchFormProps } from "@/components/form/form-submit-bar"
 import { RecentContactChips } from "@/components/form/recent-contact-chips"
 import { RecentRouteChips } from "@/components/form/recent-route-chips"
+import { SheetChoice } from "@/components/form/sheet-choice"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -37,6 +39,8 @@ import { VehicleCombobox } from "@/components/vehicles/vehicle-combobox"
 import { CARGO_BOX_TYPE_OPTIONS } from "@/lib/constants/cargo-box-type"
 import { DROPOFF_TYPE_OPTIONS } from "@/lib/constants/dropoff-type"
 import { getTodayInSeoul } from "@/lib/date"
+import { formatAmountInput } from "@/lib/money"
+import { cn } from "@/lib/utils"
 import type { RecentContact, RecentRoute } from "@/lib/quick-entry"
 import {
   buildDispatchFormData,
@@ -95,6 +99,17 @@ export function DispatchForm({
   const contactName = form.watch("contact_name")
   const contactPhone = form.watch("contact_phone")
   const recentContacts = useRecentDispatchContacts(clientId)
+  const feeAmount = form.watch("fee_amount")
+  const moreSectionId = useId()
+  // "＋"에 접어 둔 칸(차종·파렛·중량·수수료·비고) 중 값이 있으면(수정·복사) 펼친 채로 연다.
+  const [isMoreOpen, setIsMoreOpen] = useState(
+    () =>
+      defaultValues.cargo_box_type !== "" ||
+      defaultValues.pallet_count !== null ||
+      defaultValues.weight_ton !== null ||
+      defaultValues.fee_amount > 0 ||
+      defaultValues.memo.trim() !== ""
+  )
 
   function applyRecentContact(contact: RecentContact) {
     form.setValue("contact_name", contact.name, { shouldDirty: true })
@@ -149,6 +164,45 @@ export function DispatchForm({
     setPendingFormData(null)
   }
 
+  /**
+   * 수수료 칸 (일부 거래처만). 데스크톱은 운임 옆에 기존 입력칸, 모바일은 "＋" 안에 키패드 줄.
+   * 한 화면에는 둘 중 하나만 보이지만 둘 다 같은 폼 값을 쓴다.
+   */
+  function feeField(kind: "mobile" | "desktop") {
+    return (
+      <FormField
+        control={form.control}
+        name="fee_amount"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>수수료</FormLabel>
+            {kind === "mobile" ? (
+              <AmountKeypadField
+                title="수수료"
+                value={field.value}
+                onChange={field.onChange}
+                placeholder="없음"
+              />
+            ) : (
+              <FormControl>
+                {/* 기본값 0을 빈 칸으로 보여줘야 앞자리 0이 남는 입력 버그를 피한다. */}
+                <AmountInput
+                  ref={field.ref}
+                  name={field.name}
+                  onBlur={field.onBlur}
+                  value={field.value}
+                  onChange={field.onChange}
+                  placeholder="0"
+                />
+              </FormControl>
+            )}
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+    )
+  }
+
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} {...touchFormProps}>
@@ -157,22 +211,12 @@ export function DispatchForm({
           name="dispatch_date"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>운송일자 *</FormLabel>
-              <FormControl>
-                <DateQuickPicker
-                  value={field.value}
-                  onChange={field.onChange}
-                  aria-label="운송일자"
-                />
-              </FormControl>
+              <FormLabel>날짜 *</FormLabel>
+              <DateRow value={field.value} onChange={field.onChange} label="운송일자" />
               <FormMessage />
             </FormItem>
           )}
         />
-
-        <h2 className="mt-2 text-sm font-semibold text-muted-foreground">
-          거래처 정보
-        </h2>
 
         <FormItem>
           <FormLabel>거래처 *</FormLabel>
@@ -192,39 +236,6 @@ export function DispatchForm({
             </p>
           ) : null}
         </FormItem>
-
-        {/* 담당자는 거래처마다, 건마다 달라서 자동으로 채우지 않고 같은 거래처의 최근 담당자를
-            칩으로만 제안한다. 칩을 누르면 이름과 연락처를 함께 채운다. */}
-        <FormItem>
-          <FormLabel>담당자</FormLabel>
-          <FreeTextCombobox
-            value={contactName}
-            onChange={(v) => form.setValue("contact_name", v)}
-            fetchSuggestions={searchContactNameSuggestionsAction}
-            placeholder="담당자명"
-          />
-        </FormItem>
-
-        <FormField
-          control={form.control}
-          name="contact_phone"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>연락처</FormLabel>
-              <FormControl>
-                <Input {...field} type="tel" placeholder="010-0000-0000" />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <RecentContactChips
-          label="최근 담당자"
-          contacts={recentContacts}
-          value={{ name: contactName, phone: contactPhone }}
-          onSelect={applyRecentContact}
-        />
 
         <FormItem>
           <FormLabel>상차지 *</FormLabel>
@@ -275,111 +286,19 @@ export function DispatchForm({
           render={({ field }) => (
             <FormItem>
               <FormLabel>하차일</FormLabel>
-              <FormControl>
-                <ChoiceChips
-                  aria-label="하차일"
-                  options={DROPOFF_TYPE_OPTIONS}
-                  value={field.value}
-                  onChange={field.onChange}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <h2 className="mt-2 text-sm font-semibold text-muted-foreground">
-          화물내용
-        </h2>
-
-        <FormField
-          control={form.control}
-          name="cargo_box_type"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>차종 선택</FormLabel>
-              {/* 선택 칩을 다시 누르면 해제 = "선택 안 함". 폼 상태의 미선택은 기존 규칙대로
-                  ""이고, 서버 액션이 `|| null`로 정규화해 RPC에 넘긴다. */}
-              <FormControl>
-                <ChoiceChips
-                  aria-label="차종 선택"
-                  allowDeselect
-                  options={CARGO_BOX_TYPE_OPTIONS}
-                  value={field.value}
-                  onChange={field.onChange}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <div className="grid gap-4 md:grid-cols-2">
-          <FormField
-            control={form.control}
-            name="pallet_count"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>파렛 수량</FormLabel>
-                <FormControl>
-                  <Input
-                    type="number"
-                    min={0}
-                    value={field.value ?? ""}
-                    onChange={(e) => {
-                      const next = e.target.valueAsNumber
-                      field.onChange(
-                        e.target.value === "" || Number.isNaN(next) ? null : next
-                      )
-                    }}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="weight_ton"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>중량</FormLabel>
-                <FormControl>
-                  <Input
-                    type="number"
-                    min={0}
-                    step={0.01}
-                    value={field.value ?? ""}
-                    onChange={(e) => {
-                      const next = e.target.valueAsNumber
-                      field.onChange(
-                        e.target.value === "" || Number.isNaN(next) ? null : next
-                      )
-                    }}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-
-        <FormField
-          control={form.control}
-          name="memo"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>비고</FormLabel>
-              <FormControl>
-                <Textarea {...field} rows={3} />
-              </FormControl>
+              <SheetChoice
+                title="하차일"
+                options={DROPOFF_TYPE_OPTIONS}
+                value={field.value}
+                onChange={field.onChange}
+              />
               <FormMessage />
             </FormItem>
           )}
         />
 
         <FormItem>
-          <FormLabel>차량정보</FormLabel>
+          <FormLabel>차량</FormLabel>
           <VehicleCombobox
             plateNo={form.watch("plate_no_snapshot")}
             onPlateNoChange={(v) => form.setValue("plate_no_snapshot", v)}
@@ -394,15 +313,15 @@ export function DispatchForm({
           />
         </FormItem>
 
-        <div className="grid gap-4 md:grid-cols-2">
+        <div className="grid gap-0 md:grid-cols-2 md:gap-4">
           <FormField
             control={form.control}
             name="driver_name_snapshot"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>이름</FormLabel>
+                <FormLabel>기사</FormLabel>
                 <FormControl>
-                  <Input {...field} />
+                  <Input {...field} placeholder="기사 이름" />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -415,7 +334,7 @@ export function DispatchForm({
               <FormItem>
                 <FormLabel>연락처</FormLabel>
                 <FormControl>
-                  <Input {...field} type="tel" />
+                  <Input {...field} type="tel" placeholder="010-0000-0000" />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -423,49 +342,182 @@ export function DispatchForm({
           />
         </div>
 
-        <h2 className="mt-2 text-sm font-semibold text-muted-foreground">
-          지급 정보
-        </h2>
-
-        <div className="grid gap-4 md:grid-cols-2">
+        <div className="grid gap-0 md:grid-cols-2 md:gap-4">
           <FormField
             control={form.control}
             name="freight_amount"
             render={({ field }) => (
               <FormItem>
                 <FormLabel>운임</FormLabel>
-                <FormControl>
-                  {/* 미입력은 null로 둬야 "값 없음"과 0이 구분되고, 수정 폼에서
-                      지웠을 때 RHF가 defaultValues로 되돌리지 않는다. */}
-                  <AmountInput
+                {/* 미입력은 null로 둬야 "값 없음"과 0이 구분되고, 수정 폼에서
+                    지웠을 때 RHF가 defaultValues로 되돌리지 않는다. */}
+                <div className="md:hidden">
+                  <AmountKeypadField
                     nullable
-                    ref={field.ref}
-                    name={field.name}
-                    onBlur={field.onBlur}
+                    title="운임"
                     value={field.value}
                     onChange={field.onChange}
+                    placeholder="운임"
+                    extra={feeAmount > 0 ? `수수료 ${formatAmountInput(feeAmount)}` : null}
                   />
-                </FormControl>
+                </div>
+                <div className="hidden md:block">
+                  <FormControl>
+                    <AmountInput
+                      nullable
+                      ref={field.ref}
+                      name={field.name}
+                      onBlur={field.onBlur}
+                      value={field.value}
+                      onChange={field.onChange}
+                    />
+                  </FormControl>
+                </div>
                 <FormMessage />
               </FormItem>
             )}
           />
+          {/* 수수료: 데스크톱은 운임 옆, 모바일은 아래 "＋" 안 */}
+          <div className="hidden md:block">{feeField("desktop")}</div>
+        </div>
+
+        {/* 담당자는 거래처마다, 건마다 달라서 자동으로 채우지 않고 같은 거래처의 최근 담당자를
+            칩으로만 제안한다. 칩을 누르면 이름과 연락처를 함께 채운다. */}
+        <FormItem>
+          <FormLabel>담당자</FormLabel>
+          <FreeTextCombobox
+            value={contactName}
+            onChange={(v) => form.setValue("contact_name", v)}
+            fetchSuggestions={searchContactNameSuggestionsAction}
+            placeholder="담당자명"
+          />
+        </FormItem>
+
+        <FormField
+          control={form.control}
+          name="contact_phone"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>연락처</FormLabel>
+              <FormControl>
+                <Input {...field} type="tel" placeholder="010-0000-0000" />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <RecentContactChips
+          label="최근 담당자"
+          contacts={recentContacts}
+          value={{ name: contactName, phone: contactPhone }}
+          onSelect={applyRecentContact}
+        />
+
+        {/* 모바일 "＋" 줄: 자주 비워 두는 칸을 접는다. 값이 있으면(수정·복사) 펼친 채로 연다.
+            데스크톱은 항상 펼쳐 둔다. */}
+        <button
+          type="button"
+          aria-expanded={isMoreOpen}
+          aria-controls={moreSectionId}
+          onClick={() => setIsMoreOpen((open) => !open)}
+          className="flex min-h-11 items-center justify-between gap-2 text-left text-sm text-muted-foreground md:hidden"
+        >
+          <span className="truncate">＋ 화물(차종·파렛·톤) · 수수료 · 비고</span>
+          <ChevronDown
+            aria-hidden
+            className={cn("size-4 shrink-0 transition-transform", isMoreOpen && "rotate-180")}
+          />
+        </button>
+
+        <div
+          id={moreSectionId}
+          className={cn("flex-col gap-4 md:flex", isMoreOpen ? "flex" : "hidden")}
+        >
           <FormField
             control={form.control}
-            name="fee_amount"
+            name="cargo_box_type"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>수수료</FormLabel>
+                <FormLabel>차종</FormLabel>
+                {/* 선택 해제 = "선택 안 함". 폼 상태의 미선택은 기존 규칙대로 ""이고,
+                    서버 액션이 `|| null`로 정규화해 RPC에 넘긴다. */}
+                <SheetChoice
+                  title="차종"
+                  allowDeselect
+                  options={CARGO_BOX_TYPE_OPTIONS}
+                  value={field.value}
+                  onChange={field.onChange}
+                />
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <div className="grid gap-0 md:grid-cols-2 md:gap-4">
+            <FormField
+              control={form.control}
+              name="pallet_count"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>파렛</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      inputMode="numeric"
+                      min={0}
+                      placeholder="수량"
+                      value={field.value ?? ""}
+                      onChange={(e) => {
+                        const next = e.target.valueAsNumber
+                        field.onChange(
+                          e.target.value === "" || Number.isNaN(next) ? null : next
+                        )
+                      }}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="weight_ton"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>중량</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      inputMode="decimal"
+                      min={0}
+                      step={0.01}
+                      placeholder="톤"
+                      value={field.value ?? ""}
+                      onChange={(e) => {
+                        const next = e.target.valueAsNumber
+                        field.onChange(
+                          e.target.value === "" || Number.isNaN(next) ? null : next
+                        )
+                      }}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+
+          <div className="md:hidden">{feeField("mobile")}</div>
+
+          <FormField
+            control={form.control}
+            name="memo"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>비고</FormLabel>
                 <FormControl>
-                  {/* 기본값 0을 빈 칸으로 보여줘야 앞자리 0이 남는 입력 버그를 피한다. */}
-                  <AmountInput
-                    ref={field.ref}
-                    name={field.name}
-                    onBlur={field.onBlur}
-                    value={field.value}
-                    onChange={field.onChange}
-                    placeholder="0"
-                  />
+                  <Textarea {...field} rows={1} className="min-h-11 md:min-h-16" />
                 </FormControl>
                 <FormMessage />
               </FormItem>

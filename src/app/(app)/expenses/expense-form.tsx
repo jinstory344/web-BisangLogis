@@ -6,9 +6,11 @@ import { useForm } from "react-hook-form"
 import { toast } from "sonner"
 
 import { AmountInput } from "@/components/form/amount-input"
-import { ChoiceChips } from "@/components/form/choice-chips"
-import { DateQuickPicker } from "@/components/form/date-quick-picker"
+import { AmountKeypadField } from "@/components/form/amount-keypad"
+import { DateRow } from "@/components/form/date-row"
 import { FormSubmitBar, touchFormProps } from "@/components/form/form-submit-bar"
+import { SheetChoice } from "@/components/form/sheet-choice"
+import { EXPENSE_TEXT_CLASS } from "@/components/ledger/colors"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -88,6 +90,8 @@ export function ExpenseForm({
     },
   })
 
+  // 새 등록(금액이 비어 있음)이면 화면을 열자마자 금액 키패드를 띄운다. 수정·복사는 띄우지 않는다.
+  const [autoOpenKeypad] = useState(() => defaultValues.amount === 0)
   const categoryMajor = form.watch("category_major")
   const paymentMethod = form.watch("payment_method")
 
@@ -172,33 +176,25 @@ export function ExpenseForm({
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} {...touchFormProps}>
+        {/* 금액 먼저 (가계부 앱 방식). 모바일은 계산기 키패드, 데스크톱은 기존 입력칸. */}
         <FormField
           control={form.control}
-          name="expense_date"
+          name="amount"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>지출일자 *</FormLabel>
-              <FormControl>
-                <DateQuickPicker
+              <FormLabel>금액 *</FormLabel>
+              <div className="md:hidden">
+                <AmountKeypadField
+                  title="금액"
                   value={field.value}
                   onChange={field.onChange}
-                  aria-label="지출일자"
+                  autoOpen={autoOpenKeypad}
+                  amountClassName={EXPENSE_TEXT_CLASS}
+                  placeholder="금액"
+                  invalid={Boolean(form.formState.errors.amount)}
                 />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        {/* 모바일은 한 줄에 하나씩, 데스크톱은 기존처럼 금액·결제방법·할부 한 줄
-            (결제방법 칩이 줄바꿈되지 않도록 가운데 열은 내용 너비). */}
-        <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]">
-          <FormField
-            control={form.control}
-            name="amount"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>금액 *</FormLabel>
+              </div>
+              <div className="hidden md:block">
                 <FormControl>
                   {/* 기본값 0을 빈 칸으로 보여줘야 앞자리 0이 남는 입력 버그를 피한다. */}
                   <AmountInput
@@ -210,70 +206,23 @@ export function ExpenseForm({
                     placeholder="0"
                   />
                 </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="payment_method"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>결제방법</FormLabel>
-                <FormControl>
-                  <ChoiceChips
-                    aria-label="결제방법"
-                    options={EXPENSE_PAYMENT_METHOD_OPTIONS}
-                    value={field.value}
-                    onChange={(method) => {
-                      field.onChange(method)
-                      // 카드가 아니면 할부 칸이 사라지므로 이미 고른 할부도 지운다.
-                      if (method !== "CARD") {
-                        form.setValue("installment_months", undefined)
-                      }
-                    }}
-                    className="md:flex-nowrap"
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          {/* 할부는 결제방법이 카드일 때만 보인다. */}
-          {paymentMethod === "CARD" ? (
-            <FormField
-              control={form.control}
-              name="installment_months"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>할부</FormLabel>
-                  <Select
-                    value={field.value ? String(field.value) : ""}
-                    onValueChange={(v) =>
-                      field.onChange(v ? Number(v) : undefined)
-                    }
-                  >
-                    <FormControl>
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder="할부 선택" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {Array.from({ length: 12 }, (_, i) => i + 1).map(
-                        (month) => (
-                          <SelectItem key={month} value={String(month)}>
-                            {month}개월
-                          </SelectItem>
-                        )
-                      )}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          ) : null}
-        </div>
+              </div>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="expense_date"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>날짜 *</FormLabel>
+              <DateRow value={field.value} onChange={field.onChange} label="지출일자" />
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
         {/* 분류: 한 줄을 누르면 아래에서 분류 선택판이 올라온다 (가계부 앱 방식). */}
         <FormField
@@ -317,12 +266,70 @@ export function ExpenseForm({
 
         <FormField
           control={form.control}
+          name="payment_method"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>결제</FormLabel>
+              <SheetChoice
+                title="결제방법"
+                options={EXPENSE_PAYMENT_METHOD_OPTIONS}
+                value={field.value ?? ""}
+                onChange={(method) => {
+                  field.onChange(method)
+                  // 카드가 아니면 할부 칸이 사라지므로 이미 고른 할부도 지운다.
+                  if (method !== "CARD") {
+                    form.setValue("installment_months", undefined)
+                  }
+                }}
+              />
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        {/* 할부는 결제방법이 카드일 때만 보인다. */}
+        {paymentMethod === "CARD" ? (
+          <FormField
+            control={form.control}
+            name="installment_months"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>할부</FormLabel>
+                <Select
+                  value={field.value ? String(field.value) : ""}
+                  onValueChange={(v) =>
+                    field.onChange(v ? Number(v) : undefined)
+                  }
+                >
+                  <FormControl>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="일시불" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {Array.from({ length: 12 }, (_, i) => i + 1).map(
+                      (month) => (
+                        <SelectItem key={month} value={String(month)}>
+                          {month}개월
+                        </SelectItem>
+                      )
+                    )}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        ) : null}
+
+        <FormField
+          control={form.control}
           name="memo"
           render={({ field }) => (
             <FormItem>
               <FormLabel>비고</FormLabel>
               <FormControl>
-                <Textarea {...field} rows={3} />
+                <Textarea {...field} rows={1} className="min-h-11 md:min-h-16" />
               </FormControl>
               <FormMessage />
             </FormItem>

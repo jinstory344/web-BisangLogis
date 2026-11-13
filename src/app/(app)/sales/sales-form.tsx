@@ -6,11 +6,14 @@ import { startTransition, useActionState, useId, useState } from "react"
 import { useForm } from "react-hook-form"
 
 import { AmountInput } from "@/components/form/amount-input"
-import { ChoiceChips, toChoiceOptions } from "@/components/form/choice-chips"
-import { DateQuickPicker } from "@/components/form/date-quick-picker"
+import { AmountKeypadField } from "@/components/form/amount-keypad"
+import { toChoiceOptions } from "@/components/form/choice-chips"
+import { DateRow } from "@/components/form/date-row"
 import { FormSubmitBar, touchFormProps } from "@/components/form/form-submit-bar"
 import { RecentContactChips } from "@/components/form/recent-contact-chips"
 import { RecentRouteChips } from "@/components/form/recent-route-chips"
+import { SheetChoice } from "@/components/form/sheet-choice"
+import { INCOME_TEXT_CLASS } from "@/components/ledger/colors"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -41,7 +44,6 @@ import { getTodayInSeoul } from "@/lib/date"
 import {
   calcVatFromSupply,
   formatAmountInput,
-  formatKRW,
   isVatExemptForPayment,
 } from "@/lib/money"
 import type { RecentRoute } from "@/lib/quick-entry"
@@ -60,10 +62,8 @@ import {
   searchOriginSuggestionsAction,
   type SaleActionState,
 } from "./actions"
-import {
-  ClientSourcePicker,
-  type PickedSaleClient,
-} from "./client-source-picker"
+import { type PickedSaleClient } from "./client-source-picker"
+import { ClientSourceRow } from "./client-source-row"
 import { useRecentSaleContacts } from "./use-recent-sale-contacts"
 
 const SOURCE_MAJOR_CHOICES = toChoiceOptions(SOURCE_MAJOR_OPTIONS)
@@ -92,13 +92,20 @@ function isBillingShownAbove(sourceMajor: string): boolean {
   return sourceMajor !== "" && sourceMajor !== SOURCE_MAJOR_CLIENT
 }
 
-/** "더보기"에 접어 두는 필드(계산서정보·출처 비고·비고) 중 값이 있는지 — 있으면 펼친 채로 연다. */
+/** "＋"에 접어 두는 필드(연락처·계산서정보·출처 비고) 중 값이 있는지 — 있으면 펼친 채로 연다. */
 function hasMoreSectionValues(values: SaleFormValues): boolean {
-  return [
-    isBillingShownAbove(values.source_major) ? "" : values.billing_entity_name,
-    values.source_note,
-    values.memo,
-  ].some((value) => value.trim() !== "")
+  // 거래처 이름으로 자동 채운 계산서정보는 거래처 아래에 이미 작게 보이므로 펼칠 이유가 아니다.
+  const billing = values.billing_entity_name.trim()
+  const billingNeedsShowing =
+    !isBillingShownAbove(values.source_major) &&
+    billing !== "" &&
+    billing !== values.source_minor.trim()
+  return (
+    billingNeedsShowing ||
+    [values.order_contact_phone, values.source_note].some(
+      (value) => value.trim() !== ""
+    )
+  )
 }
 
 /**
@@ -118,6 +125,9 @@ export function SalesForm({
   const [pendingFormData, setPendingFormData] = useState<FormData | null>(null)
   const [isCheckingDuplicate, setIsCheckingDuplicate] = useState(false)
   const moreSectionId = useId()
+  const originInputId = useId()
+  // 새 등록(금액이 비어 있음)이면 화면을 열자마자 금액 키패드를 띄운다. 수정·복사는 띄우지 않는다.
+  const [autoOpenKeypad] = useState(() => defaultValues.supply_amount === 0)
   const [isMoreOpen, setIsMoreOpen] = useState(() =>
     hasMoreSectionValues(defaultValues)
   )
@@ -277,9 +287,9 @@ export function SalesForm({
     </FormItem>
   )
   const moreSummary = [
+    "연락처",
     billingShownAbove ? null : "계산서정보",
     showSourceNote ? "출처 비고" : null,
-    "비고",
   ]
     .filter(Boolean)
     .join(" · ")
@@ -287,19 +297,78 @@ export function SalesForm({
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} {...touchFormProps}>
+        {/* 금액 먼저 (가계부 앱 방식). 모바일은 계산기 키패드, 데스크톱은 공급가액·세액·합계 세 칸. */}
+        <div className="grid gap-4 md:grid-cols-3">
+          <FormField
+            control={form.control}
+            name="supply_amount"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>금액 *</FormLabel>
+                <div className="md:hidden">
+                  <AmountKeypadField
+                    title="금액 (공급가액)"
+                    value={field.value}
+                    onChange={field.onChange}
+                    autoOpen={autoOpenKeypad}
+                    amountClassName={INCOME_TEXT_CLASS}
+                    placeholder="공급가액"
+                    invalid={Boolean(form.formState.errors.supply_amount)}
+                    extra={
+                      field.value > 0
+                        ? isVatExempt
+                          ? `세액 없음 · 합계 ${formatAmountInput(totalAmount)}`
+                          : `세액 ${formatAmountInput(vatAmount)} · 합계 ${formatAmountInput(totalAmount)}`
+                        : null
+                    }
+                    // 금액 다음은 상차지로 바로 (누른 순간에 커서를 옮겨야 폰 키보드가 뜬다)
+                    onNext={() => document.getElementById(originInputId)?.focus()}
+                  />
+                </div>
+                <div className="hidden md:block">
+                  <FormControl>
+                    <AmountInput
+                      ref={field.ref}
+                      name={field.name}
+                      onBlur={field.onBlur}
+                      value={field.value}
+                      onChange={field.onChange}
+                      placeholder="0"
+                    />
+                  </FormControl>
+                </div>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormItem className="hidden md:grid">
+            <FormLabel>세액</FormLabel>
+            <Input
+              className="text-right tabular-nums"
+              value={isVatExempt ? "" : formatAmountInput(vatAmount)}
+              placeholder={isVatExempt ? "세액 없음" : undefined}
+              disabled
+              readOnly
+            />
+          </FormItem>
+          <FormItem className="hidden md:grid">
+            <FormLabel>합계</FormLabel>
+            <Input
+              className="text-right tabular-nums"
+              value={formatAmountInput(totalAmount)}
+              disabled
+              readOnly
+            />
+          </FormItem>
+        </div>
+
         <FormField
           control={form.control}
           name="sale_date"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>매출일자 *</FormLabel>
-              <FormControl>
-                <DateQuickPicker
-                  value={field.value}
-                  onChange={field.onChange}
-                  aria-label="매출일자"
-                />
-              </FormControl>
+              <FormLabel>날짜 *</FormLabel>
+              <DateRow value={field.value} onChange={field.onChange} label="매출일자" />
               <FormMessage />
             </FormItem>
           )}
@@ -308,6 +377,7 @@ export function SalesForm({
         <FormItem>
           <FormLabel>상차지 *</FormLabel>
           <FreeTextCombobox
+            inputId={originInputId}
             value={origin}
             onChange={(v) =>
               form.setValue("origin", v, { shouldValidate: true })
@@ -348,104 +418,38 @@ export function SalesForm({
           />
         ) : null}
 
-        <h2 className="mt-2 text-sm font-semibold text-muted-foreground">
-          운임
-        </h2>
-
-        <div className="grid gap-4 md:grid-cols-3">
-          <FormField
-            control={form.control}
-            name="supply_amount"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>공급가액 *</FormLabel>
-                <FormControl>
-                  <AmountInput
-                    ref={field.ref}
-                    name={field.name}
-                    onBlur={field.onBlur}
-                    value={field.value}
-                    onChange={field.onChange}
-                    placeholder="0"
-                  />
-                </FormControl>
-                {/* 모바일: 세액·합계 칸 대신 한 줄 요약 (데스크톱은 오른쪽 두 칸) */}
-                <p className="text-right text-sm text-muted-foreground tabular-nums md:hidden">
-                  {isVatExempt ? "세액 없음" : `세액 ${formatKRW(vatAmount)}`} ·
-                  합계{" "}
-                  <span className="font-medium text-foreground">
-                    {formatKRW(totalAmount)}
-                  </span>
-                </p>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormItem className="hidden md:grid">
-            <FormLabel>세액</FormLabel>
-            <FormControl>
-              <Input
-                className="text-right tabular-nums"
-                value={isVatExempt ? "" : formatAmountInput(vatAmount)}
-                placeholder={isVatExempt ? "세액 없음" : undefined}
-                disabled
-                readOnly
-              />
-            </FormControl>
-          </FormItem>
-          <FormItem className="hidden md:grid">
-            <FormLabel>합계</FormLabel>
-            <FormControl>
-              <Input
-                className="text-right tabular-nums"
-                value={formatAmountInput(totalAmount)}
-                disabled
-                readOnly
-              />
-            </FormControl>
-          </FormItem>
-        </div>
-
         <FormField
           control={form.control}
           name="payment_method"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>지불방법</FormLabel>
-              <FormControl>
-                <ChoiceChips
-                  aria-label="지불방법"
-                  options={PAYMENT_METHOD_OPTIONS}
-                  value={field.value}
-                  onChange={(next) =>
-                    handlePaymentMethodChange(next, field.onChange)
-                  }
-                />
-              </FormControl>
+              <FormLabel>지불</FormLabel>
+              <SheetChoice
+                title="지불방법"
+                options={PAYMENT_METHOD_OPTIONS}
+                value={field.value}
+                onChange={(next) =>
+                  handlePaymentMethodChange(next, field.onChange)
+                }
+              />
               <FormMessage />
             </FormItem>
           )}
         />
-
-        <h2 className="mt-2 text-sm font-semibold text-muted-foreground">
-          출처
-        </h2>
 
         <FormField
           control={form.control}
           name="source_major"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>대분류</FormLabel>
-              <FormControl>
-                <ChoiceChips
-                  aria-label="출처 대분류"
-                  allowDeselect
-                  options={SOURCE_MAJOR_CHOICES}
-                  value={field.value}
-                  onChange={handleSourceMajorChange}
-                />
-              </FormControl>
+              <FormLabel>출처</FormLabel>
+              <SheetChoice
+                title="출처"
+                allowDeselect
+                options={SOURCE_MAJOR_CHOICES}
+                value={field.value}
+                onChange={handleSourceMajorChange}
+              />
               <FormMessage />
             </FormItem>
           )}
@@ -453,8 +457,8 @@ export function SalesForm({
 
         {sourceMajor === SOURCE_MAJOR_CLIENT ? (
           <FormItem>
-            <FormLabel>소분류</FormLabel>
-            <ClientSourcePicker
+            <FormLabel>거래처</FormLabel>
+            <ClientSourceRow
               choices={clientChoices}
               clientId={clientId}
               sourceMinor={sourceMinor}
@@ -467,69 +471,52 @@ export function SalesForm({
               </p>
             ) : null}
           </FormItem>
-        ) : (
+        ) : sourceMajor || sourceMinor ? (
           <FormField
             control={form.control}
             name="source_minor"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>소분류</FormLabel>
+                <FormLabel>오더자</FormLabel>
                 <FormControl>
-                  <Input {...field} placeholder="이름 또는 업체명 직접 입력" />
+                  <Input {...field} placeholder="이름 또는 업체명" />
                 </FormControl>
                 <FormMessage />
               </FormItem>
             )}
           />
-        )}
+        ) : null}
 
-        {/* 연락처: 어떤 출처를 골라도 소분류가 곧 오더자이므로 바로 아래에 둔다.
-            같은 거래처라도 담당자가 건마다 달라, 자동으로 채우지 않고 최근 연락처를 칩으로만 제안한다. */}
+        {billingShownAbove ? billingField : null}
+
         <FormField
           control={form.control}
-          name="order_contact_phone"
+          name="memo"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>연락처</FormLabel>
+              <FormLabel>비고</FormLabel>
               <FormControl>
-                <Input {...field} type="tel" placeholder="010-0000-0000" />
+                <Textarea {...field} rows={1} className="min-h-11 md:min-h-16" />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
-        <RecentContactChips
-          // 매출은 소분류가 곧 오더자라 이름 없이 번호만 쓴다.
-          contacts={recentContacts.map((phone) => ({ name: "", phone }))}
-          value={{ name: "", phone: orderContactPhone }}
-          onSelect={(contact) =>
-            form.setValue("order_contact_phone", contact.phone, {
-              shouldDirty: true,
-            })
-          }
-        />
 
-        {billingShownAbove ? billingField : null}
-
-        {/* 모바일 "더보기": 자주 비워 두는 필드를 접는다. 값이 있으면(수정·복사) 펼친 채로 연다.
+        {/* 모바일 "＋" 줄: 자주 비워 두는 칸을 접는다. 값이 있으면(수정·복사) 펼친 채로 연다.
             데스크톱은 기존처럼 항상 펼쳐 둔다. */}
         <button
           type="button"
           aria-expanded={isMoreOpen}
           aria-controls={moreSectionId}
           onClick={() => setIsMoreOpen((open) => !open)}
-          className="flex min-h-11 items-center justify-between gap-2 rounded-lg border px-3 text-left text-sm font-medium transition-colors outline-none hover:bg-muted focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 md:hidden"
+          className="flex min-h-11 items-center justify-between gap-2 text-left text-sm text-muted-foreground md:hidden"
         >
-          <span className="flex min-w-0 items-baseline gap-2">
-            <span className="shrink-0">더보기</span>
-            <span className="truncate text-xs font-normal text-muted-foreground">
-              {moreSummary}
-            </span>
-          </span>
+          <span className="truncate">＋ {moreSummary}</span>
           <ChevronDown
             aria-hidden
             className={cn(
-              "size-4 shrink-0 text-muted-foreground transition-transform",
+              "size-4 shrink-0 transition-transform",
               isMoreOpen && "rotate-180"
             )}
           />
@@ -539,6 +526,31 @@ export function SalesForm({
           id={moreSectionId}
           className={cn("flex-col gap-4 md:flex", isMoreOpen ? "flex" : "hidden")}
         >
+          {/* 연락처: 같은 거래처라도 담당자가 건마다 달라, 자동으로 채우지 않고 최근 연락처를 칩으로만 제안한다. */}
+          <FormField
+            control={form.control}
+            name="order_contact_phone"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>연락처</FormLabel>
+                <FormControl>
+                  <Input {...field} type="tel" placeholder="010-0000-0000" />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <RecentContactChips
+            // 매출은 소분류가 곧 오더자라 이름 없이 번호만 쓴다.
+            contacts={recentContacts.map((phone) => ({ name: "", phone }))}
+            value={{ name: "", phone: orderContactPhone }}
+            onSelect={(contact) =>
+              form.setValue("order_contact_phone", contact.phone, {
+                shouldDirty: true,
+              })
+            }
+          />
+
           {billingShownAbove ? null : billingField}
 
           {showSourceNote ? (
@@ -556,20 +568,6 @@ export function SalesForm({
               )}
             />
           ) : null}
-
-          <FormField
-            control={form.control}
-            name="memo"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>비고</FormLabel>
-                <FormControl>
-                  <Textarea {...field} rows={3} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
         </div>
 
         {state.error ? (
