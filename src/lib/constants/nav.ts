@@ -25,7 +25,7 @@ export interface NavItem {
  * (데스크톱 사이드바는 아래 sidebarNavGroups를 따로 쓴다.)
  */
 export const primaryNavItems: NavItem[] = [
-  { label: "비상", href: "/", icon: BookOpen },
+  { label: "HOME", href: "/", icon: BookOpen },
   { label: "배차", href: "/dispatches", icon: Truck },
   { label: "통계", href: "/stats", icon: BarChart3 },
 ]
@@ -52,7 +52,7 @@ export const quickCreateNavItems: NavItem[] = [
 /** 데스크톱 사이드바 전용 — 구분선으로 나뉘는 메뉴 그룹 */
 export const sidebarNavGroups: NavItem[][] = [
   [
-    { label: "비상", href: "/", icon: BookOpen },
+    { label: "HOME", href: "/", icon: BookOpen },
     { label: "통계", href: "/stats", icon: BarChart3 },
   ],
   [

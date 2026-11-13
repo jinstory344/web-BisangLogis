@@ -30,7 +30,7 @@ export function LedgerViewTabs({
 
   return (
     <nav
-      aria-label="비상 보기"
+      aria-label="HOME 보기"
       // 이 메뉴 안에서 좌우로 미는 건 메뉴 스크롤이지 달 넘기기가 아니다
       data-swipe-ignore
       className="no-scrollbar -mx-4 grid auto-cols-[minmax(4rem,1fr)] grid-flow-col overflow-x-auto border-b px-2 md:mx-0 md:px-0"

@@ -117,7 +117,7 @@ export default async function LedgerPage({
             {/* 가계부 앱처럼: 왼쪽 검색 · 가운데 제목 */}
             <header className="grid grid-cols-[2.5rem_1fr_2.5rem] items-center">
               <SearchButton />
-              <h1 className="text-center text-lg font-semibold tracking-tight">비상</h1>
+              <h1 className="text-center text-lg font-semibold tracking-wide">HOME</h1>
               <span aria-hidden />
             </header>
 
@@ -133,7 +133,7 @@ export default async function LedgerPage({
 
           {errorMessage ? (
             <p className="py-3 text-sm text-destructive">
-              비상을 불러오지 못했습니다: {errorMessage}
+              HOME 화면을 불러오지 못했습니다: {errorMessage}
             </p>
           ) : (
             <>

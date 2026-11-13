@@ -28,20 +28,21 @@ export default async function NewEntryPage({
     <div className="p-4 md:p-6">
       <div className="mx-auto flex max-w-lg flex-col gap-3">
         <header className="grid grid-cols-[1fr_auto_1fr] items-center">
+          {/* 뒤로 가기: 누르기 쉽게 글씨·화살표를 키운다 (제목보다는 조금 작게) */}
           <Link
             href="/"
-            className="-ml-2 flex h-11 w-fit items-center gap-0.5 pr-2 text-sm text-muted-foreground"
+            className="-ml-2 flex h-12 w-fit items-center gap-0.5 pr-3 text-base font-medium text-foreground/80"
           >
-            <ChevronLeft className="size-5" />
-            비상
+            <ChevronLeft className="size-6" />
+            HOME
           </Link>
           <h1 className="text-lg font-semibold">{label} 등록</h1>
           <Link
             href="/"
             aria-label="닫기"
-            className="-mr-2 flex size-11 items-center justify-center justify-self-end text-muted-foreground"
+            className="-mr-2 flex size-12 items-center justify-center justify-self-end text-foreground/80"
           >
-            <X className="size-5" />
+            <X className="size-6" />
           </Link>
         </header>
 

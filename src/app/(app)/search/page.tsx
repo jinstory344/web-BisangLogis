@@ -180,7 +180,7 @@ export default async function SearchPage({
           <header className="grid grid-cols-[2.75rem_1fr_2.75rem] items-center">
             <Link
               href="/"
-              aria-label="비상으로 돌아가기"
+              aria-label="HOME으로 돌아가기"
               className="flex size-11 items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground"
             >
               <ChevronLeft className="size-6" />
