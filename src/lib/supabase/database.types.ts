@@ -105,6 +105,8 @@ export type SaleRow = BaseColumns & {
   payment_status: PaymentStatus
   paid_at: string | null
   source_major: string | null
+  /** 출처 하위분류 (예: 카카오톡 › 스마일의 "스마일"). 오더자 이름은 source_minor. */
+  source_sub: string | null
   source_minor: string | null
   source_note: string | null
   /** 계산서정보 — 직접 운송 건에서 운임을 지급하고 계산서를 받을 상대 상호명(FK 아님). */
@@ -138,6 +140,13 @@ export type ExpenseRow = BaseColumns & {
 export type ExpenseCategoryRow = BaseColumns & {
   major: string
   minor: string | null
+  sort_order: number
+}
+
+/** 매출 출처 목록: 대분류 행(sub null) + 하위분류 행(예: 카카오톡 › 스마일) */
+export type SaleSourceRow = BaseColumns & {
+  major: string
+  sub: string | null
   sort_order: number
 }
 
@@ -212,6 +221,7 @@ export type Database = {
       sales: TableDef<SaleRow>
       expenses: TableDef<ExpenseRow>
       expense_categories: TableDef<ExpenseCategoryRow>
+      sale_sources: TableDef<SaleSourceRow>
       tax_invoices: TableDef<TaxInvoiceRow>
       tax_invoice_dispatches: TableDef<TaxInvoiceDispatchRow>
       purchase_invoices: TableDef<PurchaseInvoiceRow>
@@ -308,6 +318,7 @@ export type Database = {
           p_order_contact_phone?: string | null
           /** 출처 대분류가 "거래처"일 때만 허용된다 (RPC가 검사). */
           p_client_id?: string | null
+          p_source_sub?: string | null
         }
         Returns: string
       }
@@ -327,6 +338,7 @@ export type Database = {
           p_billing_entity_name?: string | null
           p_order_contact_phone?: string | null
           p_client_id?: string | null
+          p_source_sub?: string | null
         }
         Returns: undefined
       }

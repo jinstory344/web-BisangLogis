@@ -30,7 +30,10 @@ export const saleFormSchema = z.object({
    */
   is_vat_exempt: z.boolean(),
   payment_method: z.enum(["TAX_INVOICE", "TRANSFER", "CASH"]),
-  source_major: z.string().trim(),
+  source_major: z.string().trim().max(20, "출처 이름이 너무 길어요"),
+  /** 출처 하위분류 (예: 카카오톡 › 스마일). 고르지 않으면 "" → 서버에서 null */
+  source_sub: z.string().trim().max(20, "출처 이름이 너무 길어요"),
+  /** 오더자(거래처 출처면 거래처 이름) */
   source_minor: z.string().trim(),
   source_note: z.string().trim(),
   /**
@@ -61,6 +64,7 @@ export const saleFormDefaults: SaleFormValues = {
   is_vat_exempt: false,
   payment_method: "TAX_INVOICE",
   source_major: "",
+  source_sub: "",
   source_minor: "",
   source_note: "",
   billing_entity_name: "",
@@ -84,6 +88,7 @@ export function saleRowToFormValues(row: SaleRow): SaleFormValues {
     is_vat_exempt: isVatExemptForPayment(row.payment_method),
     payment_method: row.payment_method,
     source_major: row.source_major ?? "",
+    source_sub: row.source_sub ?? "",
     source_minor: row.source_minor ?? "",
     source_note: row.source_note ?? "",
     billing_entity_name: row.billing_entity_name ?? "",
@@ -146,5 +151,16 @@ export function coerceSaleFormData(
     billing_entity_name: raw.billing_entity_name ?? "",
     order_contact_phone: raw.order_contact_phone ?? "",
     client_id: raw.client_id ?? "",
+    source_sub: raw.source_sub ?? "",
   }
+}
+
+/**
+ * RPC에 넘길 출처 하위분류. 출처가 없거나 "거래처"(거래처 명단에서 고름)면 하위분류는 쓰지 않는다.
+ */
+export function resolveSaleSourceSub(
+  values: Pick<SaleFormValues, "source_major" | "source_sub">
+): string | null {
+  if (!values.source_major || values.source_major === SOURCE_MAJOR_CLIENT) return null
+  return values.source_sub || null
 }

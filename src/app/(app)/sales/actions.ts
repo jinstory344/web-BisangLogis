@@ -21,6 +21,7 @@ import { createClient } from "@/lib/supabase/server"
 import {
   coerceSaleFormData,
   resolveSaleClientId,
+  resolveSaleSourceSub,
   saleFormSchema,
 } from "@/lib/validations/sales"
 
@@ -224,6 +225,7 @@ export async function createSaleAction(
     p_billing_entity_name: values.billing_entity_name || null,
     p_order_contact_phone: values.order_contact_phone || null,
     p_client_id: resolveSaleClientId(values),
+    p_source_sub: resolveSaleSourceSub(values),
   })
 
   if (error) {
@@ -268,6 +270,7 @@ export async function updateSaleAction(
     p_billing_entity_name: values.billing_entity_name || null,
     p_order_contact_phone: values.order_contact_phone || null,
     p_client_id: resolveSaleClientId(values),
+    p_source_sub: resolveSaleSourceSub(values),
   })
 
   if (error) {

@@ -14,7 +14,6 @@ import { useForm } from "react-hook-form"
 
 import { AmountInput } from "@/components/form/amount-input"
 import { AmountKeypadField } from "@/components/form/amount-keypad"
-import { toChoiceOptions } from "@/components/form/choice-chips"
 import { DateRow } from "@/components/form/date-row"
 import { FormSubmitBar, touchFormProps } from "@/components/form/form-submit-bar"
 import { RecentContactChips } from "@/components/form/recent-contact-chips"
@@ -42,10 +41,8 @@ import { FreeTextCombobox } from "@/components/common/free-text-combobox"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { PAYMENT_METHOD_OPTIONS } from "@/lib/constants/payment-method"
-import {
-  SOURCE_MAJOR_CLIENT,
-  SOURCE_MAJOR_OPTIONS,
-} from "@/lib/constants/source"
+import { DEFAULT_SALE_SOURCE_TREE } from "@/lib/constants/sale-sources"
+import { SOURCE_MAJOR_CLIENT } from "@/lib/constants/source"
 import { getTodayInSeoul } from "@/lib/date"
 import {
   calcVatFromSupply,
@@ -68,9 +65,9 @@ import {
 } from "./actions"
 import { type PickedSaleClient } from "./client-source-picker"
 import { ClientSourceRow } from "./client-source-row"
+import { SourcePickerSheet } from "./source-picker-sheet"
+import type { SaleSources } from "./sources"
 import { useRecentSaleContacts } from "./use-recent-sale-contacts"
-
-const SOURCE_MAJOR_CHOICES = toChoiceOptions(SOURCE_MAJOR_OPTIONS)
 
 interface SalesFormProps {
   action: (
@@ -84,6 +81,8 @@ interface SalesFormProps {
    * 거래처 페이지에 등록된 거래처를 그대로 쓴다. 조회에 실패하면 비워서 넘겨도 폼은 쓸 수 있다.
    */
   clientChoices?: SaleClientChoice[]
+  /** 출처 목록(대분류 › 하위분류)과 편집 가능 여부. 못 읽으면 기본 대분류만. */
+  sources?: SaleSources
 }
 
 /**
@@ -119,6 +118,7 @@ export function SalesForm({
   defaultValues,
   submitLabel,
   clientChoices = [],
+  sources = { tree: DEFAULT_SALE_SOURCE_TREE, editable: false },
 }: SalesFormProps) {
   const [state, formAction, isPending] = useActionState(action, {
     error: null,
@@ -411,23 +411,25 @@ export function SalesForm({
           )}
         />
 
-        <FormField
-          control={form.control}
-          name="source_major"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>출처</FormLabel>
-              <SheetChoice
-                title="출처"
-                allowDeselect
-                options={SOURCE_MAJOR_CHOICES}
-                value={field.value}
-                onChange={handleSourceMajorChange}
-              />
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        <FormItem>
+          <FormLabel>출처</FormLabel>
+          {/* 대분류 › 하위분류 (예: 카카오톡 › 스마일). 오더자 이름은 아래 줄에 따로 적는다. */}
+          <SourcePickerSheet
+            initialTree={sources.tree}
+            editable={sources.editable}
+            major={sourceMajor}
+            sub={form.watch("source_sub")}
+            onPick={(nextMajor, nextSub) => {
+              handleSourceMajorChange(nextMajor)
+              form.setValue("source_sub", nextSub, { shouldDirty: true })
+            }}
+          />
+          {form.formState.errors.source_major ? (
+            <p className="text-sm text-destructive">
+              {form.formState.errors.source_major.message}
+            </p>
+          ) : null}
+        </FormItem>
 
         {sourceMajor === SOURCE_MAJOR_CLIENT ? (
           <FormItem>

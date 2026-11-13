@@ -9,6 +9,7 @@ import {
 
 import { createSaleAction } from "../actions"
 import { getSaleClientChoices } from "../client-choices"
+import { getSaleSources } from "../sources"
 import { SalesForm } from "../sales-form"
 
 /**
@@ -33,10 +34,12 @@ async function loadSaleCopyDefaults(id: string): Promise<SaleFormValues | null> 
  */
 export async function NewSaleBody({ copyId }: { copyId: string | null }) {
 
-  const [copiedValues, clientChoices] = await Promise.all([
+  const [copiedValues, clientChoices, sources] = await Promise.all([
     copyId ? loadSaleCopyDefaults(copyId) : null,
     // 거래처 명단은 부가 기능이라 조회 실패 시 비운다 (매출 폼은 계속 쓸 수 있다).
     getSaleClientChoices().catch(() => []),
+    // 출처 목록은 읽지 못해도 기본 대분류로 대신한다 (getSaleSources 안에서 처리)
+    getSaleSources(),
   ])
 
   return (
@@ -49,6 +52,7 @@ export async function NewSaleBody({ copyId }: { copyId: string | null }) {
           action={createSaleAction}
           defaultValues={copiedValues ?? saleFormDefaults}
           clientChoices={clientChoices}
+          sources={sources}
           submitLabel="등록"
         />
       </div>

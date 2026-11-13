@@ -9,6 +9,7 @@ import { saleRowToFormValues } from "@/lib/validations/sales"
 import { updateSaleAction } from "../../actions"
 import { getSaleClientChoices } from "../../client-choices"
 import { SalesForm } from "../../sales-form"
+import { getSaleSources } from "../../sources"
 
 export default async function EditSalePage({
   params,
@@ -23,9 +24,10 @@ export default async function EditSalePage({
   const supabase = await createClient()
   // 매출 한 건과 거래처 명단은 서로 기다릴 필요가 없어 함께 읽는다.
   // 거래처 명단은 부가 기능이라 조회 실패 시 비운다 (수정 화면은 계속 쓸 수 있다).
-  const [{ data: sale }, clientChoices] = await Promise.all([
+  const [{ data: sale }, clientChoices, sources] = await Promise.all([
     supabase.from("sales").select("*").eq("id", id).is("deleted_at", null).single(),
     getSaleClientChoices().catch(() => []),
+    getSaleSources(),
   ])
 
   if (!sale) {
@@ -47,6 +49,7 @@ export default async function EditSalePage({
           action={updateSaleAction.bind(null, id, returnTo)}
           defaultValues={defaultValues}
           clientChoices={clientChoices}
+          sources={sources}
           submitLabel="저장"
         />
       </div>

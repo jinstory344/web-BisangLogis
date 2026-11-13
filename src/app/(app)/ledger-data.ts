@@ -1,4 +1,5 @@
 import { EXPENSE_PAYMENT_METHOD_LABELS } from "@/lib/constants/payment-method"
+import { formatSaleSource } from "@/lib/constants/sale-sources"
 import type { AmountRow, LedgerEntry } from "@/lib/ledger"
 import { appendClientIdFilter, buildIlikeOrFilter } from "@/lib/search"
 import type { ExpenseRow, SaleRow } from "@/lib/supabase/database.types"
@@ -115,7 +116,7 @@ function toSaleEntry(row: SaleRow): SaleLedgerEntry {
     amount: row.supply_amount,
     source: row.source_minor || row.source_major || "-",
     route: `${row.origin} → ${row.destination}`,
-    sourceMajor: row.source_major ?? "-",
+    sourceMajor: formatSaleSource(row.source_major, row.source_sub) || "-",
     isUnpaid: row.payment_status === "UNPAID",
     row,
   }
@@ -201,6 +202,7 @@ export async function searchLedgerEntries(
               "origin",
               "destination",
               "source_major",
+              "source_sub",
               "source_minor",
               "billing_entity_name",
               "memo",

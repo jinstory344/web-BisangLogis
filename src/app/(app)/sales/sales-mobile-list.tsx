@@ -17,6 +17,7 @@ import {
 import { PAID_TEXT_CLASS } from "@/components/dispatches/payment-badge"
 import { DayHeader } from "@/components/list/day-header"
 import { PAYMENT_METHOD_LABELS } from "@/lib/constants/payment-method"
+import { formatSaleSource } from "@/lib/constants/sale-sources"
 import { spansMultipleMonths } from "@/lib/day-groups"
 import { formatDateWithWeekday, formatMonthDay } from "@/lib/date"
 import { formatKRW } from "@/lib/money"
@@ -174,7 +175,7 @@ export function SalesMobileList({
                     {sale.origin} → {sale.destination}
                   </p>
                   <p className="mt-0.5 text-xs text-muted-foreground">
-                    {sale.source_major ?? "-"} ·{" "}
+                    {formatSaleSource(sale.source_major, sale.source_sub) || "-"} ·{" "}
                     {PAYMENT_METHOD_LABELS[sale.payment_method]}
                   </p>
                 </div>
@@ -242,7 +243,8 @@ export function SaleActionSheetBody({
           {sale.origin} → {sale.destination}
         </SheetTitle>
         <SheetDescription>
-          {formatDateWithWeekday(sale.sale_date)} · {sale.source_major ?? "-"}
+          {formatDateWithWeekday(sale.sale_date)} ·{" "}
+          {formatSaleSource(sale.source_major, sale.source_sub) || "-"}
           {sale.source_minor ? ` / ${sale.source_minor}` : ""}
         </SheetDescription>
       </SheetHeader>

@@ -7,6 +7,7 @@ import {
   buildSaleFormData,
   coerceSaleFormData,
   resolveSaleClientId,
+  resolveSaleSourceSub,
   saleFormDefaults,
   saleFormSchema,
   saleRowToFormValues,
@@ -31,6 +32,7 @@ const baseRow: SaleRow = {
   payment_status: "PAID",
   paid_at: "2026-11-02",
   source_major: "거래처",
+  source_sub: null,
   source_minor: "조은물류",
   source_note: "월말 정산",
   billing_entity_name: "조은물류(주)",
@@ -88,6 +90,7 @@ describe("buildSaleCopyDefaults (이전 건 복사)", () => {
       is_vat_exempt: true,
       payment_method: "TRANSFER",
       source_major: "거래처",
+      source_sub: "",
       source_minor: "조은물류",
       source_note: "월말 정산",
       billing_entity_name: "조은물류(주)",
@@ -279,5 +282,17 @@ describe("buildSaleFormData (폼 → 서버 액션 직렬화)", () => {
     expect(fd.get("supply_amount")).toBe("550000")
     expect(fd.get("is_vat_exempt")).toBe("true")
     expect(saleFormSchema.parse(coerceSaleFormData(submittedEntries(values)))).toEqual(values)
+  })
+})
+
+describe("resolveSaleSourceSub", () => {
+  it("출처가 있고 거래처가 아니면 하위분류를 넘긴다", () => {
+    expect(resolveSaleSourceSub({ source_major: "카카오톡", source_sub: "스마일" })).toBe("스마일")
+  })
+
+  it("하위분류가 비었거나, 출처가 없거나, 거래처면 null", () => {
+    expect(resolveSaleSourceSub({ source_major: "카카오톡", source_sub: "" })).toBeNull()
+    expect(resolveSaleSourceSub({ source_major: "", source_sub: "스마일" })).toBeNull()
+    expect(resolveSaleSourceSub({ source_major: "거래처", source_sub: "스마일" })).toBeNull()
   })
 })

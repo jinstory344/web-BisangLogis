@@ -38,6 +38,7 @@ import {
 } from "@/components/ui/table"
 import { PaymentBadge } from "@/components/dispatches/payment-badge"
 import { PAYMENT_METHOD_LABELS } from "@/lib/constants/payment-method"
+import { formatSaleSource } from "@/lib/constants/sale-sources"
 import {
   formatDateWithWeekday,
   formatMonthDay,
@@ -346,7 +347,7 @@ export function SalesList({
                             {s.origin} → {s.destination}
                           </TableCell>
                           <TableCell>
-                            {s.source_major ?? "-"}
+                            {formatSaleSource(s.source_major, s.source_sub) || "-"}
                             {s.source_minor ? ` / ${s.source_minor}` : ""}
                           </TableCell>
                           <TableCell>{s.billing_entity_name ?? "-"}</TableCell>
