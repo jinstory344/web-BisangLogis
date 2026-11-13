@@ -221,7 +221,7 @@ export function SalesMobileList({
   )
 }
 
-function SaleActionSheetBody({
+export function SaleActionSheetBody({
   sale,
   onPay,
   onCancelPaid,

@@ -1,4 +1,6 @@
-import Link from "next/link"
+"use client"
+
+import { useState } from "react"
 
 import { DayHeader } from "@/components/list/day-header"
 import { formatKRW } from "@/lib/money"
@@ -9,10 +11,12 @@ import { cn } from "@/lib/utils"
 import type { DayLedgerEntry } from "@/app/(app)/ledger-data"
 
 import { EXPENSE_TEXT_CLASS, INCOME_TEXT_CLASS } from "./colors"
+import { LedgerEntryActions } from "./ledger-entry-actions"
 
 /**
  * 일일 장부: 날짜별로 그날의 매출(파랑)과 지출(빨강)을 한 목록에 보여 준다.
- * 날짜 머리글에는 그날 매출·지출 합계가 있고, 건을 누르면 매출은 상세, 지출은 수정 화면으로 간다.
+ * 날짜 머리글에는 그날 매출·지출 합계가 있고, 건을 누르면 매출·지출 목록과 같은 작업 시트가 뜬다
+ * (매출: 입금 처리·상세·수정·복사 등록·삭제 / 지출: 수정·복사 등록·삭제).
  */
 export function LedgerDayList({
   buckets,
@@ -21,6 +25,9 @@ export function LedgerDayList({
   buckets: DayBucket<DayLedgerEntry>[]
   emptyMessage?: string
 }) {
+  const [sheetEntry, setSheetEntry] = useState<DayLedgerEntry | null>(null)
+  const [isSheetOpen, setIsSheetOpen] = useState(false)
+
   if (buckets.length === 0) {
     return (
       <p className="py-12 text-center text-sm text-muted-foreground">
@@ -56,16 +63,14 @@ export function LedgerDayList({
           />
 
           {bucket.entries.map((entry) => (
-            <Link
-              // 화면에 보이는 건은 상세·수정 화면을 미리 받아 두어 누르면 바로 뜨게 한다.
-              prefetch
+            <button
+              type="button"
               key={`${entry.kind}-${entry.id}`}
-              href={
-                entry.kind === "sale"
-                  ? `/sales/${entry.id}`
-                  : `/expenses/${entry.id}/edit`
-              }
-              className="flex items-start gap-3 border-t px-4 py-2.5 transition-colors hover:bg-muted/40 active:bg-muted/60"
+              onClick={() => {
+                setSheetEntry(entry)
+                setIsSheetOpen(true)
+              }}
+              className="flex w-full items-start gap-3 border-t px-4 py-2.5 text-left transition-colors hover:bg-muted/40 active:bg-muted/60"
             >
               {entry.kind === "sale" ? (
                 <>
@@ -128,10 +133,16 @@ export function LedgerDayList({
                   </div>
                 </>
               )}
-            </Link>
+            </button>
           ))}
         </section>
       ))}
+
+      <LedgerEntryActions
+        entry={sheetEntry}
+        open={isSheetOpen}
+        onOpenChange={setIsSheetOpen}
+      />
     </div>
   )
 }

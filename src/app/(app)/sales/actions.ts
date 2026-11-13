@@ -274,6 +274,8 @@ export async function updateSaleAction(
   }
 
   revalidatePath("/sales")
+  // 비상(홈) 화면의 합계·목록·미입금도 바로 바뀌게
+  revalidatePath("/")
   revalidatePath(`/sales/${id}`)
   redirect(`/sales/${id}`)
 }
@@ -283,6 +285,8 @@ export async function deleteSaleAction(id: string): Promise<void> {
   const supabase = await createClient()
   await softDelete(supabase, "sales", id)
   revalidatePath("/sales")
+  // 비상(홈) 화면의 합계·목록·미입금도 바로 바뀌게
+  revalidatePath("/")
 }
 
 /** 매출 목록에서 체크박스로 선택한 여러 건을 한 번에 삭제 */
@@ -327,6 +331,8 @@ export async function markSalePaidAction(
   })
 
   revalidatePath("/sales")
+  // 비상(홈) 화면의 합계·목록·미입금도 바로 바뀌게
+  revalidatePath("/")
   revalidatePath(`/sales/${id}`)
 }
 
@@ -366,6 +372,8 @@ export async function cancelSalePaidAction(id: string): Promise<void> {
   })
 
   revalidatePath("/sales")
+  // 비상(홈) 화면의 합계·목록·미입금도 바로 바뀌게
+  revalidatePath("/")
   revalidatePath(`/sales/${id}`)
 }
 

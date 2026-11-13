@@ -81,6 +81,8 @@ export interface SaleLedgerEntry extends LedgerEntry {
   route: string
   sourceMajor: string
   isUnpaid: boolean
+  /** 작업 시트용 원래 행 */
+  row: SaleRow
 }
 
 export interface ExpenseLedgerEntry extends LedgerEntry {
@@ -91,42 +93,20 @@ export interface ExpenseLedgerEntry extends LedgerEntry {
   note: string
   /** "카드" 등 */
   paymentLabel: string
+  /** 작업 시트용 원래 행 */
+  row: ExpenseRow
 }
 
 export type DayLedgerEntry = SaleLedgerEntry | ExpenseLedgerEntry
 
-const SALE_ENTRY_COLUMNS =
-  "id, created_at, sale_date, origin, destination, supply_amount, payment_status, source_major, source_minor"
-const EXPENSE_ENTRY_COLUMNS =
-  "id, created_at, expense_date, category_major, category_minor, amount, payment_method, vendor, memo"
+/**
+ * 일일 장부·검색은 건을 누르면 뜨는 작업 시트(입금 처리·상세·수정·복사·삭제)에
+ * 세액·합계금액·입금일·결제수단 등이 필요해서 행 전체를 읽는다.
+ */
+const SALE_ENTRY_COLUMNS = "*"
+const EXPENSE_ENTRY_COLUMNS = "*"
 
-type SaleEntryRow = Pick<
-  SaleRow,
-  | "id"
-  | "created_at"
-  | "sale_date"
-  | "origin"
-  | "destination"
-  | "supply_amount"
-  | "payment_status"
-  | "source_major"
-  | "source_minor"
->
-
-type ExpenseEntryRow = Pick<
-  ExpenseRow,
-  | "id"
-  | "created_at"
-  | "expense_date"
-  | "category_major"
-  | "category_minor"
-  | "amount"
-  | "payment_method"
-  | "vendor"
-  | "memo"
->
-
-function toSaleEntry(row: SaleEntryRow): SaleLedgerEntry {
+function toSaleEntry(row: SaleRow): SaleLedgerEntry {
   return {
     kind: "sale",
     id: row.id,
@@ -137,10 +117,11 @@ function toSaleEntry(row: SaleEntryRow): SaleLedgerEntry {
     route: `${row.origin} → ${row.destination}`,
     sourceMajor: row.source_major ?? "-",
     isUnpaid: row.payment_status === "UNPAID",
+    row,
   }
 }
 
-function toExpenseEntry(row: ExpenseEntryRow): ExpenseLedgerEntry {
+function toExpenseEntry(row: ExpenseRow): ExpenseLedgerEntry {
   return {
     kind: "expense",
     id: row.id,
@@ -156,6 +137,7 @@ function toExpenseEntry(row: ExpenseEntryRow): ExpenseLedgerEntry {
     paymentLabel: row.payment_method
       ? EXPENSE_PAYMENT_METHOD_LABELS[row.payment_method]
       : "",
+    row,
   }
 }
 

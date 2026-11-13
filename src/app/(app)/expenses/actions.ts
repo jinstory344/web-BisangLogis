@@ -132,6 +132,8 @@ export async function updateExpenseAction(
   })
 
   revalidatePath("/expenses")
+  // 비상(홈) 화면의 합계·목록·미입금도 바로 바뀌게
+  revalidatePath("/")
   redirect("/expenses")
 }
 
@@ -139,4 +141,6 @@ export async function deleteExpenseAction(id: string): Promise<void> {
   const supabase = await createClient()
   await softDelete(supabase, "expenses", id)
   revalidatePath("/expenses")
+  // 비상(홈) 화면의 합계·목록·미입금도 바로 바뀌게
+  revalidatePath("/")
 }

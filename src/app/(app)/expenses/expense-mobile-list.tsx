@@ -163,7 +163,7 @@ export function ExpenseMobileList({
   )
 }
 
-function ExpenseActionSheetBody({
+export function ExpenseActionSheetBody({
   expense,
   onDelete,
 }: {
