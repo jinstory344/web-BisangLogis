@@ -17,7 +17,7 @@ const SHOWN_ON = ["/", "/dispatches", "/stats", "/sales", "/expenses"]
 
 /**
  * 모바일 오른쪽 아래 떠 있는 버튼 두 개 (가계부 앱 방식):
- * 빨간 ＋ = 통합 등록 화면(마지막에 고른 종류로), 회색 복사 = 이전 건 찾아 복사.
+ * 차분한 벽돌빨강(#c4524e) ＋ = 통합 등록 화면(마지막에 고른 종류로), 회색 복사 = 이전 건 찾아 복사.
  */
 export function FloatingActions() {
   const pathname = usePathname()
@@ -56,9 +56,9 @@ export function FloatingActions() {
         href={newEntryHref("sale")}
         onClick={openNewEntry}
         aria-label="등록"
-        className="flex size-14 items-center justify-center rounded-full bg-red-500 text-white shadow-lg transition-transform active:scale-95"
+        className="flex size-12 items-center justify-center rounded-full bg-[#c4524e] text-white shadow-lg transition-transform active:scale-95"
       >
-        <Plus className="size-7" aria-hidden />
+        <Plus className="size-6" aria-hidden />
       </Link>
     </div>
   )
