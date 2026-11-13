@@ -6,3 +6,8 @@ export const EXPENSE_TEXT_CLASS = "text-red-600 dark:text-red-400"
 export function netTextClass(net: number): string {
   return net < 0 ? EXPENSE_TEXT_CLASS : INCOME_TEXT_CLASS
 }
+
+/** HOME·검색 요약의 수익: 흑자는 흰색(라이트 모드는 검정) 굵게, 적자는 빨강 굵게 */
+export function profitTextClass(net: number): string {
+  return net < 0 ? `${EXPENSE_TEXT_CLASS} font-bold` : "text-foreground font-bold"
+}

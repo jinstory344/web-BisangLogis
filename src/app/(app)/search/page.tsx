@@ -2,7 +2,11 @@ import { ChevronLeft } from "lucide-react"
 import Link from "next/link"
 import type { ReactNode } from "react"
 
-import { EXPENSE_TEXT_CLASS, INCOME_TEXT_CLASS } from "@/components/ledger/colors"
+import {
+  EXPENSE_TEXT_CLASS,
+  INCOME_TEXT_CLASS,
+  profitTextClass,
+} from "@/components/ledger/colors"
 import { TotalsRow } from "@/components/list/totals-row"
 import { sumTotals } from "@/lib/ledger"
 import { formatKRW } from "@/lib/money"
@@ -128,10 +132,10 @@ export default async function SearchPage({
                 {
                   label: "수익",
                   value: formatKRW(ledgerTotals.net),
-                  className:
-                    ledgerTotals.net < 0 ? EXPENSE_TEXT_CLASS : INCOME_TEXT_CLASS,
+                  className: profitTextClass(ledgerTotals.net),
                 },
               ]}
+              size="lg"
             />
           ) : (
             <TotalsRow

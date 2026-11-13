@@ -5,10 +5,10 @@ import { TotalsRow } from "@/components/list/totals-row"
 import { formatKRW } from "@/lib/money"
 import type { LedgerTotals } from "@/lib/ledger"
 
-import { EXPENSE_TEXT_CLASS, INCOME_TEXT_CLASS, netTextClass } from "./colors"
+import { EXPENSE_TEXT_CLASS, INCOME_TEXT_CLASS, profitTextClass } from "./colors"
 
 /**
- * 비상 상단 합계 줄: 매출(공급가액) / 지출 / 합계(매출 − 지출). 검색 화면과 같은 모양.
+ * 비상 상단 요약 줄: 매출(공급가액) / 지출 / 수익(매출 − 지출, 굵게). 검색 화면과 같은 모양.
  */
 export function LedgerSummary({ totals }: { totals: LedgerTotals }) {
   return (
@@ -24,8 +24,9 @@ export function LedgerSummary({ totals }: { totals: LedgerTotals }) {
           value: formatKRW(totals.expense),
           className: EXPENSE_TEXT_CLASS,
         },
-        { label: "수익", value: formatKRW(totals.net), className: netTextClass(totals.net) },
+        { label: "수익", value: formatKRW(totals.net), className: profitTextClass(totals.net) },
       ]}
+      size="lg"
     />
   )
 }
@@ -42,7 +43,7 @@ export function UnpaidLine({ unpaid }: { unpaid: { count: number; supplyAmount: 
       className="-mx-4 flex items-center justify-between gap-3 border-b px-4 py-2 text-xs transition-colors hover:bg-muted/40 active:bg-muted/60 md:mx-0 md:px-0"
     >
       <span className="text-muted-foreground">미입금 {unpaid.count}건</span>
-      <span className="flex items-center gap-0.5 text-sm font-medium tabular-nums">
+      <span className="flex items-center gap-0.5 text-[13px] text-foreground/85 tabular-nums">
         {formatKRW(unpaid.supplyAmount)}
         <ChevronRight className="size-4 text-muted-foreground" />
       </span>
