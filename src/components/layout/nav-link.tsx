@@ -32,6 +32,20 @@ export function NavLink({
   const isActive = active ?? isNavItemActive(item, pathname)
   const Icon = item.icon
 
+  // 아직 화면이 없는 메뉴: 흐리게 보이고 누를 수 없다
+  if (item.soon) {
+    return (
+      <span
+        aria-disabled
+        className={cn("text-muted-foreground/50", className)}
+      >
+        <Icon className={iconClassName} />
+        <span className={labelClassName}>{item.label}</span>
+        <span className="ml-auto text-[11px] text-muted-foreground/60">준비 중</span>
+      </span>
+    )
+  }
+
   return (
     <Link
       href={item.href}

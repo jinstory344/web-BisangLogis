@@ -23,7 +23,7 @@ export function AppShell({
         <NavigationProgress />
       </Suspense>
       <FloatingActions />
-      <MobileTabBar userEmail={userEmail} />
+      <MobileTabBar />
     </div>
   )
 }

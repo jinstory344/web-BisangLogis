@@ -1,20 +1,10 @@
 "use client"
 
-import { LogOut, MoreHorizontal } from "lucide-react"
+import { Menu } from "lucide-react"
 import { usePathname } from "next/navigation"
 import { useEffect, useState } from "react"
 
-import { logout } from "@/app/(app)/actions"
-import { clearPageCache } from "@/components/layout/service-worker"
-import { Button } from "@/components/ui/button"
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { primaryNavItems, secondaryNavItems } from "@/lib/constants/nav"
 import { getTodayInSeoul } from "@/lib/date"
 
@@ -31,7 +21,7 @@ const TAB_CLASS_NAME =
  * 탭 높이 56px + 아이폰 아래 홈 막대 자리(safe-area-inset-bottom)만큼 아래 여백.
  * 이 높이는 main의 아래 여백, 폼 저장 바·떠 있는 버튼의 위치와 맞춘 값이다(모두 같은 calc).
  */
-export function MobileTabBar({ userEmail }: { userEmail: string | null }) {
+export function MobileTabBar() {
   const [moreOpen, setMoreOpen] = useState(false)
   const pathname = usePathname()
   // 누른 탭에 바로 불을 옮겨, 새 화면이 도착하기 전에도 눌렸다는 걸 알 수 있게 한다 (도착하면 경로 기준으로 돌아감).
@@ -64,56 +54,36 @@ export function MobileTabBar({ userEmail }: { userEmail: string | null }) {
   return (
     <nav className="fixed inset-x-0 bottom-0 z-40 flex h-[calc(3.5rem+env(safe-area-inset-bottom))] border-t bg-background pb-[env(safe-area-inset-bottom)] md:hidden">
       {primaryNavItems.map(renderTab)}
-      <Sheet open={moreOpen} onOpenChange={setMoreOpen}>
-        <SheetTrigger asChild>
+      <Popover open={moreOpen} onOpenChange={setMoreOpen}>
+        <PopoverTrigger asChild>
           <button
             type="button"
-            data-active={pendingHref ? false : isMoreActive}
+            aria-label="메뉴"
+            data-active={pendingHref ? false : isMoreActive || moreOpen}
             className={`${TAB_CLASS_NAME} text-muted-foreground`}
           >
-            <MoreHorizontal className="size-5" />
-            <span>더보기</span>
+            <Menu className="size-5" />
+            <span>메뉴</span>
           </button>
-        </SheetTrigger>
-        <SheetContent side="bottom" className="pb-8">
-          <SheetHeader>
-            <SheetTitle>더보기</SheetTitle>
-            <SheetDescription className="sr-only">
-              매출·지출 목록과 기타 메뉴
-            </SheetDescription>
-          </SheetHeader>
-          <div className="grid grid-cols-3 gap-2 px-4">
-            {secondaryNavItems.map((item) => (
-              <NavLink
-                key={item.href}
-                item={item}
-                onNavigate={() => setMoreOpen(false)}
-                className="flex flex-col items-center justify-center gap-1 rounded-md border py-4 text-xs"
-                iconClassName="size-5"
-                labelClassName="text-center"
-              />
-            ))}
-          </div>
-          <div className="mt-2 flex flex-col gap-2 px-4">
-            {userEmail ? (
-              <p className="truncate text-xs text-muted-foreground">
-                {userEmail}
-              </p>
-            ) : null}
-            <form action={logout} onSubmit={clearPageCache}>
-              <Button
-                type="submit"
-                variant="outline"
-                size="sm"
-                className="w-full justify-start gap-2"
-              >
-                <LogOut className="size-4" />
-                로그아웃
-              </Button>
-            </form>
-          </div>
-        </SheetContent>
-      </Sheet>
+        </PopoverTrigger>
+        {/* 메뉴 탭 바로 위에 세로 목록으로 펼친다 (엄지가 닿는 오른쪽 아래). 바깥을 누르면 닫힌다. */}
+        <PopoverContent
+          side="top"
+          align="end"
+          sideOffset={8}
+          className="w-52 gap-0 rounded-2xl p-1.5"
+        >
+          {secondaryNavItems.map((item) => (
+            <NavLink
+              key={item.href}
+              item={item}
+              onNavigate={() => setMoreOpen(false)}
+              className="flex h-11 items-center gap-3 rounded-lg px-3 text-[15px] data-[active=true]:bg-muted"
+              iconClassName="size-5 shrink-0"
+            />
+          ))}
+        </PopoverContent>
+      </Popover>
     </nav>
   )
 }
