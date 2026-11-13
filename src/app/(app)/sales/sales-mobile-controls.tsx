@@ -98,11 +98,11 @@ export function SalesMobileControls({
               className: unpaid > 0 ? "text-destructive" : undefined,
             },
           ]}
-          size="xl"
+          size="lg"
         />
       </div>
 
-      <p className="text-xs text-muted-foreground">
+      <p className="text-[13px] text-muted-foreground">
         세액 포함 합계금액 {formatKRW(summary.all.totalAmount)}
       </p>
 

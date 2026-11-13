@@ -40,7 +40,7 @@ export function UnpaidLine({ unpaid }: { unpaid: { count: number; supplyAmount: 
   return (
     <Link
       href="/sales?from=1970-01-01&to=2099-12-31&payment_status=UNPAID"
-      className="-mx-4 flex items-center justify-between gap-3 border-b px-4 py-2 text-xs transition-colors hover:bg-muted/40 active:bg-muted/60 md:mx-0 md:px-0"
+      className="-mx-4 flex items-center justify-between gap-3 border-b px-4 py-2 text-[13px] transition-colors hover:bg-muted/40 active:bg-muted/60 md:mx-0 md:px-0"
     >
       <span className="text-muted-foreground">미입금 {unpaid.count}건</span>
       <span className="flex items-center gap-0.5 text-[13px] text-foreground/85 tabular-nums">

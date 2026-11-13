@@ -4,8 +4,6 @@ export interface TotalsRowItem {
   label: string
   value: string
   className?: string
-  /** 이름 글씨를 따로 키울 때 (지출 목록처럼 칸이 하나뿐일 때) */
-  labelClassName?: string
 }
 
 /**
@@ -18,12 +16,12 @@ export function TotalsRow({
 }: {
   items: TotalsRowItem[]
   /**
-   * lg: HOME·검색의 매출·지출·수익 요약처럼 크게 (이름 13px, 금액 16px)
-   * xl: 한 단계 더 (이름 14px, 금액 18px) — 매출 목록
+   * lg: 앱 공통 요약 크기 (이름 14px, 금액 18px) — HOME·검색·매출·지출·배차 목록 모두 같다.
+   * 강조할 금액(수익, 지출 합계)은 항목 className에 굵게를 더한다.
    */
-  size?: "md" | "lg" | "xl"
+  size?: "md" | "lg"
 }) {
-  const large = size !== "md"
+  const large = size === "lg"
   return (
     <dl
       className={cn(
@@ -37,22 +35,13 @@ export function TotalsRow({
           <dt
             className={cn(
               "text-muted-foreground",
-              size === "xl"
-                ? "text-sm leading-5"
-                : large
-                  ? "text-[13px] leading-5"
-                  : "text-[11px] leading-4",
-              item.labelClassName
+              large ? "text-sm leading-5" : "text-[11px] leading-4"
             )}
           >{item.label}</dt>
           <dd
             className={cn(
               "max-w-full truncate font-medium tabular-nums",
-              size === "xl"
-                ? "text-lg leading-7"
-                : large
-                  ? "text-base leading-6"
-                  : "text-sm leading-5",
+              large ? "text-lg leading-7" : "text-sm leading-5",
               item.className
             )}
           >

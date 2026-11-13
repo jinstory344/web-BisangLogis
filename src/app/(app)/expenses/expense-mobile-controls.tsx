@@ -94,9 +94,8 @@ export function ExpenseMobileControls({
             {
               label: "지출 합계",
               value: formatKRW(summary.total),
-              // 칸이 하나뿐이라 크게 (이름 15px · 금액 22px)
-              className: `${EXPENSE_TEXT_CLASS} text-[22px] leading-8 font-semibold`,
-              labelClassName: "text-[15px] leading-6",
+              // 강조 금액은 다른 화면의 수익처럼 굵게 (크기는 앱 공통 14px · 18px)
+              className: `${EXPENSE_TEXT_CLASS} font-bold`,
             },
           ]}
           size="lg"
