@@ -308,12 +308,13 @@
  * 빛은 로고 모양 안에서만 보이도록 로고 그림으로 가린다(mask).
  */
 @keyframes login-shine {
+  /* 105% → -5%: 빛줄기가 로고 칸 밖에서 들어와 막 빠져나가는 구간만 움직인다 (안 보이는 이동 없음) */
   0% {
-    background-position: 130% 0;
+    background-position: 105% 0;
   }
-  70%,
+  66%,
   100% {
-    background-position: -30% 0;
+    background-position: -5% 0;
   }
 }
 
@@ -321,14 +322,14 @@
   background-image: linear-gradient(
     115deg,
     transparent 40%,
-    rgb(147 197 253 / 0.32) 50%,
+    rgb(147 197 253 / 0.26) 50%,
     transparent 60%
   );
   background-size: 250% 100%;
   background-repeat: no-repeat;
   -webkit-mask: url("/brand/logo-white.png") center / contain no-repeat;
   mask: url("/brand/logo-white.png") center / contain no-repeat;
-  animation: login-shine 14s ease-in-out infinite; /* 약 10초 동안 천천히 지나가고 4초 쉬기, 끝없이 반복 */
+  animation: login-shine 10s ease-in-out infinite; /* 약 6.5초 동안 천천히 지나가고 3.5초 뒤 다시, 끝없이 반복 */
 }
 
 @media (prefers-reduced-motion: reduce) {
