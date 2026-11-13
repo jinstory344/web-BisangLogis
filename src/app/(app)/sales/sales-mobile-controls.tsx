@@ -88,7 +88,7 @@ export function SalesMobileControls({
         <MonthNavigator from={from} to={to} hrefForRange={(range) => hrefWith({ ...range })} />
         <TotalsRow
           items={[
-            { label: "매출(공급가)", value: formatKRW(summary.all.supplyAmount) },
+            { label: "매출", value: formatKRW(summary.all.supplyAmount) },
             {
               label: "입금",
               value: formatKRW(summary.paid.supplyAmount),

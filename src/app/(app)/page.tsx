@@ -113,7 +113,7 @@ export default async function LedgerPage({
           nextHref={neighbors ? ledgerHref(view, neighbors.next, kind) : null}
           className="flex flex-col"
         >
-          {/* 위에 고정되는 부분: 목록을 내려도 제목·날짜·보기 탭·합계가 계속 보인다 */}
+          {/* 위에 고정되는 부분: 목록을 내려도 제목·날짜·보기 탭·합계·미입금이 계속 보인다 */}
           <div className="sticky top-0 z-20 -mx-4 bg-background px-4 pt-2 md:-mx-6 md:px-6 md:pt-6">
             {/* 가계부 앱처럼: 왼쪽 검색 · 가운데 제목 */}
             <header className="grid grid-cols-[2.5rem_1fr_2.5rem] items-center">
@@ -130,7 +130,12 @@ export default async function LedgerPage({
 
             <LedgerNav view={view} anchor={anchor} kind={kind} />
             <LedgerViewTabs view={view} anchor={anchor} />
-            {errorMessage ? null : <LedgerSummary totals={totals} />}
+            {errorMessage ? null : (
+              <>
+                <LedgerSummary totals={totals} />
+                <UnpaidLine unpaid={unpaid} />
+              </>
+            )}
           </div>
 
           {errorMessage ? (
@@ -139,7 +144,6 @@ export default async function LedgerPage({
             </p>
           ) : (
             <>
-              <UnpaidLine unpaid={unpaid} />
               {view === "day" ? (
                 <LedgerKindChips anchor={anchor} value={kind} />
               ) : null}
