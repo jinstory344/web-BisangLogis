@@ -1,3 +1,4 @@
+import { DonutChart } from "@/components/stats/donut-chart"
 import { SummaryMonthNav } from "@/components/list/summary-month-nav"
 import type { ExpenseCategoryTree } from "@/lib/constants/expense-categories"
 import { formatYearMonth, getMonthRange, shiftMonthRange } from "@/lib/date"
@@ -68,6 +69,11 @@ export async function ExpenseSummary({
           {formatKRW(previousTotal)})
         </p>
       </div>
+
+      <DonutChart
+        ariaLabel="지출 대분류별 비율"
+        items={breakdown.map(({ major, total }) => ({ label: major, value: total }))}
+      />
 
       <div className="rounded-md border">
         {breakdown.map(({ major, total, minors }) => (

@@ -1,3 +1,4 @@
+import { DonutChart } from "@/components/stats/donut-chart"
 import { SummaryMonthNav } from "@/components/list/summary-month-nav"
 import { PAID_TEXT_CLASS } from "@/components/dispatches/payment-badge"
 import { formatYearMonth, getMonthRange, shiftMonthRange } from "@/lib/date"
@@ -82,6 +83,14 @@ export async function SalesSummary({ from }: { from: string }) {
           {summary.count}건 · 세액 포함 합계금액 {formatKRW(summary.totalAmount)}
         </p>
       </div>
+
+      <DonutChart
+        ariaLabel="매출 출처별 비율"
+        items={summary.byMajor.map((major) => ({
+          label: major.major,
+          value: major.supplyAmount,
+        }))}
+      />
 
       {summary.byMajor.length === 0 ? (
         <p className="py-8 text-center text-sm text-muted-foreground">

@@ -1,3 +1,4 @@
+import { DonutChart } from "@/components/stats/donut-chart"
 import { SummaryMonthNav } from "@/components/list/summary-month-nav"
 import { formatYearMonth, getMonthRange, shiftMonthRange } from "@/lib/date"
 import {
@@ -82,6 +83,14 @@ export async function DispatchSummary({ from }: { from: string }) {
           {previousCount}건 · 운임 {formatKRW(previousFreight)})
         </p>
       </div>
+
+      <DonutChart
+        ariaLabel="배차 거래처별 운임 비율"
+        items={summary.byClient.map((client) => ({
+          label: clientNames[client.clientId] ?? "-",
+          value: client.freightAmount,
+        }))}
+      />
 
       {summary.count === 0 ? (
         <p className="py-8 text-center text-sm text-muted-foreground">

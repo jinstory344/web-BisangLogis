@@ -1,5 +1,6 @@
 
 import { SearchButton } from "@/components/layout/search-button"
+import { LedgerCalendar } from "@/components/ledger/ledger-calendar"
 import { LedgerDayList } from "@/components/ledger/ledger-day-list"
 import { LedgerNav } from "@/components/ledger/ledger-nav"
 import { LedgerRangeList } from "@/components/ledger/ledger-range-list"
@@ -38,7 +39,7 @@ interface LedgerSearchParams {
 
 /**
  * 장부(홈): 매출(공급가액)과 지출을 한곳에서 보고 남은 돈을 확인한다.
- * 일일(그 달의 날짜별 내역) · 주별 · 월별 · 연별로 바꿔 볼 수 있고, 기본은 일일이다.
+ * 일일(그 달의 날짜별 내역) · 달력(날짜 칸마다 합계) · 주별 · 월별 · 연별로 바꿔 볼 수 있고, 기본은 일일이다.
  * 배차의 운임·수수료는 매출과 따로 관리해서 여기에 넣지 않는다.
  */
 export default async function LedgerPage({
@@ -65,7 +66,7 @@ export default async function LedgerPage({
     const [unpaidSummary, body] = await Promise.all([
       fetchUnpaidSummary(supabase),
       (async () => {
-        if (view === "day") {
+        if (view === "day" || view === "calendar") {
           const entries = await fetchLedgerEntries(supabase, range.from, range.to)
           return {
             totals: sumTotals(
@@ -75,11 +76,18 @@ export default async function LedgerPage({
                 expense: entry.kind === "expense" ? entry.amount : 0,
               }))
             ),
-            node: (
-              <LedgerDayList
-                buckets={buildDayBuckets(filterLedgerEntries(entries, kind))}
-              />
-            ),
+            node:
+              view === "calendar" ? (
+                <LedgerCalendar
+                  anchor={anchor}
+                  today={today}
+                  buckets={buildDayBuckets(entries)}
+                />
+              ) : (
+                <LedgerDayList
+                  buckets={buildDayBuckets(filterLedgerEntries(entries, kind))}
+                />
+              ),
           }
         }
 

@@ -9,6 +9,8 @@ import {
   type LedgerView,
 } from "@/lib/ledger"
 
+import { LedgerPeriodPicker } from "./ledger-period-picker"
+
 /**
  * 장부 상단 기간 이동. 일일·주별은 `‹ 2026년 11월 ›`(달 단위), 월별은 `‹ 2026년 ›`(해 단위),
  * 연별은 전체라서 이동 없이 "전체"만 보여 준다.
@@ -56,7 +58,7 @@ export function LedgerNav({
         <ChevronLeft className="size-5" />
       </Link>
       <div className="flex items-baseline gap-2">
-        <span className="text-base font-semibold">{label}</span>
+        <LedgerPeriodPicker view={view} anchor={anchor} kind={kind} label={label} />
         {isCurrent ? null : (
           <Link
             href={href(today)}

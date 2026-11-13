@@ -7,10 +7,13 @@ import {
   formatMonthDay,
   formatYearMonth,
   getCurrentMonthRangeInSeoul,
+  getMonthRange,
   isFullMonthRange,
   shiftMonthRange,
   type DateRange,
 } from "@/lib/date"
+
+import { PeriodPicker } from "./period-picker"
 
 interface MonthNavigatorProps {
   from: string
@@ -44,7 +47,16 @@ export function MonthNavigator({ from, to, hrefForRange }: MonthNavigatorProps) 
         <ChevronLeft className="size-5" />
       </Link>
       <div className="flex items-baseline gap-2">
-        <span className="text-base font-semibold">{label}</span>
+        {isMonth ? (
+          <PeriodPicker
+            mode="month"
+            value={from}
+            label={label}
+            hrefFor={(date) => hrefForRange(getMonthRange(date))}
+          />
+        ) : (
+          <span className="text-base font-semibold">{label}</span>
+        )}
         {isCurrentMonth ? null : (
           <Link
             href={hrefForRange(currentMonth)}

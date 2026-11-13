@@ -1,10 +1,14 @@
 import { getMonthRange } from "@/lib/date"
 
-/** 장부 보기: 일일(월 안의 날짜별) · 주별(월 안의 주차별) · 월별(연 안의 월별) · 연별(전체 연도별) */
-export type LedgerView = "day" | "week" | "month" | "year"
+/**
+ * 장부 보기: 일일(월 안의 날짜별) · 달력(그 달 달력에 날짜별 합계) · 주별(월 안의 주차별)
+ * · 월별(연 안의 월별) · 연별(전체 연도별)
+ */
+export type LedgerView = "day" | "calendar" | "week" | "month" | "year"
 
 export const LEDGER_VIEWS: readonly { value: LedgerView; label: string }[] = [
   { value: "day", label: "일일" },
+  { value: "calendar", label: "달력" },
   { value: "week", label: "주별" },
   { value: "month", label: "월별" },
   { value: "year", label: "연별" },
@@ -209,12 +213,14 @@ export function parseAnchorDate(
   return exists ? value : fallback
 }
 
-/** 보기별로 장부가 다루는 기간: 일일·주별은 기준일이 속한 달, 월별은 그 해, 연별은 전체. */
+/** 보기별로 장부가 다루는 기간: 일일·달력·주별은 기준일이 속한 달, 월별은 그 해, 연별은 전체. */
 export function getLedgerRange(
   view: LedgerView,
   anchor: string
 ): { from: string; to: string } {
-  if (view === "day" || view === "week") return getMonthRange(anchor)
+  if (view === "day" || view === "calendar" || view === "week") {
+    return getMonthRange(anchor)
+  }
   if (view === "month") {
     const year = anchor.slice(0, 4)
     return { from: `${year}-01-01`, to: `${year}-12-31` }
@@ -278,4 +284,32 @@ export function ledgerHref(
 ): string {
   const kindPart = view === "day" && kind !== "all" ? `&kind=${kind}` : ""
   return `/?view=${view}&d=${anchor}${kindPart}`
+}
+
+/** 달력 한 칸 */
+export interface CalendarCell {
+  /** yyyy-MM-dd */
+  date: string
+  /** 보고 있는 달의 날짜인지 (앞뒤 달 날짜는 흐리게) */
+  inMonth: boolean
+}
+
+/**
+ * 한 달 달력의 칸들: 일요일부터 시작해 그 달 1일이 든 주부터 말일이 든 주까지(주 단위로 채움).
+ * 앞뒤 빈칸에는 이전·다음 달 날짜가 들어간다.
+ */
+export function buildCalendarCells(monthAnchor: string): CalendarCell[] {
+  const { from, to } = getMonthRange(monthAnchor)
+  const [year, month] = from.split("-").map(Number)
+  const lastDay = Number(to.slice(8, 10))
+  const firstWeekday = new Date(Date.UTC(year, month - 1, 1)).getUTCDay()
+  const total = Math.ceil((firstWeekday + lastDay) / 7) * 7
+  const cells: CalendarCell[] = []
+  for (let i = 0; i < total; i += 1) {
+    const date = new Date(Date.UTC(year, month - 1, 1 - firstWeekday + i))
+      .toISOString()
+      .slice(0, 10)
+    cells.push({ date, inMonth: date >= from && date <= to })
+  }
+  return cells
 }

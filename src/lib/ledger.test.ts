@@ -264,3 +264,22 @@ describe("기간 이동 (화살표·스와이프)", () => {
     expect(ledgerHref("week", "2026-11-01", "unpaid")).toBe("/?view=week&d=2026-11-01")
   })
 })
+
+describe("buildCalendarCells", () => {
+  it("2026년 11월: 일요일 1일부터 5주, 뒤는 12월 날짜", async () => {
+    const { buildCalendarCells } = await import("./ledger")
+    const cells = buildCalendarCells("2026-11-13")
+    expect(cells).toHaveLength(35)
+    expect(cells[0]).toEqual({ date: "2026-11-01", inMonth: true })
+    expect(cells[29]).toEqual({ date: "2026-11-30", inMonth: true })
+    expect(cells[34]).toEqual({ date: "2026-12-05", inMonth: false })
+  })
+
+  it("앞쪽 빈칸은 이전 달 날짜로 채운다 (2026년 10월 1일은 목요일)", async () => {
+    const { buildCalendarCells } = await import("./ledger")
+    const cells = buildCalendarCells("2026-10-01")
+    expect(cells[0]).toEqual({ date: "2026-09-27", inMonth: false })
+    expect(cells[4]).toEqual({ date: "2026-10-01", inMonth: true })
+    expect(cells.length % 7).toBe(0)
+  })
+})
