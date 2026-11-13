@@ -35,7 +35,7 @@ export const secondaryNavItems: NavItem[] = [
   { label: "매출 목록", href: "/sales", icon: TrendingUp },
   { label: "지출 목록", href: "/expenses", icon: Wallet },
   { label: "거래처", href: "/clients", icon: Users },
-  { label: "차량·기사", href: "/vehicles", icon: Car },
+  { label: "차량 정보", href: "/vehicles", icon: Car },
   { label: "계산서", href: "/tax-invoices", icon: Receipt, soon: true },
   { label: "설정", href: "/settings", icon: Settings },
 ]
