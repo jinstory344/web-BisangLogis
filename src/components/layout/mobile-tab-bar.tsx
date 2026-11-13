@@ -20,13 +20,13 @@ import { getTodayInSeoul } from "@/lib/date"
 import { isNavItemActive, NavLink } from "./nav-link"
 
 const TAB_CLASS_NAME =
-  "flex flex-1 flex-col items-center justify-center gap-0.5 text-[11px]"
+  "flex flex-1 flex-col items-center justify-center gap-0.5 text-[11px] leading-4"
 
 /**
  * 모바일 하단 탭: [오늘 날짜(비상)] [배차] [통계] [더보기] (가계부 앱 방식).
  * 매출·지출 목록과 나머지 메뉴는 "더보기" 시트에 있고, 등록은 오른쪽 아래 떠 있는 ＋ 버튼으로 한다.
  * 데스크톱(md 이상)은 사이드바를 쓴다.
- * 높이 h-16(64px)은 main의 pb-16, 폼 저장 바의 bottom-16과 맞춘 값이다.
+ * 높이 h-14(56px)는 main의 pb-14, 폼 저장 바의 bottom-14, 떠 있는 버튼의 bottom-[4.5rem]과 맞춘 값이다.
  */
 export function MobileTabBar({ userEmail }: { userEmail: string | null }) {
   const [moreOpen, setMoreOpen] = useState(false)
@@ -50,7 +50,7 @@ export function MobileTabBar({ userEmail }: { userEmail: string | null }) {
   )
 
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-40 flex h-16 border-t bg-background md:hidden">
+    <nav className="fixed inset-x-0 bottom-0 z-40 flex h-14 border-t bg-background md:hidden">
       {primaryNavItems.map(renderTab)}
       <Sheet open={moreOpen} onOpenChange={setMoreOpen}>
         <SheetTrigger asChild>

@@ -16,7 +16,7 @@ export function AppShell({
     <div className="flex min-h-svh">
       <Sidebar userEmail={userEmail} />
       <div className="flex min-w-0 flex-1 flex-col">
-        <main className="flex-1 pb-16 md:pb-0">{children}</main>
+        <main className="flex-1 pb-14 md:pb-0">{children}</main>
       </div>
       {/* useSearchParams를 쓰는 클라이언트 컴포넌트라 Suspense로 감싼다 */}
       <Suspense fallback={null}>

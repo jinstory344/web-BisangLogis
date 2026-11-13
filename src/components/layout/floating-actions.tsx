@@ -39,7 +39,7 @@ export function FloatingActions() {
   }
 
   return (
-    <div className="fixed right-4 bottom-20 z-40 flex items-center gap-3 md:hidden">
+    <div className="fixed right-4 bottom-[4.5rem] z-40 flex items-center gap-3 md:hidden">
       <QuickEntrySheet
         mode="copy"
         trigger={

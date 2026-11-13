@@ -163,7 +163,7 @@ export function VehicleForm({
           </p>
         ) : null}
 
-        <div className="fixed inset-x-0 bottom-16 border-t bg-background p-3 md:static md:bottom-auto md:border-0 md:p-0">
+        <div className="fixed inset-x-0 bottom-14 border-t bg-background p-3 md:static md:bottom-auto md:border-0 md:p-0">
           <Button
             type="submit"
             className="w-full md:w-auto"
