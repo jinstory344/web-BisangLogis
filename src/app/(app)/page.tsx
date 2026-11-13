@@ -1,6 +1,7 @@
 import { cache, Suspense } from "react"
 
 import { SearchButton } from "@/components/layout/search-button"
+import { RefreshIfStale } from "@/components/layout/service-worker"
 import { LedgerCalendar } from "@/components/ledger/ledger-calendar"
 import { LedgerDayList } from "@/components/ledger/ledger-day-list"
 import { LedgerKindChips } from "@/components/ledger/ledger-kind-chips"
@@ -200,10 +201,13 @@ export default async function LedgerPage({
   const neighbors = getLedgerNeighborAnchors(view, anchor)
   // 화면 안 이동(달·보기 바꾸기)은 전환 중에 이전 화면을 그대로 두므로 자리 표시는 처음 열 때만 보인다.
   const slot: SlotProps = { view, anchor, kind, today }
+  // 서버가 이 화면을 그린 시각 — 폰에 저장해 둔 옛 화면으로 열렸는지 알아보는 데 쓴다
+  const renderedAt = Date.now()
 
   return (
     <div className="px-4 pb-4 md:px-6 md:pb-6">
       <div className="mx-auto max-w-2xl">
+        <RefreshIfStale renderedAt={renderedAt} />
         <SwipePager
           prevHref={neighbors ? ledgerHref(view, neighbors.prev, kind) : null}
           nextHref={neighbors ? ledgerHref(view, neighbors.next, kind) : null}

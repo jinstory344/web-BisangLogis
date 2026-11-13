@@ -4,6 +4,7 @@ import { LogOut } from "lucide-react"
 import { Fragment } from "react"
 
 import { logout } from "@/app/(app)/actions"
+import { clearPageCache } from "@/components/layout/service-worker"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { sidebarNavGroups } from "@/lib/constants/nav"
@@ -39,7 +40,7 @@ export function Sidebar({ userEmail }: { userEmail: string | null }) {
             {userEmail}
           </p>
         ) : null}
-        <form action={logout}>
+        <form action={logout} onSubmit={clearPageCache}>
           <Button
             type="submit"
             variant="ghost"
