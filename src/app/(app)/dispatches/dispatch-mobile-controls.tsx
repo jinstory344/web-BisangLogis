@@ -9,7 +9,9 @@ import type { ClientSearchResult } from "@/app/(app)/clients/actions"
 import { ClientCombobox } from "@/components/clients/client-combobox"
 import { chipVariants } from "@/components/form/choice-chips"
 import { DateRangeInputs } from "@/components/list/date-range-inputs"
+import { LIST_CHIP_CLASS, LIST_SUB_STICKY_CLASS } from "@/components/list/list-page-head"
 import { MonthNavigator } from "@/components/list/month-navigator"
+import { TotalsRow } from "@/components/list/totals-row"
 import { isFullMonthRange } from "@/lib/date"
 import { pickClientChips, type DispatchSummary } from "@/lib/dispatch-list"
 import { formatKRW } from "@/lib/money"
@@ -79,34 +81,22 @@ export function DispatchMobileControls({
   ]
 
   return (
-    <div className="flex flex-col gap-3">
-      <MonthNavigator
-        from={from}
-        to={to}
-        hrefForRange={(range) => hrefWith({ ...range })}
-      />
-
-      <div className="rounded-xl border p-3">
-        <div className="grid grid-cols-3 gap-2">
-          <div>
-            <p className="text-xs text-muted-foreground">배차</p>
-            <p className="text-base font-semibold tabular-nums">
-              {summary.count}건
-            </p>
-          </div>
-          <div>
-            <p className="text-xs text-muted-foreground">운임</p>
-            <p className="text-base font-semibold tabular-nums">
-              {formatKRW(summary.freightAmount)}
-            </p>
-          </div>
-          <div>
-            <p className="text-xs text-muted-foreground">수수료</p>
-            <p className="text-base font-semibold tabular-nums">
-              {formatKRW(summary.feeAmount)}
-            </p>
-          </div>
-        </div>
+    // contents: 자식들이 목록 영역의 직접 자식처럼 놓여서 아래 고정 영역이 목록 끝까지 붙어 있을 수 있다
+    <div className="contents">
+      {/* 위에 고정: 달 이동 + 합계 줄 */}
+      <div className={LIST_SUB_STICKY_CLASS}>
+        <MonthNavigator
+          from={from}
+          to={to}
+          hrefForRange={(range) => hrefWith({ ...range })}
+        />
+        <TotalsRow
+          items={[
+            { label: "배차", value: `${summary.count}건` },
+            { label: "운임", value: formatKRW(summary.freightAmount) },
+            { label: "수수료", value: formatKRW(summary.feeAmount) },
+          ]}
+        />
       </div>
 
       <div className="flex items-center gap-2">
@@ -119,7 +109,7 @@ export function DispatchMobileControls({
                 client_name: chip.clientId ? chip.label : "",
               })}
               aria-current={clientId === chip.clientId ? "true" : undefined}
-              className={chipVariants({ selected: clientId === chip.clientId })}
+              className={cn(chipVariants({ selected: clientId === chip.clientId }), LIST_CHIP_CLASS)}
             >
               {chip.label} {chip.count}
             </Link>
@@ -131,6 +121,7 @@ export function DispatchMobileControls({
           onClick={() => setIsFilterOpen((open) => !open)}
           className={cn(
             chipVariants({ selected: activeFilterCount > 0 }),
+            LIST_CHIP_CLASS,
             "shrink-0"
           )}
         >

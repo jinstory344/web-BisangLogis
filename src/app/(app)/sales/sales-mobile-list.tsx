@@ -125,7 +125,7 @@ export function SalesMobileList({
       </div>
 
       {groups.map((group) => (
-        <section key={group.date} className="overflow-hidden rounded-xl border">
+        <section key={group.date} className="-mx-4 -mt-3 overflow-hidden border-b">
           <DayHeader
             date={group.date}
             totalLabel={formatKRW(group.supplyAmount)}

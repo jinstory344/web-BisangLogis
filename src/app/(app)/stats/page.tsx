@@ -1,3 +1,4 @@
+import { Search } from "lucide-react"
 import Link from "next/link"
 
 import { MonthSwipe } from "@/components/list/month-swipe"
@@ -38,33 +39,52 @@ export default async function StatsPage({
   const from = parseAnchorDate(params.from, getCurrentMonthRangeInSeoul().from)
 
   return (
-    <div className="p-4 md:p-6">
+    <div className="px-4 pb-4 md:p-6">
       <div className="mx-auto flex max-w-2xl flex-col gap-3">
-        <h1 className="text-2xl font-semibold">통계</h1>
+        {/* 위에 고정: 제목 + 종류 탭 (비상 화면과 같은 모양) */}
+        <div className="sticky top-0 z-30 -mx-4 bg-background px-4 pt-2 md:static md:mx-0 md:px-0 md:pt-0">
+          <header className="grid h-10 grid-cols-[2.5rem_1fr_2.5rem] items-center">
+            <Link
+              href="/search"
+              aria-label="검색"
+              className="flex size-10 items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground"
+            >
+              <Search className="size-5" />
+            </Link>
+            <h1 className="text-center text-lg font-semibold tracking-tight">통계</h1>
+            <span aria-hidden />
+          </header>
 
-        <nav
-          aria-label="통계 종류"
-          className="grid grid-cols-3 gap-1 rounded-lg bg-muted p-[3px]"
-        >
-          {STAT_TYPES.map((item) => {
-            const isActive = item.value === type
-            return (
-              <Link
-                key={item.value}
-                href={`/stats?type=${item.value}&from=${from}`}
-                aria-current={isActive ? "page" : undefined}
-                className={cn(
-                  "flex min-h-10 items-center justify-center rounded-md text-sm font-medium transition-colors",
-                  isActive
-                    ? "bg-background text-foreground shadow-sm"
-                    : "text-muted-foreground hover:text-foreground"
-                )}
-              >
-                {item.label}
-              </Link>
-            )
-          })}
-        </nav>
+          <nav
+            aria-label="통계 종류"
+            className="-mx-4 grid grid-cols-3 border-b px-2 md:mx-0 md:px-0"
+          >
+            {STAT_TYPES.map((item) => {
+              const isActive = item.value === type
+              return (
+                <Link
+                  key={item.value}
+                  href={`/stats?type=${item.value}&from=${from}`}
+                  aria-current={isActive ? "page" : undefined}
+                  className={cn(
+                    "relative flex min-h-9 items-center justify-center px-3 text-sm whitespace-nowrap transition-colors",
+                    isActive
+                      ? "font-semibold text-foreground"
+                      : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  {item.label}
+                  {isActive ? (
+                    <span
+                      aria-hidden
+                      className="absolute inset-x-3 -bottom-px h-0.5 rounded-full bg-red-400"
+                    />
+                  ) : null}
+                </Link>
+              )
+            })}
+          </nav>
+        </div>
 
         <MonthSwipe>
         {type === "sales" ? (

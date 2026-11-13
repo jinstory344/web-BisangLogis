@@ -4,7 +4,7 @@ import Link from "next/link"
 import { LedgerDayList } from "@/components/ledger/ledger-day-list"
 import { LedgerNav } from "@/components/ledger/ledger-nav"
 import { LedgerRangeList } from "@/components/ledger/ledger-range-list"
-import { LedgerSummary } from "@/components/ledger/ledger-summary"
+import { LedgerSummary, UnpaidLine } from "@/components/ledger/ledger-summary"
 import { LedgerViewTabs } from "@/components/ledger/ledger-view-tabs"
 import { SwipePager } from "@/components/ledger/swipe-pager"
 import { LedgerKindChips } from "@/components/ledger/ledger-kind-chips"
@@ -106,35 +106,40 @@ export default async function LedgerPage({
   }
 
   return (
-    <div className="p-4 md:p-6">
-      <div className="mx-auto flex max-w-2xl flex-col gap-3">
-        {/* 가계부 앱처럼: 왼쪽 검색 · 가운데 제목 */}
-        <header className="-mt-1 grid grid-cols-[2.75rem_1fr_2.75rem] items-center">
-          <Link
-            href="/search"
-            aria-label="검색"
-            className="flex size-11 items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground"
-          >
-            <Search className="size-5" />
-          </Link>
-          <h1 className="text-center text-lg font-semibold tracking-tight">비상</h1>
-          <span aria-hidden />
-        </header>
-
+    <div className="px-4 pb-4 md:px-6 md:pb-6">
+      <div className="mx-auto max-w-2xl">
         <SwipePager
           prevHref={neighbors ? ledgerHref(view, neighbors.prev, kind) : null}
           nextHref={neighbors ? ledgerHref(view, neighbors.next, kind) : null}
+          className="flex flex-col"
         >
-          <LedgerNav view={view} anchor={anchor} kind={kind} />
-          <LedgerViewTabs view={view} anchor={anchor} />
+          {/* 위에 고정되는 부분: 목록을 내려도 제목·날짜·보기 탭·합계가 계속 보인다 */}
+          <div className="sticky top-0 z-20 -mx-4 bg-background px-4 pt-2 md:-mx-6 md:px-6 md:pt-6">
+            {/* 가계부 앱처럼: 왼쪽 검색 · 가운데 제목 */}
+            <header className="grid grid-cols-[2.5rem_1fr_2.5rem] items-center">
+              <Link
+                href="/search"
+                aria-label="검색"
+                className="flex size-10 items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground"
+              >
+                <Search className="size-5" />
+              </Link>
+              <h1 className="text-center text-lg font-semibold tracking-tight">비상</h1>
+              <span aria-hidden />
+            </header>
+
+            <LedgerNav view={view} anchor={anchor} kind={kind} />
+            <LedgerViewTabs view={view} anchor={anchor} />
+            {errorMessage ? null : <LedgerSummary totals={totals} />}
+          </div>
 
           {errorMessage ? (
-            <p className="text-sm text-destructive">
+            <p className="py-3 text-sm text-destructive">
               비상을 불러오지 못했습니다: {errorMessage}
             </p>
           ) : (
             <>
-              <LedgerSummary totals={totals} unpaid={unpaid} />
+              <UnpaidLine unpaid={unpaid} />
               {view === "day" ? (
                 <LedgerKindChips anchor={anchor} value={kind} />
               ) : null}

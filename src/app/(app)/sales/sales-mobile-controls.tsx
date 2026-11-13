@@ -8,7 +8,9 @@ import { useState } from "react"
 import { PAID_TEXT_CLASS } from "@/components/dispatches/payment-badge"
 import { chipVariants } from "@/components/form/choice-chips"
 import { DateRangeInputs } from "@/components/list/date-range-inputs"
+import { LIST_CHIP_CLASS, LIST_SUB_STICKY_CLASS } from "@/components/list/list-page-head"
 import { MonthNavigator } from "@/components/list/month-navigator"
+import { TotalsRow } from "@/components/list/totals-row"
 import {
   Select,
   SelectContent,
@@ -79,44 +81,31 @@ export function SalesMobileControls({
   const unpaid = summary.unpaid.supplyAmount
 
   return (
-    <div className="flex flex-col gap-3">
-      <MonthNavigator from={from} to={to} hrefForRange={(range) => hrefWith({ ...range })} />
-
-      <div className="rounded-xl border p-3">
-        <div className="grid grid-cols-3 gap-2">
-          <div>
-            <p className="text-xs text-muted-foreground">매출</p>
-            <p className="text-base font-semibold tabular-nums">
-              {formatKRW(summary.all.supplyAmount)}
-            </p>
-          </div>
-          <div>
-            <p className="text-xs text-muted-foreground">입금</p>
-            <p
-              className={cn(
-                "text-base font-semibold tabular-nums",
-                summary.paid.supplyAmount > 0 && PAID_TEXT_CLASS
-              )}
-            >
-              {formatKRW(summary.paid.supplyAmount)}
-            </p>
-          </div>
-          <div>
-            <p className="text-xs text-muted-foreground">미입금</p>
-            <p
-              className={cn(
-                "text-base font-semibold tabular-nums",
-                unpaid > 0 && "text-destructive"
-              )}
-            >
-              {formatKRW(unpaid)}
-            </p>
-          </div>
-        </div>
-        <p className="mt-2 text-xs text-muted-foreground">
-          공급가액 기준 · 세액 포함 합계금액 {formatKRW(summary.all.totalAmount)}
-        </p>
+    // contents: 자식들이 목록 영역의 직접 자식처럼 놓여서 아래 고정 영역이 목록 끝까지 붙어 있을 수 있다
+    <div className="contents">
+      {/* 위에 고정: 달 이동 + 합계 줄 (공급가액 기준) */}
+      <div className={LIST_SUB_STICKY_CLASS}>
+        <MonthNavigator from={from} to={to} hrefForRange={(range) => hrefWith({ ...range })} />
+        <TotalsRow
+          items={[
+            { label: "매출(공급가)", value: formatKRW(summary.all.supplyAmount) },
+            {
+              label: "입금",
+              value: formatKRW(summary.paid.supplyAmount),
+              className: summary.paid.supplyAmount > 0 ? PAID_TEXT_CLASS : undefined,
+            },
+            {
+              label: "미입금",
+              value: formatKRW(unpaid),
+              className: unpaid > 0 ? "text-destructive" : undefined,
+            },
+          ]}
+        />
       </div>
+
+      <p className="text-xs text-muted-foreground">
+        세액 포함 합계금액 {formatKRW(summary.all.totalAmount)}
+      </p>
 
       <div className="flex items-center gap-2">
         <div className="no-scrollbar -ml-4 flex min-w-0 flex-1 gap-2 overflow-x-auto py-0.5 pl-4 [contain:inline-size]">
@@ -125,7 +114,7 @@ export function SalesMobileControls({
               key={chip.key}
               href={hrefWith({ payment_status: chip.value })}
               aria-current={paymentStatus === chip.value ? "true" : undefined}
-              className={chipVariants({ selected: paymentStatus === chip.value })}
+              className={cn(chipVariants({ selected: paymentStatus === chip.value }), LIST_CHIP_CLASS)}
             >
               {chip.label} {summary[chip.key].count}
             </Link>
@@ -137,6 +126,7 @@ export function SalesMobileControls({
           onClick={() => setIsFilterOpen((open) => !open)}
           className={cn(
             chipVariants({ selected: activeFilterCount > 0 }),
+            LIST_CHIP_CLASS,
             "shrink-0"
           )}
         >

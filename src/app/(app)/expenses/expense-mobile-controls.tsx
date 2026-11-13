@@ -7,7 +7,10 @@ import { useState } from "react"
 
 import { chipVariants } from "@/components/form/choice-chips"
 import { DateRangeInputs } from "@/components/list/date-range-inputs"
+import { EXPENSE_TEXT_CLASS } from "@/components/ledger/colors"
+import { LIST_CHIP_CLASS, LIST_SUB_STICKY_CLASS } from "@/components/list/list-page-head"
 import { MonthNavigator } from "@/components/list/month-navigator"
+import { TotalsRow } from "@/components/list/totals-row"
 import {
   Select,
   SelectContent,
@@ -84,31 +87,36 @@ export function ExpenseMobileControls({
   ]
 
   return (
-    <div className="flex flex-col gap-3">
-      <MonthNavigator
-        from={from}
-        to={to}
-        hrefForRange={(range) => hrefWith({ ...range })}
-      />
-
-      <div className="rounded-xl border p-3">
-        <div className="flex items-baseline justify-between">
-          <p className="text-xs text-muted-foreground">지출 합계</p>
-          <p className="text-xs text-muted-foreground">{summary.count}건</p>
-        </div>
-        <p className="text-xl font-semibold tabular-nums">
-          {formatKRW(summary.total)}
-        </p>
-        {spent.length > 0 ? (
-          <p className="mt-2 flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-muted-foreground tabular-nums">
-            {spent.map((major) => (
-              <span key={major.major}>
-                {major.major} {formatKRW(major.total)}
-              </span>
-            ))}
-          </p>
-        ) : null}
+    // contents: 자식들이 목록 영역의 직접 자식처럼 놓여서 아래 고정 영역이 목록 끝까지 붙어 있을 수 있다
+    <div className="contents">
+      {/* 위에 고정: 달 이동 + 합계 줄 */}
+      <div className={LIST_SUB_STICKY_CLASS}>
+        <MonthNavigator
+          from={from}
+          to={to}
+          hrefForRange={(range) => hrefWith({ ...range })}
+        />
+        <TotalsRow
+          items={[
+            { label: "건수", value: `${summary.count}건` },
+            {
+              label: "지출 합계",
+              value: formatKRW(summary.total),
+              className: EXPENSE_TEXT_CLASS,
+            },
+          ]}
+        />
       </div>
+
+      {spent.length > 0 ? (
+        <p className="flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-muted-foreground tabular-nums">
+          {spent.map((major) => (
+            <span key={major.major}>
+              {major.major} {formatKRW(major.total)}
+            </span>
+          ))}
+        </p>
+      ) : null}
 
       <div className="flex items-center gap-2">
         <div className="no-scrollbar -ml-4 flex min-w-0 flex-1 gap-2 overflow-x-auto py-0.5 pl-4 [contain:inline-size]">
@@ -117,7 +125,7 @@ export function ExpenseMobileControls({
               key={chip.value || "all"}
               href={hrefWith({ category_major: chip.value, category_minor: "" })}
               aria-current={categoryMajor === chip.value ? "true" : undefined}
-              className={chipVariants({ selected: categoryMajor === chip.value })}
+              className={cn(chipVariants({ selected: categoryMajor === chip.value }), LIST_CHIP_CLASS)}
             >
               {chip.label} {chip.count}
             </Link>
@@ -129,6 +137,7 @@ export function ExpenseMobileControls({
           onClick={() => setIsFilterOpen((open) => !open)}
           className={cn(
             chipVariants({ selected: activeFilterCount > 0 }),
+            LIST_CHIP_CLASS,
             "shrink-0"
           )}
         >

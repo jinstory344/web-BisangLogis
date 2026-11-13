@@ -44,7 +44,7 @@ export function LedgerViewTabs({
             href={`/?view=${item.value}&d=${anchor}`}
             aria-current={isActive ? "page" : undefined}
             className={cn(
-              "relative flex min-h-11 items-center justify-center px-3 text-[15px] whitespace-nowrap transition-colors",
+              "relative flex min-h-9 items-center justify-center px-3 text-sm whitespace-nowrap transition-colors",
               isActive
                 ? "font-semibold text-foreground"
                 : "text-muted-foreground hover:text-foreground"

@@ -27,19 +27,20 @@ export function LedgerRangeList({
   buckets: RangeBucket[]
 }) {
   return (
-    <div className="overflow-hidden rounded-xl border">
+    // 상자 없이 화면 폭을 꽉 채운 줄 목록
+    <div className="-mx-4 divide-y border-b md:mx-0">
       {buckets.map((bucket) => {
         const isEmpty = bucket.count === 0
         return (
           <div
             key={bucket.key}
             className={cn(
-              "border-t px-4 py-3 first:border-t-0",
+              "px-4 py-2.5",
               isEmpty && "text-muted-foreground"
             )}
           >
             <div className="flex items-baseline justify-between gap-3">
-              <span className="font-medium">
+              <span className="text-sm font-medium">
                 {bucketLabel(view, bucket)}
                 <span className="ml-1.5 text-xs font-normal text-muted-foreground">
                   {bucket.count}건
@@ -47,7 +48,7 @@ export function LedgerRangeList({
               </span>
               <span
                 className={cn(
-                  "font-semibold tabular-nums",
+                  "text-sm font-semibold tabular-nums",
                   isEmpty ? "text-muted-foreground" : netTextClass(bucket.net)
                 )}
               >

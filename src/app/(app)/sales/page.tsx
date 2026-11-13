@@ -1,9 +1,10 @@
 import Link from "next/link"
 import { Plus } from "lucide-react"
 
+import { ListPageHead } from "@/components/list/list-page-head"
 import { Button } from "@/components/ui/button"
 import { MonthSwipe } from "@/components/list/month-swipe"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Tabs, TabsContent } from "@/components/ui/tabs"
 import { getCurrentMonthRangeInSeoul } from "@/lib/date"
 import { createClient } from "@/lib/supabase/server"
 import type { PaymentMethod, PaymentStatus, SaleRow } from "@/lib/supabase/database.types"
@@ -101,25 +102,27 @@ export default async function SalesPage({
   const totalPages = Math.max(1, Math.ceil((count ?? 0) / PAGE_SIZE))
 
   return (
-    <div className="p-4 md:p-6">
-      <div className="flex items-center justify-between gap-4">
-        <h1 className="text-2xl font-semibold">매출 관리</h1>
-        <Button asChild size="sm">
-          <Link href="/sales/new">
-            <Plus />
-            매출 등록
-          </Link>
-        </Button>
-      </div>
-
-      <Tabs defaultValue="list" className="mt-4">
-        <TabsList>
-          <TabsTrigger value="list">목록</TabsTrigger>
-          <TabsTrigger value="summary">월간 집계</TabsTrigger>
-        </TabsList>
+    <div className="px-4 pb-4 md:p-6">
+      <Tabs defaultValue="list" className="gap-0 md:gap-2">
+        <ListPageHead
+          title="매출"
+          desktopTitle="매출 관리"
+          desktopAction={
+            <Button asChild size="sm">
+              <Link href="/sales/new">
+                <Plus />
+                매출 등록
+              </Link>
+            </Button>
+          }
+          tabs={[
+            { value: "list", label: "목록" },
+            { value: "summary", label: "월간 집계" },
+          ]}
+        />
 
         <TabsContent value="list">
-          <MonthSwipe className="flex flex-col gap-4">
+          <MonthSwipe className="flex flex-col gap-3 md:gap-4">
           {reconciliationMismatch ? (
             <div className="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
               검산 경고: 개별 건 합계와 표시된 합계가 일치하지 않습니다. 새로고침
@@ -136,7 +139,8 @@ export default async function SalesPage({
               paymentMethod={paymentMethod}
             />
           </div>
-          <div className="md:hidden">
+          {/* 모바일 조작부는 contents라서 안의 달 이동·합계가 목록 전체 높이에서 고정될 수 있다 */}
+          <div className="contents md:hidden">
             <SalesMobileControls
               from={from}
               to={to}
@@ -163,7 +167,7 @@ export default async function SalesPage({
           </MonthSwipe>
         </TabsContent>
 
-        <TabsContent value="summary">
+        <TabsContent value="summary" className="pt-3 md:pt-0">
           <MonthSwipe>
           <SalesSummary from={from} />
           </MonthSwipe>

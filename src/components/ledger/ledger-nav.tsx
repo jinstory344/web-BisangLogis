@@ -25,8 +25,8 @@ export function LedgerNav({
   const neighbors = getLedgerNeighborAnchors(view, anchor)
   if (view === "year" || !neighbors) {
     return (
-      <div className="flex min-h-11 items-center justify-center">
-        <span className="text-lg font-semibold">전체</span>
+      <div className="flex min-h-10 items-center justify-center">
+        <span className="text-base font-semibold">전체</span>
       </div>
     )
   }
@@ -51,16 +51,16 @@ export function LedgerNav({
         // 이웃 달을 미리 다 받아 두어 스와이프·화살표로 넘길 때 바로 뜨게 한다.
         prefetch
         aria-label={isYearView ? "이전 해" : "이전 달"}
-        className="flex size-11 items-center justify-center rounded-full text-muted-foreground hover:bg-muted"
+        className="flex size-10 items-center justify-center rounded-full text-muted-foreground hover:bg-muted"
       >
         <ChevronLeft className="size-5" />
       </Link>
-      <div className="flex flex-col items-center">
-        <span className="text-lg font-semibold">{label}</span>
+      <div className="flex items-baseline gap-2">
+        <span className="text-base font-semibold">{label}</span>
         {isCurrent ? null : (
           <Link
             href={href(today)}
-            className="text-xs text-muted-foreground underline underline-offset-2"
+            className="text-[11px] text-muted-foreground underline underline-offset-2"
           >
             {currentLabel}
           </Link>
@@ -70,7 +70,7 @@ export function LedgerNav({
         href={href(neighbors.next)}
         prefetch
         aria-label={isYearView ? "다음 해" : "다음 달"}
-        className="flex size-11 items-center justify-center rounded-full text-muted-foreground hover:bg-muted"
+        className="flex size-10 items-center justify-center rounded-full text-muted-foreground hover:bg-muted"
       >
         <ChevronRight className="size-5" />
       </Link>

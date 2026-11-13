@@ -3,6 +3,7 @@ import Link from "next/link"
 import type { ReactNode } from "react"
 
 import { EXPENSE_TEXT_CLASS, INCOME_TEXT_CLASS } from "@/components/ledger/colors"
+import { TotalsRow } from "@/components/list/totals-row"
 import { Input } from "@/components/ui/input"
 import { sumTotals } from "@/lib/ledger"
 import { formatKRW } from "@/lib/money"
@@ -113,7 +114,7 @@ export default async function SearchPage({
 
           {/* 찾은 건 합계 (가계부 앱의 수입·지출·이체 줄처럼) */}
           {tab === "ledger" ? (
-            <SearchTotals
+            <TotalsRow
               items={[
                 {
                   label: "매출",
@@ -134,7 +135,7 @@ export default async function SearchPage({
               ]}
             />
           ) : (
-            <SearchTotals
+            <TotalsRow
               items={[
                 { label: "건수", value: `${dispatch.dispatches.length}건` },
                 { label: "운임", value: formatKRW(dispatchTotals.freight) },
@@ -214,30 +215,5 @@ export default async function SearchPage({
         {list}
       </div>
     </div>
-  )
-}
-
-/** 고정 영역 아래쪽의 합계 한 줄: 세 칸에 이름(작게)과 금액 */
-function SearchTotals({
-  items,
-}: {
-  items: { label: string; value: string; className?: string }[]
-}) {
-  return (
-    <dl className="-mx-4 grid grid-cols-3 border-b px-2 py-1.5 md:mx-0 md:px-0">
-      {items.map((item) => (
-        <div key={item.label} className="flex min-w-0 flex-col items-center">
-          <dt className="text-[11px] leading-4 text-muted-foreground">{item.label}</dt>
-          <dd
-            className={cn(
-              "max-w-full truncate text-sm leading-5 font-medium tabular-nums",
-              item.className
-            )}
-          >
-            {item.value}
-          </dd>
-        </div>
-      ))}
-    </dl>
   )
 }

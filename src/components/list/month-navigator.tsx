@@ -39,16 +39,16 @@ export function MonthNavigator({ from, to, hrefForRange }: MonthNavigatorProps) 
         // 이웃 달을 미리 받아 두어 화살표·스와이프로 넘길 때 바로 뜨게 한다.
         prefetch
         aria-label="이전 달"
-        className="flex size-11 items-center justify-center rounded-full text-muted-foreground hover:bg-muted"
+        className="flex size-10 items-center justify-center rounded-full text-muted-foreground hover:bg-muted"
       >
         <ChevronLeft className="size-5" />
       </Link>
-      <div className="flex flex-col items-center">
-        <span className="text-lg font-semibold">{label}</span>
+      <div className="flex items-baseline gap-2">
+        <span className="text-base font-semibold">{label}</span>
         {isCurrentMonth ? null : (
           <Link
             href={hrefForRange(currentMonth)}
-            className="text-xs text-muted-foreground underline underline-offset-2"
+            className="text-[11px] text-muted-foreground underline underline-offset-2"
           >
             이번 달로
           </Link>
@@ -58,7 +58,7 @@ export function MonthNavigator({ from, to, hrefForRange }: MonthNavigatorProps) 
         href={hrefForRange(shiftMonthRange(from, 1))}
         prefetch
         aria-label="다음 달"
-        className="flex size-11 items-center justify-center rounded-full text-muted-foreground hover:bg-muted"
+        className="flex size-10 items-center justify-center rounded-full text-muted-foreground hover:bg-muted"
       >
         <ChevronRight className="size-5" />
       </Link>

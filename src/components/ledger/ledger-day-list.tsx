@@ -32,9 +32,10 @@ export function LedgerDayList({
   const spansMonths = spansMultipleMonths(buckets)
 
   return (
-    <div className="flex flex-col gap-3">
+    // 상자 없이 화면 폭을 꽉 채운 줄 목록 (가계부 앱의 일일 화면처럼)
+    <div className="-mx-4 flex flex-col md:mx-0">
       {buckets.map((bucket) => (
-        <section key={bucket.date} className="overflow-hidden rounded-xl border">
+        <section key={bucket.date} className="border-b">
           <DayHeader
             date={bucket.date}
             showMonth={spansMonths}
@@ -64,7 +65,7 @@ export function LedgerDayList({
                   ? `/sales/${entry.id}`
                   : `/expenses/${entry.id}/edit`
               }
-              className="flex items-start gap-3 border-t px-4 py-2.5 transition-colors first:border-t-0 hover:bg-muted/40 active:bg-muted/60"
+              className="flex items-start gap-3 border-t px-4 py-2.5 transition-colors hover:bg-muted/40 active:bg-muted/60"
             >
               {entry.kind === "sale" ? (
                 <>
