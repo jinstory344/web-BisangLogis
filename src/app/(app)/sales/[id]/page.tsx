@@ -77,7 +77,7 @@ export default async function SaleDetailPage({
           value={formatPhoneNumber(sale.order_contact_phone)}
         />
         <Field
-          label="계산서정보"
+          label="사업자 정보"
           value={sale.billing_entity_name ?? "-"}
         />
         <Field label="비고" value={sale.memo ?? "-"} />

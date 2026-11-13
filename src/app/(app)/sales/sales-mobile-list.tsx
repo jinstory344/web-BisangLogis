@@ -287,7 +287,7 @@ export function SaleActionSheetBody({
             <span className="font-medium text-destructive">미입금</span>
           )}
           {sale.billing_entity_name
-            ? ` · 계산서정보 ${sale.billing_entity_name}`
+            ? ` · 사업자 정보 ${sale.billing_entity_name}`
             : ""}
         </p>
 

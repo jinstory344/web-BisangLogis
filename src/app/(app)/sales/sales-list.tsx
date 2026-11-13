@@ -292,7 +292,7 @@ export function SalesList({
               <TableHead>날짜</TableHead>
               <TableHead>구간</TableHead>
               <TableHead>출처</TableHead>
-              <TableHead>계산서정보</TableHead>
+              <TableHead>사업자 정보</TableHead>
               <TableHead className="text-right">공급가액</TableHead>
               <TableHead className="text-right">세액</TableHead>
               <TableHead className="text-right">합계금액</TableHead>

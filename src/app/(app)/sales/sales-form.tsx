@@ -256,7 +256,7 @@ export function SalesForm({
   // 계산서정보 칸은 한 번에 한 곳에만 그린다: 거래처 외 출처면 연락처 아래, 아니면 더보기 안.
   const billingField = (
     <FormItem>
-      <FormLabel>계산서정보</FormLabel>
+      <FormLabel>사업자 정보</FormLabel>
       <FreeTextCombobox
         value={form.watch("billing_entity_name")}
         onChange={(v) => form.setValue("billing_entity_name", v)}
@@ -264,14 +264,14 @@ export function SalesForm({
         placeholder={
           billingShownAbove
             ? "계산서 받을 업체 (직접 입력 가능)"
-            : "계산서정보 (직접 입력 가능)"
+            : "사업자 정보 (직접 입력 가능)"
         }
       />
     </FormItem>
   )
   const moreSummary = [
     "연락처",
-    billingShownAbove ? null : "계산서정보",
+    billingShownAbove ? null : "사업자 정보",
     showSourceNote ? "출처 비고" : null,
   ]
     .filter(Boolean)
@@ -443,7 +443,7 @@ export function SalesForm({
             {/* 계산서정보는 더보기에 접혀 있으므로, 거래처로 자동 입력된 값을 여기서 바로 보여 준다. */}
             {clientId && billingEntityName.trim() ? (
               <p className="text-xs text-muted-foreground">
-                계산서정보: {billingEntityName.trim()}
+                사업자 정보: {billingEntityName.trim()}
               </p>
             ) : null}
           </FormItem>
