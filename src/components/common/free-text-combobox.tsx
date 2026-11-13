@@ -5,7 +5,6 @@ import { useEffect, useState, useTransition } from "react"
 import {
   Combobox,
   ComboboxContent,
-  ComboboxEmpty,
   ComboboxInput,
   ComboboxItem,
   ComboboxList,
@@ -61,20 +60,19 @@ export function FreeTextCombobox({
       disabled={disabled}
     >
       <ComboboxInput placeholder={placeholder} />
-      <ComboboxContent>
-        <ComboboxList>
-          {items.map((item) => (
-            <ComboboxItem key={item} value={item}>
-              {item}
-            </ComboboxItem>
-          ))}
-        </ComboboxList>
-        <ComboboxEmpty>
-          <p className="py-2 text-center text-sm text-muted-foreground">
-            최근 입력 내역이 없습니다
-          </p>
-        </ComboboxEmpty>
-      </ComboboxContent>
+      {/* 추천할 최근 입력값이 없으면 목록 상자를 아예 띄우지 않는다
+          ("없습니다" 상자가 아래 칩·칸을 가려서 잘못 누르게 되는 문제) */}
+      {items.length > 0 ? (
+        <ComboboxContent>
+          <ComboboxList>
+            {items.map((item) => (
+              <ComboboxItem key={item} value={item}>
+                {item}
+              </ComboboxItem>
+            ))}
+          </ComboboxList>
+        </ComboboxContent>
+      ) : null}
     </Combobox>
   )
 }
