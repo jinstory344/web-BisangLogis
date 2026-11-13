@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
 
 import { recordAuditLog } from "@/lib/audit/log"
+import { getMonthRange } from "@/lib/date"
 import {
   pickRecentContacts,
   pickRecentRoutes,
@@ -259,7 +260,9 @@ export async function updateSaleAction(
   // 비상(홈) 화면의 합계·목록·미입금도 바로 바뀌게
   revalidatePath("/")
   revalidatePath(`/sales/${id}`)
-  redirect(`/sales/${id}`)
+  // 저장하면 상세 화면 대신 매출 목록으로, 수정한 매출이 있는 달을 연다.
+  const { from, to } = getMonthRange(values.sale_date)
+  redirect(`/sales?from=${from}&to=${to}`)
 }
 
 /** 3.7 매출 삭제 (소프트 삭제 + 이력 로그) */
