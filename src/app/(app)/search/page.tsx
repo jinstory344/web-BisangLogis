@@ -43,7 +43,7 @@ export default async function SearchPage({
   let fixedPart: ReactNode = null
   let list: ReactNode = (
     <p className="py-12 text-center text-sm text-muted-foreground">
-      지명·거래처·차량번호·기사·분류·비고로 매출·지출·배차를 찾아요.
+      지명·거래처·차량번호·차주·분류·비고로 매출·지출·배차를 찾아요.
     </p>
   )
 

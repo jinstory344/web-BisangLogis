@@ -89,7 +89,7 @@ export default async function DispatchDetailPage({
           }
         />
         <Field
-          label="기사 연락처"
+          label="차주 연락처"
           value={formatPhoneNumber(dispatch.driver_phone_snapshot)}
         />
         <Field
