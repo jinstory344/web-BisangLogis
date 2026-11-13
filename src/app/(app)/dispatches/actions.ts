@@ -5,11 +5,11 @@ import { redirect } from "next/navigation"
 
 import {
   pickRecentDispatchContacts,
-  pickRecentRoutes,
+  FREQUENT_ROUTE_SCAN_SIZE,
+  pickFrequentRoutes,
   RECENT_CONTACT_LIMIT,
   RECENT_DISPATCH_CONTACT_SCAN_SIZE,
   RECENT_ROUTE_LIMIT,
-  RECENT_ROUTE_SCAN_SIZE,
   type RecentContact,
   type RecentRoute,
 } from "@/lib/quick-entry"
@@ -92,13 +92,14 @@ export async function getRecentDispatchRoutesAction(): Promise<RecentRoute[]> {
     .select("origin, destination")
     .is("deleted_at", null)
     .order("created_at", { ascending: false })
-    .limit(RECENT_ROUTE_SCAN_SIZE)
+    .limit(FREQUENT_ROUTE_SCAN_SIZE)
 
   if (error) {
-    throw new Error(`최근 구간 조회 실패: ${error.message}`)
+    throw new Error(`반복 구간 조회 실패: ${error.message}`)
   }
 
-  return pickRecentRoutes(data, RECENT_ROUTE_LIMIT)
+  // 자주 다닌 구간부터, 같으면 최근에 다닌 구간부터
+  return pickFrequentRoutes(data, RECENT_ROUTE_LIMIT)
 }
 
 /**

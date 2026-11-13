@@ -75,6 +75,35 @@ export function pickRecentRoutes(
   return routes
 }
 
+/** 배차 폼 "반복 구간"을 세기 위해 읽어올 최근 배차 수 */
+export const FREQUENT_ROUTE_SCAN_SIZE = 300
+
+/**
+ * 배차 폼 "반복 구간" 칩: 최근 순(created_at 내림차순) 행에서 같은 상차지→하차지를 세어
+ * 자주 다닌 구간부터, 횟수가 같으면 더 최근에 다닌 구간부터 최대 limit개를 고른다.
+ */
+export function pickFrequentRoutes(
+  rows: readonly RecentRoute[],
+  limit = RECENT_ROUTE_LIMIT
+): RecentRoute[] {
+  const stats = new Map<string, { route: RecentRoute; count: number; firstSeen: number }>()
+
+  rows.forEach((row, index) => {
+    const origin = row.origin.trim()
+    const destination = row.destination.trim()
+    if (!origin || !destination) return
+    const key = JSON.stringify([origin, destination])
+    const stat = stats.get(key)
+    if (stat) stat.count += 1
+    else stats.set(key, { route: { origin, destination }, count: 1, firstSeen: index })
+  })
+
+  return [...stats.values()]
+    .sort((a, b) => b.count - a.count || a.firstSeen - b.firstSeen)
+    .slice(0, limit)
+    .map((stat) => stat.route)
+}
+
 /** 매출 폼 "최근 연락처" 칩 최대 개수 */
 export const RECENT_CONTACT_LIMIT = 5
 /** 최근 연락처를 고르기 위해 읽어올, 같은 출처·소분류의 최근 매출 행 수 */

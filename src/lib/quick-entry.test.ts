@@ -622,3 +622,13 @@ describe("pickFrequentCandidates (자주 쓰는 건)", () => {
     expect(pickFrequentCandidates(candidates, { minCount: 3 })).toEqual([])
   })
 })
+
+describe("pickFrequentRoutes", () => {
+  it("자주 다닌 구간부터, 같은 횟수면 최근 구간부터", async () => {
+    const { pickFrequentRoutes } = await import("./quick-entry")
+    const r = (origin: string, destination: string) => ({ origin, destination })
+    // 최근 순으로 들어온 행
+    const rows = [r("A", "B"), r("C", "D"), r("E", "F"), r("C", "D"), r("A", "B"), r("C", "D"), r("G", "H"), r(" ", "X")]
+    expect(pickFrequentRoutes(rows, 3)).toEqual([r("C", "D"), r("A", "B"), r("E", "F")])
+  })
+})

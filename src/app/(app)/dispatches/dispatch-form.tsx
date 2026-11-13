@@ -275,6 +275,7 @@ export function DispatchForm({
             origin={origin}
             destination={destination}
             onSelect={applyRecentRoute}
+            label="반복 구간"
           />
         ) : null}
 
@@ -317,9 +318,9 @@ export function DispatchForm({
             name="driver_name_snapshot"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>기사</FormLabel>
+                <FormLabel>차주</FormLabel>
                 <FormControl>
-                  <Input {...field} placeholder="기사 이름" />
+                  <Input {...field} placeholder="이름" />
                 </FormControl>
                 <FormMessage />
               </FormItem>

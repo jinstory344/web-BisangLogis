@@ -13,6 +13,8 @@ interface RecentRouteChipsProps {
   origin: string
   destination: string
   onSelect: (route: RecentRoute) => void
+  /** 칩 줄 이름 (기본 "최근 구간", 배차는 "반복 구간") */
+  label?: string
 }
 
 /**
@@ -25,6 +27,7 @@ export function RecentRouteChips({
   origin,
   destination,
   onSelect,
+  label = "최근 구간",
 }: RecentRouteChipsProps) {
   const labelId = useId()
 
@@ -33,7 +36,7 @@ export function RecentRouteChips({
   return (
     <div className="flex min-w-0 flex-col gap-1.5">
       <span id={labelId} className="text-xs font-medium text-muted-foreground">
-        최근 구간
+        {label}
       </span>
       <div
         role="group"
