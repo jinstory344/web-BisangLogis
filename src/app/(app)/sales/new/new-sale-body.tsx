@@ -7,7 +7,7 @@ import {
   type SaleFormValues,
 } from "@/lib/validations/sales"
 
-import { createSaleAction, getRecentSaleRoutesAction } from "../actions"
+import { createSaleAction } from "../actions"
 import { getSaleClientChoices } from "../client-choices"
 import { SalesForm } from "../sales-form"
 
@@ -33,10 +33,9 @@ async function loadSaleCopyDefaults(id: string): Promise<SaleFormValues | null> 
  */
 export async function NewSaleBody({ copyId }: { copyId: string | null }) {
 
-  const [copiedValues, recentRoutes, clientChoices] = await Promise.all([
+  const [copiedValues, clientChoices] = await Promise.all([
     copyId ? loadSaleCopyDefaults(copyId) : null,
-    // 최근 구간 칩·거래처 명단은 부가 기능이라 조회 실패 시 그 부분만 비운다 (매출 폼은 계속 쓸 수 있다).
-    getRecentSaleRoutesAction().catch(() => []),
+    // 거래처 명단은 부가 기능이라 조회 실패 시 비운다 (매출 폼은 계속 쓸 수 있다).
     getSaleClientChoices().catch(() => []),
   ])
 
@@ -49,7 +48,6 @@ export async function NewSaleBody({ copyId }: { copyId: string | null }) {
           key={copiedValues ? copyId : "new"}
           action={createSaleAction}
           defaultValues={copiedValues ?? saleFormDefaults}
-          recentRoutes={recentRoutes}
           clientChoices={clientChoices}
           submitLabel="등록"
         />

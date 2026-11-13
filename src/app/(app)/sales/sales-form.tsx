@@ -11,7 +11,6 @@ import { toChoiceOptions } from "@/components/form/choice-chips"
 import { DateRow } from "@/components/form/date-row"
 import { FormSubmitBar, touchFormProps } from "@/components/form/form-submit-bar"
 import { RecentContactChips } from "@/components/form/recent-contact-chips"
-import { RecentRouteChips } from "@/components/form/recent-route-chips"
 import { SheetChoice } from "@/components/form/sheet-choice"
 import { INCOME_TEXT_CLASS } from "@/components/ledger/colors"
 import {
@@ -46,7 +45,6 @@ import {
   formatAmountInput,
   isVatExemptForPayment,
 } from "@/lib/money"
-import type { RecentRoute } from "@/lib/quick-entry"
 import { nextBillingEntityName, type SaleClientChoice } from "@/lib/sale-clients"
 import { cn } from "@/lib/utils"
 import {
@@ -75,8 +73,6 @@ interface SalesFormProps {
   ) => Promise<SaleActionState>
   defaultValues: SaleFormValues
   submitLabel: string
-  /** 새 등록·복사 등록 화면에서만 넘긴다. 없으면(수정 화면) 최근 구간 칩을 그리지 않는다. */
-  recentRoutes?: RecentRoute[]
   /**
    * 출처 "거래처"의 소분류로 고를 수 있는 거래처 명단(매출에서 많이 쓴 순).
    * 거래처 페이지에 등록된 거래처를 그대로 쓴다. 조회에 실패하면 비워서 넘겨도 폼은 쓸 수 있다.
@@ -116,7 +112,6 @@ export function SalesForm({
   action,
   defaultValues,
   submitLabel,
-  recentRoutes,
   clientChoices = [],
 }: SalesFormProps) {
   const [state, formAction, isPending] = useActionState(action, {
@@ -160,17 +155,6 @@ export function SalesForm({
   const destination = form.watch("destination")
   const recentContacts = useRecentSaleContacts(sourceMajor, sourceMinor)
   const billingShownAbove = isBillingShownAbove(sourceMajor)
-
-  function applyRecentRoute(route: RecentRoute) {
-    form.setValue("origin", route.origin, {
-      shouldValidate: true,
-      shouldDirty: true,
-    })
-    form.setValue("destination", route.destination, {
-      shouldValidate: true,
-      shouldDirty: true,
-    })
-  }
 
   function handleSourceMajorChange(next: string) {
     const previous = form.getValues("source_major")
@@ -408,15 +392,6 @@ export function SalesForm({
             </p>
           ) : null}
         </FormItem>
-
-        {recentRoutes ? (
-          <RecentRouteChips
-            routes={recentRoutes}
-            origin={origin}
-            destination={destination}
-            onSelect={applyRecentRoute}
-          />
-        ) : null}
 
         <FormField
           control={form.control}
