@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, useTransition } from "react"
+import { useEffect, useMemo, useState } from "react"
 
 import {
   Combobox,
@@ -9,11 +9,13 @@ import {
   ComboboxItem,
   ComboboxList,
 } from "@/components/ui/combobox"
+import { filterSuggestions } from "@/lib/korean-match"
 
 interface FreeTextComboboxProps {
   value: string
   onChange: (value: string) => void
-  fetchSuggestions: (query: string) => Promise<string[]>
+  /** 최근 입력값 목록(최근 순)을 돌려준다. 화면이 열릴 때 한 번만 부른다. */
+  fetchSuggestions: () => Promise<string[]>
   placeholder?: string
   disabled?: boolean
 }
@@ -21,6 +23,9 @@ interface FreeTextComboboxProps {
 /**
  * 항상 자유 입력을 허용하되, 최근 입력값을 제안하는 콤보박스.
  * 7.3 상차지/하차지 "최근 입력값 자동완성"용.
+ * - 칸을 누르기만 했을 때(빈 칸)는 아무것도 띄우지 않는다.
+ * - 친 글자로 "시작하는" 값만 띄운다. 한글은 치는 도중도 맞춘다(ㅂ → 부산, 붓 → 부산).
+ * 최근 값 목록은 처음에 한 번 받아 두고, 거르기는 글자를 칠 때마다 화면에서 바로 한다.
  */
 export function FreeTextCombobox({
   value,
@@ -29,24 +34,23 @@ export function FreeTextCombobox({
   placeholder,
   disabled,
 }: FreeTextComboboxProps) {
-  const [items, setItems] = useState<string[]>([])
-  const [, startTransition] = useTransition()
+  const [pool, setPool] = useState<string[]>([])
 
   useEffect(() => {
-    const query = value.trim()
-    const timeout = setTimeout(() => {
-      startTransition(async () => {
-        try {
-          const results = await fetchSuggestions(query)
-          setItems(results)
-        } catch {
-          setItems([])
-        }
+    let cancelled = false
+    fetchSuggestions()
+      .then((results) => {
+        if (!cancelled) setPool(results)
       })
-    }, 250)
+      .catch(() => {
+        if (!cancelled) setPool([])
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [fetchSuggestions])
 
-    return () => clearTimeout(timeout)
-  }, [value, fetchSuggestions])
+  const items = useMemo(() => filterSuggestions(pool, value), [pool, value])
 
   return (
     <Combobox<string>

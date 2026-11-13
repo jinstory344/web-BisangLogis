@@ -21,72 +21,54 @@ import {
 } from "@/lib/validations/dispatch"
 
 /** 7.3 상차지 최근 입력값 자동완성 */
-export async function searchOriginSuggestionsAction(
-  query: string
-): Promise<string[]> {
-  const trimmed = query.trim()
+export async function searchOriginSuggestionsAction(): Promise<string[]> {
   const supabase = await createClient()
-  let request = supabase
+  const request = supabase
     .from("dispatches")
     .select("origin")
     .is("deleted_at", null)
     .order("dispatch_date", { ascending: false })
-    .limit(50)
-
-  if (trimmed) {
-    request = request.ilike("origin", `%${trimmed}%`)
-  }
+    // 최근 1000건에서 서로 다른 값을 모아 돌려주고, 거르기("~로 시작")는 화면에서 한다
+    .limit(1000)
 
   const { data, error } = await request
   if (error) {
     throw new Error(`최근 입력값 조회 실패: ${error.message}`)
   }
 
-  return Array.from(new Set(data.map((row) => row.origin))).slice(0, 10)
+  return Array.from(new Set(data.map((row) => row.origin))).slice(0, 300)
 }
 
 /** 7.3 하차지 최근 입력값 자동완성 */
-export async function searchDestinationSuggestionsAction(
-  query: string
-): Promise<string[]> {
-  const trimmed = query.trim()
+export async function searchDestinationSuggestionsAction(): Promise<string[]> {
   const supabase = await createClient()
-  let request = supabase
+  const request = supabase
     .from("dispatches")
     .select("destination")
     .is("deleted_at", null)
     .order("dispatch_date", { ascending: false })
-    .limit(50)
-
-  if (trimmed) {
-    request = request.ilike("destination", `%${trimmed}%`)
-  }
+    // 최근 1000건에서 서로 다른 값을 모아 돌려주고, 거르기("~로 시작")는 화면에서 한다
+    .limit(1000)
 
   const { data, error } = await request
   if (error) {
     throw new Error(`최근 입력값 조회 실패: ${error.message}`)
   }
 
-  return Array.from(new Set(data.map((row) => row.destination))).slice(0, 10)
+  return Array.from(new Set(data.map((row) => row.destination))).slice(0, 300)
 }
 
 /** 담당자 최근 입력값 자동완성 */
-export async function searchContactNameSuggestionsAction(
-  query: string
-): Promise<string[]> {
-  const trimmed = query.trim()
+export async function searchContactNameSuggestionsAction(): Promise<string[]> {
   const supabase = await createClient()
-  let request = supabase
+  const request = supabase
     .from("dispatches")
     .select("contact_name")
     .is("deleted_at", null)
     .not("contact_name", "is", null)
     .order("dispatch_date", { ascending: false })
-    .limit(50)
-
-  if (trimmed) {
-    request = request.ilike("contact_name", `%${trimmed}%`)
-  }
+    // 최근 1000건에서 서로 다른 값을 모아 돌려주고, 거르기("~로 시작")는 화면에서 한다
+    .limit(1000)
 
   const { data, error } = await request
   if (error) {
@@ -95,7 +77,7 @@ export async function searchContactNameSuggestionsAction(
 
   return Array.from(
     new Set(data.map((row) => row.contact_name).filter((v): v is string => !!v))
-  ).slice(0, 10)
+  ).slice(0, 300)
 }
 
 /**
