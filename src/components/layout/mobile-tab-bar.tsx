@@ -19,8 +19,9 @@ import { getTodayInSeoul } from "@/lib/date"
 
 import { isNavItemActive, NavLink } from "./nav-link"
 
+/** 지금 열린 탭은 배경 대신 아이콘·글자를 빨간색으로 (가계부 앱 방식, 탭 밑줄과 같은 red-400) */
 const TAB_CLASS_NAME =
-  "flex flex-1 flex-col items-center justify-center gap-0.5 text-[11px] leading-4"
+  "flex flex-1 flex-col items-center justify-center gap-0.5 text-[11px] leading-4 data-[active=true]:bg-transparent data-[active=true]:text-red-400"
 
 /**
  * 모바일 하단 탭: [오늘 날짜(비상)] [배차] [통계] [더보기] (가계부 앱 방식).
@@ -57,7 +58,7 @@ export function MobileTabBar({ userEmail }: { userEmail: string | null }) {
           <button
             type="button"
             data-active={isMoreActive}
-            className={`${TAB_CLASS_NAME} text-muted-foreground data-[active=true]:bg-muted data-[active=true]:text-foreground`}
+            className={`${TAB_CLASS_NAME} text-muted-foreground`}
           >
             <MoreHorizontal className="size-5" />
             <span>더보기</span>
