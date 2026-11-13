@@ -94,7 +94,9 @@ export function ExpenseMobileControls({
             {
               label: "지출 합계",
               value: formatKRW(summary.total),
-              className: EXPENSE_TEXT_CLASS,
+              // 칸이 하나뿐이라 크게 (이름 15px · 금액 22px)
+              className: `${EXPENSE_TEXT_CLASS} text-[22px] leading-8 font-semibold`,
+              labelClassName: "text-[15px] leading-6",
             },
           ]}
           size="lg"

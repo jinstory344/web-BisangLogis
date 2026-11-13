@@ -4,6 +4,8 @@ export interface TotalsRowItem {
   label: string
   value: string
   className?: string
+  /** 이름 글씨를 따로 키울 때 (지출 목록처럼 칸이 하나뿐일 때) */
+  labelClassName?: string
 }
 
 /**
@@ -32,7 +34,8 @@ export function TotalsRow({
           <dt
             className={cn(
               "text-muted-foreground",
-              large ? "text-[13px] leading-5" : "text-[11px] leading-4"
+              large ? "text-[13px] leading-5" : "text-[11px] leading-4",
+              item.labelClassName
             )}
           >{item.label}</dt>
           <dd
