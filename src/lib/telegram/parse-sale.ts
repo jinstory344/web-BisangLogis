@@ -41,7 +41,7 @@ export function detectKind(firstLine: string): EntryKind | null {
   return KIND_WORDS[firstLine.replace(/\s/g, "")] ?? null
 }
 
-const MAX_AMOUNT = 99_999_999_999 // PRD 4.3 상한
+export const MAX_AMOUNT = 99_999_999_999 // PRD 4.3 상한
 
 const PAYMENT_WORDS: Record<string, PaymentMethod> = {
   계산서: "TAX_INVOICE",
@@ -86,7 +86,7 @@ function pad(n: number): string {
   return String(n).padStart(2, "0")
 }
 
-function shiftDays(date: string, days: number): string {
+export function shiftDays(date: string, days: number): string {
   const d = new Date(`${date}T00:00:00Z`)
   d.setUTCDate(d.getUTCDate() + days)
   return d.toISOString().slice(0, 10)
@@ -98,7 +98,7 @@ function validDate(y: number, m: number, d: number): string | null {
   return check.getUTCMonth() + 1 === m && check.getUTCDate() === d ? iso : null
 }
 
-/** "오늘/어제/그제", "11/14", "11.14", "11월 14일", "2026-11-14" (요일 괄호는 무시) → YYYY-MM-DD */
+/** "오늘/어제/그제", "11/14", "11월 14일", "2026-11-14" (요일 괄호는 무시) → YYYY-MM-DD */
 export function parseDateLine(line: string, today: string): string | null {
   const text = line.replace(/\s*\(.*\)\s*$/, "").replace(/\s/g, "")
   if (text === "오늘") return today
@@ -109,7 +109,7 @@ export function parseDateLine(line: string, today: string): string | null {
   if (full) return validDate(Number(full[1]), Number(full[2]), Number(full[3]))
 
   const short =
-    text.match(/^(\d{1,2})[/.](\d{1,2})$/) ??
+    text.match(/^(\d{1,2})\/(\d{1,2})$/) ??
     text.match(/^(\d{1,2})월(\d{1,2})일?$/)
   if (!short) return null
   const year = Number(today.slice(0, 4))
@@ -126,20 +126,21 @@ const SOURCE_ALIASES: Record<string, string> = {
   "24시콜": "24시콜화물",
 }
 
-function squash(text: string): string {
+export function squash(text: string): string {
   return text.replace(/\s/g, "").toLowerCase()
 }
 
 /** 이름 앞부분으로 하나를 찾는다(정확히 같은 이름이 먼저). 없으면 null, 여러 개면 "ambiguous". */
-function findByPrefix<T>(
+export function findByPrefix<T>(
   items: T[],
   nameOf: (item: T) => string,
   query: string
 ): T | null | "ambiguous" {
   const q = squash(query)
   if (q.length < 2) return null
-  const exact = items.find((item) => squash(nameOf(item)) === q)
-  if (exact) return exact
+  const exact = items.filter((item) => squash(nameOf(item)) === q)
+  if (exact.length === 1) return exact[0]
+  if (exact.length > 1) return "ambiguous"
   const matches = items.filter((item) => squash(nameOf(item)).startsWith(q))
   if (matches.length === 1) return matches[0]
   return matches.length > 1 ? "ambiguous" : null
