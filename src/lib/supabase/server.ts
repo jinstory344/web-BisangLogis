@@ -3,6 +3,7 @@ import { cookies } from "next/headers"
 
 import { createAdminClient } from "@/lib/supabase/admin"
 import type { Database } from "@/lib/supabase/database.types"
+import { retryFetch } from "@/lib/supabase/retry-fetch"
 
 export async function createClient() {
   // 로컬 개발 중 로그인 없이도 데이터를 볼 수 있도록 RLS를 우회하는 admin
@@ -18,6 +19,8 @@ export async function createClient() {
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
+      // 토큰 갱신 직후 서버 시계 어긋남("JWT issued at future")을 잠시 뒤 다시 시도해 넘긴다.
+      global: { fetch: retryFetch },
       cookies: {
         getAll() {
           return cookieStore.getAll()
