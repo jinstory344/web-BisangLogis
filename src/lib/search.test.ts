@@ -6,6 +6,7 @@ import {
   normalizeSearchQuery,
   pickSearchTab,
   SEARCH_MAX_LENGTH,
+  sumDispatchTotals,
 } from "./search"
 
 describe("normalizeSearchQuery", () => {
@@ -63,5 +64,21 @@ describe("pickSearchTab", () => {
     expect(pickSearchTab("x", 0, 3)).toBe("dispatch")
     expect(pickSearchTab(undefined, 2, 3)).toBe("ledger")
     expect(pickSearchTab(undefined, 0, 0)).toBe("ledger")
+  })
+})
+
+describe("sumDispatchTotals", () => {
+  it("운임·수수료를 더하고 빈 운임은 0으로 친다", () => {
+    expect(
+      sumDispatchTotals([
+        { freight_amount: 300000, fee_amount: 0 },
+        { freight_amount: null, fee_amount: 20000 },
+        { freight_amount: 150000, fee_amount: 10000 },
+      ])
+    ).toEqual({ freight: 450000, fee: 30000 })
+  })
+
+  it("없으면 0", () => {
+    expect(sumDispatchTotals([])).toEqual({ freight: 0, fee: 0 })
   })
 })

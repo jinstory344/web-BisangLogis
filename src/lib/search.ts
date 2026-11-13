@@ -42,3 +42,16 @@ export function pickSearchTab(
   if (value === "ledger" || value === "dispatch") return value
   return ledgerCount === 0 && dispatchCount > 0 ? "dispatch" : "ledger"
 }
+
+/** 찾은 배차들의 운임·수수료 합계 (운임이 비어 있는 건은 0으로 친다) */
+export function sumDispatchTotals(
+  rows: readonly { freight_amount: number | null; fee_amount: number }[]
+): { freight: number; fee: number } {
+  return rows.reduce(
+    (sum, row) => ({
+      freight: sum.freight + (row.freight_amount ?? 0),
+      fee: sum.fee + row.fee_amount,
+    }),
+    { freight: 0, fee: 0 }
+  )
+}
