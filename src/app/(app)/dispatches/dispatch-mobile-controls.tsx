@@ -99,6 +99,8 @@ export function DispatchMobileControls({
           {chips.map((chip) => (
             <Link
               key={chip.clientId || "all"}
+              // 거르기 칩 화면을 미리 받아 두어 누르면 바로 뜨게 한다
+              prefetch
               href={hrefWith({
                 client_id: chip.clientId,
                 client_name: chip.clientId ? chip.label : "",

@@ -3,8 +3,7 @@ import { cache, Suspense } from "react"
 import { SearchButton } from "@/components/layout/search-button"
 import { RefreshIfStale } from "@/components/layout/service-worker"
 import { LedgerCalendar } from "@/components/ledger/ledger-calendar"
-import { LedgerDayList } from "@/components/ledger/ledger-day-list"
-import { LedgerKindChips } from "@/components/ledger/ledger-kind-chips"
+import { LedgerDayView } from "@/components/ledger/ledger-day-view"
 import { LedgerNav } from "@/components/ledger/ledger-nav"
 import { LedgerRangeList } from "@/components/ledger/ledger-range-list"
 import { LedgerSummary, UnpaidLine } from "@/components/ledger/ledger-summary"
@@ -17,7 +16,6 @@ import {
   buildMonthBuckets,
   buildWeekBuckets,
   buildYearBuckets,
-  filterLedgerEntries,
   getLedgerNeighborAnchors,
   getLedgerRange,
   ledgerHref,
@@ -87,9 +85,7 @@ const loadLedger = cache(
                     buckets={buildDayBuckets(entries)}
                   />
                 ) : (
-                  <LedgerDayList
-                    buckets={buildDayBuckets(filterLedgerEntries(entries, kind))}
-                  />
+                  <LedgerDayView anchor={anchor} entries={entries} initialKind={kind} />
                 ),
             }
           }
@@ -146,14 +142,7 @@ async function ContentSlot(props: SlotProps) {
       </p>
     )
   }
-  return (
-    <>
-      {props.view === "day" ? (
-        <LedgerKindChips anchor={props.anchor} value={props.kind} />
-      ) : null}
-      {result.content}
-    </>
-  )
+  return result.content
 }
 
 /** 숫자를 읽는 동안 합계 줄 자리를 같은 높이로 비워 둔다 (화면이 들썩이지 않게) */

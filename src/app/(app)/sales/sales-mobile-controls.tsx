@@ -111,6 +111,8 @@ export function SalesMobileControls({
           {STATUS_CHIPS.map((chip) => (
             <Link
               key={chip.key}
+              // 거르기 칩 화면을 미리 받아 두어 누르면 바로 뜨게 한다
+              prefetch
               href={hrefWith({ payment_status: chip.value })}
               aria-current={paymentStatus === chip.value ? "true" : undefined}
               className={cn(chipVariants({ selected: paymentStatus === chip.value }), LIST_CHIP_CLASS)}
