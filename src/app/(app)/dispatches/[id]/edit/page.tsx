@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation"
 
+import { safeReturnPath } from "@/lib/return-to"
 import { createClient } from "@/lib/supabase/server"
 import { dispatchRowToFormValues } from "@/lib/validations/dispatch"
 
@@ -8,10 +9,14 @@ import { DispatchForm } from "../../dispatch-form"
 
 export default async function EditDispatchPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>
+  searchParams: Promise<{ returnTo?: string }>
 }) {
   const { id } = await params
+  // 수정을 시작한 화면 (저장하면 그리로 돌아간다)
+  const returnTo = safeReturnPath((await searchParams).returnTo)
   const supabase = await createClient()
   const { data: dispatch } = await supabase
     .from("dispatches")
@@ -41,7 +46,7 @@ export default async function EditDispatchPage({
       <h1 className="text-2xl font-semibold">배차 수정</h1>
       <div className="mt-4 max-w-lg">
         <DispatchForm
-          action={updateDispatchAction.bind(null, id)}
+          action={updateDispatchAction.bind(null, id, returnTo)}
           defaultValues={defaultValues}
           defaultClient={
             dispatch.client_id

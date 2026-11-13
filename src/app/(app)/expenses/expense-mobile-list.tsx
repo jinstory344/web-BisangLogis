@@ -3,6 +3,7 @@
 import Link from "next/link"
 import { useMemo, useState } from "react"
 
+import { ReturnToLink } from "@/components/common/return-to-link"
 import { DayHeader } from "@/components/list/day-header"
 import { Button } from "@/components/ui/button"
 import {
@@ -211,7 +212,7 @@ export function ExpenseActionSheetBody({
 
         <div className="grid grid-cols-2 gap-2">
           <Button variant="outline" className="h-11" asChild>
-            <Link href={`/expenses/${expense.id}/edit`} prefetch>수정</Link>
+            <ReturnToLink href={`/expenses/${expense.id}/edit`} prefetch>수정</ReturnToLink>
           </Button>
           <Button variant="outline" className="h-11" asChild>
             <Link href={`/expenses/new?copy=${expense.id}`}>복사 등록</Link>

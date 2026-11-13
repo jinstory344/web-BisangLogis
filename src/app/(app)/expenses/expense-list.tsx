@@ -16,6 +16,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
+import { ReturnToLink } from "@/components/common/return-to-link"
 import { Button } from "@/components/ui/button"
 import {
   Table,
@@ -202,9 +203,9 @@ export function ExpenseList({
                           <TableCell className="text-right">
                             <div className="flex justify-end gap-2">
                               <Button variant="outline" size="sm" asChild>
-                                <Link href={`/expenses/${expense.id}/edit`}>
+                                <ReturnToLink href={`/expenses/${expense.id}/edit`}>
                                   수정
-                                </Link>
+                                </ReturnToLink>
                               </Button>
                               <Button
                                 variant="outline"

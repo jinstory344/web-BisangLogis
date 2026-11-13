@@ -15,6 +15,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
+import { ReturnToLink } from "@/components/common/return-to-link"
 import { Button } from "@/components/ui/button"
 import {
   Table,
@@ -145,7 +146,7 @@ export function DispatchList({
                       <Link href={`/dispatches/${d.id}`}>상세</Link>
                     </Button>
                     <Button variant="outline" size="sm" asChild>
-                      <Link href={`/dispatches/${d.id}/edit`}>수정</Link>
+                      <ReturnToLink href={`/dispatches/${d.id}/edit`}>수정</ReturnToLink>
                     </Button>
                     <Button
                       variant="outline"

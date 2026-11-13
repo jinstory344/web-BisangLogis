@@ -6,6 +6,7 @@ import { redirect } from "next/navigation"
 import { recordAuditLog } from "@/lib/audit/log"
 import { isValidCategoryPairIn } from "@/lib/constants/expense-categories"
 import { softDelete } from "@/lib/soft-delete/soft-delete"
+import { safeReturnPath } from "@/lib/return-to"
 import { createClient } from "@/lib/supabase/server"
 import {
   coerceExpenseFormData,
@@ -74,6 +75,7 @@ export async function createExpenseAction(
 
 export async function updateExpenseAction(
   id: string,
+  returnTo: string | null,
   _prevState: ExpenseActionState,
   formData: FormData
 ): Promise<ExpenseActionState> {
@@ -134,7 +136,8 @@ export async function updateExpenseAction(
   revalidatePath("/expenses")
   // 비상(홈) 화면의 합계·목록·미입금도 바로 바뀌게
   revalidatePath("/")
-  redirect("/expenses")
+  // 저장하면 수정을 시작한 화면으로 돌아간다. 모르면 지출 목록으로.
+  redirect(safeReturnPath(returnTo) ?? "/expenses")
 }
 
 export async function deleteExpenseAction(id: string): Promise<void> {

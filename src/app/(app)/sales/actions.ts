@@ -16,6 +16,7 @@ import {
 } from "@/lib/quick-entry"
 import { cancelPaidPatch, markPaidPatch } from "@/lib/sales-payment"
 import { softDelete } from "@/lib/soft-delete/soft-delete"
+import { safeReturnPath } from "@/lib/return-to"
 import { createClient } from "@/lib/supabase/server"
 import {
   coerceSaleFormData,
@@ -222,6 +223,7 @@ export async function createSaleAction(
 /** 3.7 매출 수정 (update_sale RPC가 부가세 재계산 + 감사 로그를 함께 처리) */
 export async function updateSaleAction(
   id: string,
+  returnTo: string | null,
   _prevState: SaleActionState,
   formData: FormData
 ): Promise<SaleActionState> {
@@ -260,7 +262,9 @@ export async function updateSaleAction(
   // 비상(홈) 화면의 합계·목록·미입금도 바로 바뀌게
   revalidatePath("/")
   revalidatePath(`/sales/${id}`)
-  // 저장하면 상세 화면 대신 매출 목록으로, 수정한 매출이 있는 달을 연다.
+  // 저장하면 수정을 시작한 화면으로 돌아간다. 모르면 매출 목록(수정한 매출이 있는 달)으로.
+  const back = safeReturnPath(returnTo)
+  if (back) redirect(back)
   const { from, to } = getMonthRange(values.sale_date)
   redirect(`/sales?from=${from}&to=${to}`)
 }

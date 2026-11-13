@@ -16,6 +16,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
+import { ReturnToLink } from "@/components/common/return-to-link"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import {
@@ -396,7 +397,7 @@ export function SalesList({
                                 <Link href={`/sales/${s.id}`}>상세</Link>
                               </Button>
                               <Button variant="outline" size="sm" asChild>
-                                <Link href={`/sales/${s.id}/edit`}>수정</Link>
+                                <ReturnToLink href={`/sales/${s.id}/edit`}>수정</ReturnToLink>
                               </Button>
                               <Button
                                 variant="destructive"

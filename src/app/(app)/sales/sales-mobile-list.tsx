@@ -4,6 +4,7 @@ import { Check, Phone } from "lucide-react"
 import Link from "next/link"
 import { useMemo, useState } from "react"
 
+import { ReturnToLink } from "@/components/common/return-to-link"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import {
@@ -313,7 +314,7 @@ export function SaleActionSheetBody({
             <Link href={`/sales/${sale.id}`} prefetch>상세</Link>
           </Button>
           <Button variant="outline" className="h-11" asChild>
-            <Link href={`/sales/${sale.id}/edit`} prefetch>수정</Link>
+            <ReturnToLink href={`/sales/${sale.id}/edit`} prefetch>수정</ReturnToLink>
           </Button>
           <Button variant="outline" className="h-11" asChild>
             <Link href={`/sales/new?copy=${sale.id}`}>복사 등록</Link>

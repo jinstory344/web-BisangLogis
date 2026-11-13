@@ -1,6 +1,5 @@
 "use client"
 
-import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useState, useTransition } from "react"
 import { toast } from "sonner"
@@ -15,6 +14,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
+import { ReturnToLink } from "@/components/common/return-to-link"
 import { Button } from "@/components/ui/button"
 
 import { deleteDispatchAction } from "../actions"
@@ -41,7 +41,7 @@ export function DetailActions({ id }: { id: string }) {
   return (
     <div className="flex gap-2">
       <Button variant="outline" size="sm" asChild>
-        <Link href={`/dispatches/${id}/edit`}>수정</Link>
+        <ReturnToLink href={`/dispatches/${id}/edit`}>수정</ReturnToLink>
       </Button>
       <Button variant="outline" size="sm" onClick={() => setDeleteOpen(true)}>
         삭제

@@ -14,6 +14,7 @@ import {
   type RecentRoute,
 } from "@/lib/quick-entry"
 import { softDelete } from "@/lib/soft-delete/soft-delete"
+import { safeReturnPath } from "@/lib/return-to"
 import { createClient } from "@/lib/supabase/server"
 import {
   coerceDispatchFormData,
@@ -218,6 +219,7 @@ export async function bulkDeleteDispatchesAction(ids: string[]): Promise<void> {
 /** 3.7 배차 수정 (update_dispatch RPC가 갱신 + 감사 로그를 함께 처리) */
 export async function updateDispatchAction(
   id: string,
+  returnTo: string | null,
   _prevState: DispatchActionState,
   formData: FormData
 ): Promise<DispatchActionState> {
@@ -260,5 +262,6 @@ export async function updateDispatchAction(
 
   revalidatePath("/dispatches")
   revalidatePath(`/dispatches/${id}`)
-  redirect(`/dispatches/${id}`)
+  // 저장하면 수정을 시작한 화면으로 돌아간다. 모르면 상세 화면으로.
+  redirect(safeReturnPath(returnTo) ?? `/dispatches/${id}`)
 }

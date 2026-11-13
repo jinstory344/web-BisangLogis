@@ -4,6 +4,7 @@ import { Phone } from "lucide-react"
 import Link from "next/link"
 import { useMemo, useState, type ReactNode } from "react"
 
+import { ReturnToLink } from "@/components/common/return-to-link"
 import { DayHeader } from "@/components/list/day-header"
 import { Button } from "@/components/ui/button"
 import {
@@ -267,7 +268,7 @@ export function DispatchActionSheetBody({
             <Link href={`/dispatches/${dispatch.id}`} prefetch>상세</Link>
           </Button>
           <Button variant="outline" className="h-11" asChild>
-            <Link href={`/dispatches/${dispatch.id}/edit`} prefetch>수정</Link>
+            <ReturnToLink href={`/dispatches/${dispatch.id}/edit`} prefetch>수정</ReturnToLink>
           </Button>
           <Button variant="outline" className="h-11" asChild>
             <Link href={`/dispatches/new?copy=${dispatch.id}`}>복사 등록</Link>
