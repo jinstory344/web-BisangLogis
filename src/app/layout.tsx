@@ -16,6 +16,8 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "비상로지스",
+  // 아이폰 "홈 화면에 추가" 때 기본 이름 (상태 표시줄 모양은 지금처럼 theme-color를 따른다)
+  appleWebApp: { title: "비상" },
   description: "개인 운송사업자를 위한 배차·매출·지출·세금계산서 통합 관리",
 };
 
