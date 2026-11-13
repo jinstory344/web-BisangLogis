@@ -17,6 +17,7 @@ export function NavLink({
   iconClassName,
   labelClassName,
   onNavigate,
+  active,
 }: {
   item: NavItem
   className?: string
@@ -24,9 +25,11 @@ export function NavLink({
   labelClassName?: string
   /** 링크를 눌렀을 때 (시트 안 메뉴에서 시트를 닫는 용도) */
   onNavigate?: () => void
+  /** 지정하면 경로 대신 이 값으로 선택 표시 (하단 탭이 누르는 즉시 불을 옮길 때) */
+  active?: boolean
 }) {
   const pathname = usePathname()
-  const isActive = isNavItemActive(item, pathname)
+  const isActive = active ?? isNavItemActive(item, pathname)
   const Icon = item.icon
 
   return (

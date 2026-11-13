@@ -2,7 +2,7 @@
 
 import { LogOut, MoreHorizontal } from "lucide-react"
 import { usePathname } from "next/navigation"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 
 import { logout } from "@/app/(app)/actions"
 import { Button } from "@/components/ui/button"
@@ -33,6 +33,11 @@ const TAB_CLASS_NAME =
 export function MobileTabBar({ userEmail }: { userEmail: string | null }) {
   const [moreOpen, setMoreOpen] = useState(false)
   const pathname = usePathname()
+  // 누른 탭에 바로 불을 옮겨, 새 화면이 도착하기 전에도 눌렸다는 걸 알 수 있게 한다 (도착하면 경로 기준으로 돌아감).
+  const [pendingHref, setPendingHref] = useState<string | null>(null)
+  useEffect(() => {
+    setPendingHref(null)
+  }, [pathname])
   const isMoreActive = secondaryNavItems.some((item) =>
     isNavItemActive(item, pathname)
   )
@@ -48,6 +53,10 @@ export function MobileTabBar({ userEmail }: { userEmail: string | null }) {
       className={TAB_CLASS_NAME}
       iconClassName="size-5"
       labelClassName={item.href === "/" ? "tabular-nums" : undefined}
+      active={pendingHref ? pendingHref === item.href : undefined}
+      onNavigate={() => {
+        if (!isNavItemActive(item, pathname)) setPendingHref(item.href)
+      }}
     />
   )
 
@@ -58,7 +67,7 @@ export function MobileTabBar({ userEmail }: { userEmail: string | null }) {
         <SheetTrigger asChild>
           <button
             type="button"
-            data-active={isMoreActive}
+            data-active={pendingHref ? false : isMoreActive}
             className={`${TAB_CLASS_NAME} text-muted-foreground`}
           >
             <MoreHorizontal className="size-5" />

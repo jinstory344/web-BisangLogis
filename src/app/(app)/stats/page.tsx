@@ -60,6 +60,8 @@ export default async function StatsPage({
                 <Link
                   key={item.value}
                   href={`/stats?type=${item.value}&from=${from}`}
+                  // 옆 보기도 미리 받아 두어 누르면 바로 뜨게 한다.
+                  prefetch
                   aria-current={isActive ? "page" : undefined}
                   className={cn(
                     "relative flex min-h-9 items-center justify-center px-3 text-sm whitespace-nowrap transition-colors",
