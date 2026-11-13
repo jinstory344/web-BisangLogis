@@ -23,6 +23,9 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   themeColor: "#26272c",
   colorScheme: "dark",
+  // 홈 화면에서 앱처럼 열 때 아래 홈 막대 높이(safe-area-inset-bottom)를 알 수 있게 한다.
+  // 하단 탭이 그 높이만큼 아래 여백을 둬서 막대가 탭 글씨에 겹치지 않는다.
+  viewportFit: "cover",
 };
 
 export default function RootLayout({

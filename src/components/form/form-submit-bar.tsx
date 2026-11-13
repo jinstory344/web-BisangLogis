@@ -15,7 +15,7 @@ export function FormSubmitBar({
   children: ReactNode
 }) {
   return (
-    <div className="fixed inset-x-0 bottom-14 z-30 border-t bg-background p-3 md:static md:bottom-auto md:z-auto md:border-0 md:p-0">
+    <div className="fixed inset-x-0 bottom-[calc(3.5rem+env(safe-area-inset-bottom))] z-30 border-t bg-background p-3 md:static md:bottom-auto md:z-auto md:border-0 md:p-0">
       <Button
         type="submit"
         className="h-12 w-full text-base md:h-8 md:w-auto md:text-sm"
