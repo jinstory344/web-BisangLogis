@@ -60,7 +60,6 @@ export function ExpenseMobileControls({
   const [isFilterOpen, setIsFilterOpen] = useState(activeFilterCount > 0)
 
   const minorOptions = categoryMajor ? getMinorsOf(categories, categoryMajor) : []
-  const spent = summary.byMajor.filter((major) => major.count > 0)
 
   function hrefWith(next: Record<string, string>) {
     const params = new URLSearchParams(searchParams.toString())
@@ -101,16 +100,6 @@ export function ExpenseMobileControls({
           size="lg"
         />
       </div>
-
-      {spent.length > 0 ? (
-        <p className="flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-muted-foreground tabular-nums">
-          {spent.map((major) => (
-            <span key={major.major}>
-              {major.major} {formatKRW(major.total)}
-            </span>
-          ))}
-        </p>
-      ) : null}
 
       <div className="flex items-center gap-2">
         <div className="no-scrollbar -ml-4 flex min-w-0 flex-1 gap-2 overflow-x-auto py-0.5 pl-4 [contain:inline-size]">
