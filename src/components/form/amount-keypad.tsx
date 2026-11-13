@@ -44,7 +44,7 @@ const KEYS: { key: KeypadKey | "next"; label: ReactNode; tone?: "op" | "ok" }[] 
   { key: "1", label: "1" },
   { key: "2", label: "2" },
   { key: "3", label: "3" },
-  { key: "back", label: <Delete className="size-6" aria-label="지우기" />, tone: "op" },
+  { key: "back", label: <Delete className="size-7" aria-label="지우기" />, tone: "op" },
   { key: "00", label: "00" },
   { key: "0", label: "0" },
   { key: "000", label: "000" },
@@ -184,10 +184,10 @@ export function AmountKeypadField(props: AmountKeypadFieldProps) {
                     type="button"
                     onClick={() => press(item.key)}
                     className={cn(
-                      "flex h-[3.25rem] items-center justify-center border-r border-b text-[22px] tabular-nums transition-colors select-none active:bg-muted [&:nth-child(4n)]:border-r-0",
+                      "flex h-16 items-center justify-center border-r border-b text-2xl tabular-nums transition-colors select-none active:bg-muted [&:nth-child(4n)]:border-r-0",
                       item.tone === "op" && "bg-muted/40 text-foreground",
                       item.tone === "ok" &&
-                        "bg-[#c4524e] text-lg font-semibold text-white active:bg-[#a9433f]"
+                        "bg-[#c4524e] text-xl font-semibold text-white active:bg-[#a9433f]"
                     )}
                   >
                     {item.key === "next" ? (onNext ? "다음" : "확인") : item.label}
