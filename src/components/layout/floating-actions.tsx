@@ -2,7 +2,8 @@
 
 import { Copy, Plus } from "lucide-react"
 import Link from "next/link"
-import { usePathname, useRouter } from "next/navigation"
+import { usePathname } from "next/navigation"
+import { useEffect, useState } from "react"
 
 import {
   isEntryType,
@@ -21,22 +22,20 @@ const SHOWN_ON = ["/", "/dispatches", "/stats", "/sales", "/expenses"]
  */
 export function FloatingActions() {
   const pathname = usePathname()
-  const router = useRouter()
+  // 마지막에 고른 종류(매출·지출·배차)로 여는 주소. 화면에 뜰 때 정해 두어 그 화면을 미리 받아 둘 수 있게 한다.
+  const [entryHref, setEntryHref] = useState(newEntryHref("sale"))
+
+  useEffect(() => {
+    try {
+      const last = localStorage.getItem(LAST_ENTRY_TYPE_KEY)
+      if (isEntryType(last)) setEntryHref(newEntryHref(last))
+    } catch {
+      // 저장소를 못 쓰면 매출로 연다.
+    }
+    // 등록 화면에서 종류를 바꾸고 돌아오면 그 종류로 다시 맞춘다.
+  }, [pathname])
 
   if (!SHOWN_ON.includes(pathname)) return null
-
-  function openNewEntry(event: React.MouseEvent<HTMLAnchorElement>) {
-    let last: string | null = null
-    try {
-      last = localStorage.getItem(LAST_ENTRY_TYPE_KEY)
-    } catch {
-      last = null
-    }
-    if (isEntryType(last) && last !== "sale") {
-      event.preventDefault()
-      router.push(newEntryHref(last))
-    }
-  }
 
   return (
     <div className="fixed right-4 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-40 flex items-center gap-3 md:hidden">
@@ -53,8 +52,9 @@ export function FloatingActions() {
         }
       />
       <Link
-        href={newEntryHref("sale")}
-        onClick={openNewEntry}
+        href={entryHref}
+        // 등록 화면을 미리 받아 두어 누르면 바로 뜨게 한다.
+        prefetch
         aria-label="등록"
         className="flex size-12 items-center justify-center rounded-full bg-[#c4524e] text-white shadow-lg transition-transform active:scale-95"
       >

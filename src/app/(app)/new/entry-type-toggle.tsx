@@ -24,6 +24,8 @@ export function EntryTypeToggle({ value }: { value: EntryType }) {
             key={type.value}
             href={newEntryHref(type.value)}
             replace
+            // 세 종류 화면을 미리 받아 두어 바꿀 때 바로 뜨게 한다.
+            prefetch
             aria-current={isActive ? "page" : undefined}
             onClick={() => {
               try {
