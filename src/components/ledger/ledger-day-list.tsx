@@ -14,11 +14,17 @@ import { EXPENSE_TEXT_CLASS, INCOME_TEXT_CLASS } from "./colors"
  * 일일 장부: 날짜별로 그날의 매출(파랑)과 지출(빨강)을 한 목록에 보여 준다.
  * 날짜 머리글에는 그날 매출·지출 합계가 있고, 건을 누르면 매출은 상세, 지출은 수정 화면으로 간다.
  */
-export function LedgerDayList({ buckets }: { buckets: DayBucket<DayLedgerEntry>[] }) {
+export function LedgerDayList({
+  buckets,
+  emptyMessage = "이 달에 기록된 매출·지출이 없습니다.",
+}: {
+  buckets: DayBucket<DayLedgerEntry>[]
+  emptyMessage?: string
+}) {
   if (buckets.length === 0) {
     return (
       <p className="py-12 text-center text-sm text-muted-foreground">
-        이 달에 기록된 매출·지출이 없습니다.
+        {emptyMessage}
       </p>
     )
   }
@@ -66,7 +72,7 @@ export function LedgerDayList({ buckets }: { buckets: DayBucket<DayLedgerEntry>[
                     {entry.source}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm leading-snug font-medium break-keep">
+                    <p className="text-sm leading-snug font-medium break-keep wrap-anywhere">
                       {entry.route}
                     </p>
                     <p className="mt-0.5 truncate text-xs text-muted-foreground">
@@ -95,7 +101,7 @@ export function LedgerDayList({ buckets }: { buckets: DayBucket<DayLedgerEntry>[
                     {entry.major}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm leading-snug font-medium break-keep">
+                    <p className="text-sm leading-snug font-medium break-keep wrap-anywhere">
                       {entry.minor}
                     </p>
                     {entry.note ? (

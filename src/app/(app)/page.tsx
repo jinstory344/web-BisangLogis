@@ -1,3 +1,6 @@
+import { Search } from "lucide-react"
+import Link from "next/link"
+
 import { LedgerDayList } from "@/components/ledger/ledger-day-list"
 import { LedgerNav } from "@/components/ledger/ledger-nav"
 import { LedgerRangeList } from "@/components/ledger/ledger-range-list"
@@ -105,15 +108,25 @@ export default async function LedgerPage({
   return (
     <div className="p-4 md:p-6">
       <div className="mx-auto flex max-w-2xl flex-col gap-3">
-        <h1 className="text-2xl font-semibold tracking-tight">비상</h1>
-
-        <LedgerViewTabs view={view} anchor={anchor} />
+        {/* 가계부 앱처럼: 왼쪽 검색 · 가운데 제목 */}
+        <header className="-mt-1 grid grid-cols-[2.75rem_1fr_2.75rem] items-center">
+          <Link
+            href="/search"
+            aria-label="검색"
+            className="flex size-11 items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground"
+          >
+            <Search className="size-5" />
+          </Link>
+          <h1 className="text-center text-lg font-semibold tracking-tight">비상</h1>
+          <span aria-hidden />
+        </header>
 
         <SwipePager
           prevHref={neighbors ? ledgerHref(view, neighbors.prev, kind) : null}
           nextHref={neighbors ? ledgerHref(view, neighbors.next, kind) : null}
         >
           <LedgerNav view={view} anchor={anchor} kind={kind} />
+          <LedgerViewTabs view={view} anchor={anchor} />
 
           {errorMessage ? (
             <p className="text-sm text-destructive">

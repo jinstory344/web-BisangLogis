@@ -25,6 +25,7 @@ interface SwipePagerProps {
  * 손가락을 따라 내용이 밀리고, 충분히 밀면 그 방향으로 빠져나간 뒤 이웃 달로 이동한다.
  * 이웃 달은 위쪽 화살표 링크가 미리 받아 두므로(prefetch) 보통 바로 뜬다.
  * 위아래 스크롤은 브라우저가 그대로 처리한다(touch-action: pan-y).
+ * `data-swipe-ignore`가 붙은 영역(가로 스크롤 메뉴)에서 시작한 손짓은 넘기지 않는다.
  */
 export function SwipePager({
   prevHref,
@@ -75,6 +76,11 @@ export function SwipePager({
 
   function onTouchStart(event: React.TouchEvent) {
     if (event.touches.length !== 1) return
+    // 가로로 밀어 보는 메뉴(보기 탭 등) 안에서 시작한 손짓은 그 메뉴가 쓴다
+    if ((event.target as Element).closest?.("[data-swipe-ignore]")) {
+      gesture.current = null
+      return
+    }
     const touch = event.touches[0]
     gesture.current = { x: touch.clientX, y: touch.clientY, t: Date.now(), axis: null, dx: 0 }
   }

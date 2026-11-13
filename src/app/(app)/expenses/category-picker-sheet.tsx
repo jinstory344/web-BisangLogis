@@ -189,7 +189,7 @@ export function CategoryPickerSheet({
                     onClick={() => (isEditing ? undefined : pick(name))}
                     aria-pressed={isSelected}
                     className={cn(
-                      "flex h-14 w-full items-center justify-center px-2 text-center text-sm break-keep",
+                      "flex h-14 w-full items-center justify-center px-2 text-center text-sm break-keep wrap-anywhere",
                       isSelected ? "font-semibold text-red-400" : "text-foreground",
                       isEditing && "cursor-default"
                     )}

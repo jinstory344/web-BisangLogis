@@ -117,7 +117,7 @@ export function ExpenseMobileList({
                 </div>
 
                 <div className="pointer-events-none min-w-0 flex-1">
-                  <p className="text-sm leading-snug font-medium break-keep">
+                  <p className="text-sm leading-snug font-medium break-keep wrap-anywhere">
                     {expense.category_minor}
                   </p>
                   {note ? (
@@ -181,7 +181,7 @@ function ExpenseActionSheetBody({
   return (
     <>
       <SheetHeader className="pr-12">
-        <SheetTitle className="leading-snug break-keep">
+        <SheetTitle className="leading-snug break-keep wrap-anywhere">
           {expense.category_major} · {expense.category_minor}
         </SheetTitle>
         <SheetDescription>

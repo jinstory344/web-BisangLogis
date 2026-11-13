@@ -169,7 +169,7 @@ export function SalesMobileList({
                 </div>
 
                 <div className="pointer-events-none min-w-0 flex-1">
-                  <p className="text-sm leading-snug font-medium break-keep">
+                  <p className="text-sm leading-snug font-medium break-keep wrap-anywhere">
                     {sale.origin} → {sale.destination}
                   </p>
                   <p className="mt-0.5 text-xs text-muted-foreground">
@@ -237,7 +237,7 @@ function SaleActionSheetBody({
   return (
     <>
       <SheetHeader className="pr-12">
-        <SheetTitle className="leading-snug break-keep">
+        <SheetTitle className="leading-snug break-keep wrap-anywhere">
           {sale.origin} → {sale.destination}
         </SheetTitle>
         <SheetDescription>

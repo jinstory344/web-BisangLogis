@@ -4,6 +4,15 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* 가로로 밀어 보는 메뉴·칩 줄: 스크롤은 되고 스크롤바는 숨긴다 */
+@utility no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
