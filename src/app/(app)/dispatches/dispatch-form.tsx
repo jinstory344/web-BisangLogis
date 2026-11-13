@@ -2,7 +2,14 @@
 
 import { zodResolver } from "@hookform/resolvers/zod"
 import { ChevronDown } from "lucide-react"
-import { startTransition, useActionState, useId, useState } from "react"
+import {
+  startTransition,
+  useActionState,
+  useEffect,
+  useId,
+  useRef,
+  useState,
+} from "react"
 import { useForm } from "react-hook-form"
 
 import type { ClientSearchResult } from "@/app/(app)/clients/actions"
@@ -49,7 +56,6 @@ import {
 } from "@/lib/validations/dispatch"
 
 import {
-  checkDuplicateDispatchAction,
   searchContactNameSuggestionsAction,
   searchDestinationSuggestionsAction,
   searchOriginSuggestionsAction,
@@ -83,7 +89,13 @@ export function DispatchForm({
     defaultClient
   )
   const [pendingFormData, setPendingFormData] = useState<FormData | null>(null)
-  const [isCheckingDuplicate, setIsCheckingDuplicate] = useState(false)
+  // 마지막으로 보낸 값 — 서버가 "중복"이라고 하면 확인 창에서 그대로 다시 보낸다
+  const lastFormDataRef = useRef<FormData | null>(null)
+  useEffect(() => {
+    if (state.duplicate && lastFormDataRef.current) {
+      setPendingFormData(lastFormDataRef.current)
+    }
+  }, [state])
 
   const form = useForm<DispatchFormValues>({
     resolver: zodResolver(dispatchFormSchema),
@@ -130,23 +142,8 @@ export function DispatchForm({
   async function onSubmit(values: DispatchFormValues) {
     const fd = buildDispatchFormData(values)
 
-    setIsCheckingDuplicate(true)
-    try {
-      const isDuplicate = await checkDuplicateDispatchAction({
-        dispatchDate: values.dispatch_date,
-        clientId: values.client_id,
-        origin: values.origin,
-        destination: values.destination,
-        plateNoSnapshot: values.plate_no_snapshot,
-      })
-
-      if (isDuplicate) {
-        setPendingFormData(fd)
-        return
-      }
-    } finally {
-      setIsCheckingDuplicate(false)
-    }
+    // 중복 확인은 서버가 저장하면서 함께 한다(왕복 한 번). 중복이면 state.duplicate로 알려 준다.
+    lastFormDataRef.current = fd
 
     // useActionState의 formAction을 handleSubmit 콜백에서 수동 호출할 때는
     // 반드시 transition으로 감싼다 (감싸지 않으면 폼이 클라이언트에서 크래시).
@@ -157,6 +154,7 @@ export function DispatchForm({
 
   function handleConfirmDuplicate() {
     if (pendingFormData) {
+      pendingFormData.set("confirm_duplicate", "1")
       startTransition(() => {
         formAction(pendingFormData)
       })
@@ -531,12 +529,8 @@ export function DispatchForm({
           </p>
         ) : null}
 
-        <FormSubmitBar disabled={isPending || isCheckingDuplicate}>
-          {isPending
-            ? "저장 중..."
-            : isCheckingDuplicate
-              ? "중복 확인 중..."
-              : submitLabel}
+        <FormSubmitBar disabled={isPending}>
+          {isPending ? "저장 중..." : submitLabel}
         </FormSubmitBar>
       </form>
 

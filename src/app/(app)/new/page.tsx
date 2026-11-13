@@ -1,5 +1,6 @@
 import { ChevronLeft, X } from "lucide-react"
 import Link from "next/link"
+import { Suspense } from "react"
 
 import { ENTRY_TYPES, parseEntryType } from "@/lib/entry-type"
 import { parseCopyId } from "@/lib/quick-entry"
@@ -49,7 +50,17 @@ export default async function NewEntryPage({
         <EntryTypeToggle value={type} />
 
         {/* 종류를 바꾸거나 다른 건을 복사하면 폼 상태를 새로 만든다. */}
-        <div key={`${type}-${copyId ?? "new"}`}>
+        {/* 머리·종류 전환은 바로 보내고, 폼은 거래처·분류 목록을 읽는 대로 채운다(스트리밍) */}
+        <Suspense
+          key={`${type}-${copyId ?? "new"}`}
+          fallback={
+            <div aria-hidden className="mt-4 flex flex-col gap-4">
+              {Array.from({ length: 6 }, (_, i) => (
+                <div key={i} className="h-11 animate-pulse rounded-md bg-muted/40" />
+              ))}
+            </div>
+          }
+        >
           {type === "sale" ? (
             <NewSaleBody copyId={copyId} />
           ) : type === "expense" ? (
@@ -57,7 +68,7 @@ export default async function NewEntryPage({
           ) : (
             <NewDispatchBody copyId={copyId} />
           )}
-        </div>
+        </Suspense>
       </div>
     </div>
   )

@@ -2,7 +2,14 @@
 
 import { zodResolver } from "@hookform/resolvers/zod"
 import { ChevronDown } from "lucide-react"
-import { startTransition, useActionState, useId, useState } from "react"
+import {
+  startTransition,
+  useActionState,
+  useEffect,
+  useId,
+  useRef,
+  useState,
+} from "react"
 import { useForm } from "react-hook-form"
 
 import { AmountInput } from "@/components/form/amount-input"
@@ -54,7 +61,6 @@ import {
 } from "@/lib/validations/sales"
 
 import {
-  checkDuplicateSaleAction,
   searchBillingEntityNameSuggestionsAction,
   searchDestinationSuggestionsAction,
   searchOriginSuggestionsAction,
@@ -118,7 +124,13 @@ export function SalesForm({
     error: null,
   })
   const [pendingFormData, setPendingFormData] = useState<FormData | null>(null)
-  const [isCheckingDuplicate, setIsCheckingDuplicate] = useState(false)
+  // 마지막으로 보낸 값 — 서버가 "중복"이라고 하면 확인 창에서 그대로 다시 보낸다
+  const lastFormDataRef = useRef<FormData | null>(null)
+  useEffect(() => {
+    if (state.duplicate && lastFormDataRef.current) {
+      setPendingFormData(lastFormDataRef.current)
+    }
+  }, [state])
   const moreSectionId = useId()
   const originInputId = useId()
   // 새 등록(금액이 비어 있음)이면 화면을 열자마자 금액 키패드를 띄운다. 수정·복사는 띄우지 않는다.
@@ -221,22 +233,8 @@ export function SalesForm({
   async function onSubmit(values: SaleFormValues) {
     const fd = buildSaleFormData(values)
 
-    setIsCheckingDuplicate(true)
-    try {
-      const isDuplicate = await checkDuplicateSaleAction({
-        saleDate: values.sale_date,
-        origin: values.origin,
-        destination: values.destination,
-        supplyAmount: values.supply_amount,
-      })
-
-      if (isDuplicate) {
-        setPendingFormData(fd)
-        return
-      }
-    } finally {
-      setIsCheckingDuplicate(false)
-    }
+    // 중복 확인은 서버가 저장하면서 함께 한다(왕복 한 번). 중복이면 state.duplicate로 알려 준다.
+    lastFormDataRef.current = fd
 
     // useActionState의 formAction을 handleSubmit 콜백에서 수동 호출할 때는
     // 반드시 transition으로 감싼다 (감싸지 않으면 폼이 클라이언트에서 크래시).
@@ -247,6 +245,7 @@ export function SalesForm({
 
   function handleConfirmDuplicate() {
     if (pendingFormData) {
+      pendingFormData.set("confirm_duplicate", "1")
       startTransition(() => {
         formAction(pendingFormData)
       })
@@ -551,12 +550,8 @@ export function SalesForm({
           </p>
         ) : null}
 
-        <FormSubmitBar disabled={isPending || isCheckingDuplicate}>
-          {isPending
-            ? "저장 중..."
-            : isCheckingDuplicate
-              ? "중복 확인 중..."
-              : submitLabel}
+        <FormSubmitBar disabled={isPending}>
+          {isPending ? "저장 중..." : submitLabel}
         </FormSubmitBar>
       </form>
 

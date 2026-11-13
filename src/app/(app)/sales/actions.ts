@@ -176,7 +176,12 @@ export async function checkDuplicateSaleAction(input: {
 
 export interface SaleActionState {
   error: string | null
+  /** 같은 날·구간·금액 매출이 이미 있어 저장하지 않았다 — 화면이 확인을 받고 다시 보낸다 */
+  duplicate?: boolean
 }
+
+/** 저장 전 중복 확인을 건너뛰라는 표시 (사용자가 "그래도 저장"을 눌렀을 때) */
+const CONFIRM_DUPLICATE_FIELD = "confirm_duplicate" // 폼(sales-form·dispatch-form)과 같은 이름
 
 /** 3.1~3.3 매출 등록. 부가세/합계는 create_sale RPC가 공급가액으로부터 계산한다. */
 export async function createSaleAction(
@@ -192,6 +197,17 @@ export async function createSaleAction(
 
   const values = parsed.data
   const supabase = await createClient()
+
+  // 중복 확인을 저장과 같은 요청 안에서 한다 (전에는 화면이 서버를 한 번 더 오갔다).
+  if (formData.get(CONFIRM_DUPLICATE_FIELD) !== "1") {
+    const isDuplicate = await checkDuplicateSaleAction({
+      saleDate: values.sale_date,
+      origin: values.origin,
+      destination: values.destination,
+      supplyAmount: values.supply_amount,
+    })
+    if (isDuplicate) return { error: null, duplicate: true }
+  }
 
   const { error } = await supabase.rpc("create_sale", {
     p_sale_date: values.sale_date,

@@ -155,7 +155,12 @@ export async function checkDuplicateDispatchAction(input: {
 
 export interface DispatchActionState {
   error: string | null
+  /** 같은 날·거래처·구간·차량 배차가 이미 있어 저장하지 않았다 — 화면이 확인을 받고 다시 보낸다 */
+  duplicate?: boolean
 }
+
+/** 저장 전 중복 확인을 건너뛰라는 표시 (사용자가 "그래도 저장"을 눌렀을 때) */
+const CONFIRM_DUPLICATE_FIELD = "confirm_duplicate" // 폼(sales-form·dispatch-form)과 같은 이름
 
 /** 3.1~3.3 배차(차량 섭외) 등록. 금액은 다루지 않는다 — 수익은 매출(sales) 담당. */
 export async function createDispatchAction(
@@ -171,6 +176,18 @@ export async function createDispatchAction(
 
   const values = parsed.data
   const supabase = await createClient()
+
+  // 중복 확인을 저장과 같은 요청 안에서 한다 (전에는 화면이 서버를 한 번 더 오갔다).
+  if (formData.get(CONFIRM_DUPLICATE_FIELD) !== "1") {
+    const isDuplicate = await checkDuplicateDispatchAction({
+      dispatchDate: values.dispatch_date,
+      clientId: values.client_id,
+      origin: values.origin,
+      destination: values.destination,
+      plateNoSnapshot: values.plate_no_snapshot,
+    })
+    if (isDuplicate) return { error: null, duplicate: true }
+  }
 
   const { error } = await supabase.rpc("create_dispatch", {
     p_dispatch_date: values.dispatch_date,

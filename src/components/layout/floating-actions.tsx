@@ -2,7 +2,7 @@
 
 import { Copy, Plus } from "lucide-react"
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
 
 import {
@@ -22,6 +22,7 @@ const SHOWN_ON = ["/", "/dispatches", "/stats", "/sales", "/expenses"]
  */
 export function FloatingActions() {
   const pathname = usePathname()
+  const router = useRouter()
   // 마지막에 고른 종류(매출·지출·배차)로 여는 주소. 화면에 뜰 때 정해 두어 그 화면을 미리 받아 둘 수 있게 한다.
   const [entryHref, setEntryHref] = useState(newEntryHref("sale"))
 
@@ -34,6 +35,13 @@ export function FloatingActions() {
     }
     // 등록 화면에서 종류를 바꾸고 돌아오면 그 종류로 다시 맞춘다.
   }, [pathname])
+
+  // 저장·삭제 뒤에는 휴대폰에 받아 둔 화면이 모두 버려지므로, 화면이 바뀔 때마다 등록 화면을 다시 받아 둔다.
+  useEffect(() => {
+    if (!SHOWN_ON.includes(pathname)) return
+    // kind "full": Link의 prefetch와 같이 데이터까지 받아 둔다
+    router.prefetch(entryHref, { kind: "full" } as Parameters<typeof router.prefetch>[1])
+  }, [pathname, entryHref, router])
 
   if (!SHOWN_ON.includes(pathname)) return null
 

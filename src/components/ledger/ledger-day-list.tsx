@@ -47,7 +47,8 @@ export function LedgerDayList({
             date={bucket.date}
             showMonth={spansMonths}
             totalLabel={
-              <span className="flex items-center gap-2">
+              // 매출(파랑)과 지출(빨강) 사이를 넉넉히 띄운다
+              <span className="flex items-center gap-5">
                 {bucket.income > 0 ? (
                   <span className={INCOME_TEXT_CLASS}>
                     {formatKRW(bucket.income)}
