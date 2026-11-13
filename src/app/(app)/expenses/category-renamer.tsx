@@ -14,13 +14,21 @@ interface CategoryRenamerProps {
   /** 성공하면 null, 실패하면 화면에 보여 줄 오류 문장 */
   onSave: (name: string) => Promise<string | null>
   onCancel: () => void
+  /** 입력칸 아래 안내 (기본: 지출 분류 안내) */
+  note?: string
 }
 
 /**
  * 분류 선택판 편집 모드에서 이름을 누르면 열리는 이름 바꾸기 칸.
  * 입력칸에서 Enter를 눌러도 지출 폼이 제출되지 않고 이름만 저장된다.
  */
-export function CategoryRenamer({ current, label, onSave, onCancel }: CategoryRenamerProps) {
+export function CategoryRenamer({
+  current,
+  label,
+  onSave,
+  onCancel,
+  note = "이미 등록한 지출의 분류 이름도 함께 바뀌어요.",
+}: CategoryRenamerProps) {
   const [name, setName] = useState(current)
   const [error, setError] = useState<string | null>(null)
   const [isSaving, setIsSaving] = useState(false)
@@ -80,9 +88,7 @@ export function CategoryRenamer({ current, label, onSave, onCancel }: CategoryRe
           취소
         </Button>
       </div>
-      <p className="text-xs text-muted-foreground">
-        이미 등록한 지출의 분류 이름도 함께 바뀌어요.
-      </p>
+      <p className="text-xs text-muted-foreground">{note}</p>
       {error ? (
         <p className="text-sm text-destructive" role="alert">
           {error}

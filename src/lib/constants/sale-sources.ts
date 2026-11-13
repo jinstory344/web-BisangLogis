@@ -1,7 +1,7 @@
 /**
  * 매출 출처 목록: 대분류 › 하위분류 (예: 카카오톡 › 스마일). 오더자 이름은 그 아래 따로(source_minor).
  *
- * 목록은 DB의 sale_sources 테이블이 원본이고 앱에서 직접 추가·삭제한다.
+ * 목록은 DB의 sale_sources 테이블이 원본이고 앱에서 직접 추가·삭제·이름 바꾸기를 한다.
  * 지출 분류(expense-categories.ts)와 같은 모양·규칙을 쓰되, 출처에는 "기타(직접 입력)" 하위분류가 없다
  * (하위분류는 고르지 않아도 된다). "거래처" 대분류는 하위분류 대신 거래처 명단에서 고르므로
  * 하위분류를 붙일 수 없고 지울 수도 없다.
@@ -11,10 +11,12 @@ import {
   buildCategoryTree,
   checkDeleteCategory,
   checkNewCategory,
+  checkRenameCategory,
   type CategoryCheck,
   type DeleteCategoryInput,
   type ExpenseCategoryTree,
   type NewCategoryInput,
+  type RenameCategoryInput,
 } from "./expense-categories"
 import { SOURCE_MAJOR_CLIENT, SOURCE_MAJOR_OPTIONS } from "./source"
 
@@ -77,4 +79,22 @@ export function checkDeleteSaleSource(
     return { ok: false, error: "'거래처'는 지울 수 없어요" }
   }
   return checkDeleteCategory(tree, input)
+}
+
+/**
+ * 출처 이름을 바꿔도 되는지. "거래처"는 거래처 명단 연결 규칙(앱·DB)이 이름에 묶여 있어 바꿀 수 없고,
+ * 다른 출처를 "거래처"로 바꿀 수도 없다(이미 있는 이름이라 중복 검사에서 막힌다).
+ */
+export function checkRenameSaleSource(
+  tree: SaleSourceTree,
+  input: RenameCategoryInput
+): CategoryCheck {
+  if (input.minor === undefined && input.major === SOURCE_MAJOR_CLIENT) {
+    return { ok: false, error: "'거래처'는 이름을 바꿀 수 없어요" }
+  }
+  const check = checkRenameCategory(tree, input)
+  if (!check.ok) {
+    return { ok: false, error: check.error.replace("소분류", "하위분류") }
+  }
+  return check
 }

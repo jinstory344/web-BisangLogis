@@ -4,6 +4,7 @@ import {
   buildSaleSourceTree,
   checkDeleteSaleSource,
   checkNewSaleSource,
+  checkRenameSaleSource,
   DEFAULT_SALE_SOURCE_TREE,
   formatSaleSource,
   type SaleSourceTree,
@@ -81,5 +82,34 @@ describe("checkDeleteSaleSource", () => {
     expect(checkDeleteSaleSource(tree, { major: "지인" }).ok).toBe(true)
     expect(checkDeleteSaleSource(tree, { major: "카카오톡", minor: "해피" }).ok).toBe(true)
     expect(checkDeleteSaleSource(tree, { major: "카카오톡", minor: "없음" }).ok).toBe(false)
+  })
+})
+
+describe("checkRenameSaleSource", () => {
+  const tree = [
+    { major: "거래처", minors: [] },
+    { major: "카카오톡", minors: ["스마일", "해피"] },
+    { major: "지인", minors: [] },
+  ]
+
+  it("대분류·하위분류 이름을 바꿀 수 있다", () => {
+    expect(checkRenameSaleSource(tree, { major: "카카오톡", name: "카톡" })).toEqual({
+      ok: true,
+      name: "카톡",
+    })
+    expect(
+      checkRenameSaleSource(tree, { major: "카카오톡", minor: "스마일", name: "스마일방" })
+    ).toEqual({ ok: true, name: "스마일방" })
+  })
+
+  it("'거래처'는 바꿀 수 없고, 다른 출처를 '거래처'로 바꿀 수도 없다", () => {
+    expect(checkRenameSaleSource(tree, { major: "거래처", name: "고객사" }).ok).toBe(false)
+    expect(checkRenameSaleSource(tree, { major: "지인", name: "거래처" }).ok).toBe(false)
+  })
+
+  it("같은 대분류 안의 하위분류 이름과 겹치면 '하위분류'로 알려 준다", () => {
+    expect(
+      checkRenameSaleSource(tree, { major: "카카오톡", minor: "스마일", name: "해피" })
+    ).toEqual({ ok: false, error: "이미 있는 하위분류예요" })
   })
 })

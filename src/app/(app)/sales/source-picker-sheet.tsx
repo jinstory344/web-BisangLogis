@@ -31,8 +31,16 @@ import { SOURCE_MAJOR_CLIENT } from "@/lib/constants/source"
 import { cn } from "@/lib/utils"
 
 import { CategoryAdder } from "../expenses/category-adder"
+import { CategoryRenamer } from "../expenses/category-renamer"
 
-import { addSaleSourceAction, deleteSaleSourceAction } from "./source-actions"
+import {
+  addSaleSourceAction,
+  deleteSaleSourceAction,
+  renameSaleSourceAction,
+} from "./source-actions"
+
+/** 이름을 바꾸는 중인 출처 (minor가 없으면 대분류) */
+type RenameTarget = { major: string; minor?: string }
 
 interface SourcePickerSheetProps {
   /** 서버에서 읽은 출처 목록 (추가·삭제하면 이 화면 안에서 새 목록으로 바뀐다) */
@@ -49,7 +57,8 @@ interface SourcePickerSheetProps {
  * 매출 "출처" 한 줄과, 누르면 아래에서 올라오는 출처 선택판 (지출 분류와 같은 방식).
  * 위쪽 대분류 칩을 고르고, 하위분류(예: 카카오톡 › 스마일)가 있으면 아래 3열 칸에서 고른다.
  * 하위분류가 없는 대분류나 "거래처"는 칩을 누르면 바로 정해진다(거래처는 아래 거래처 줄에서 고른다).
- * 연필을 누르면 편집: 칸마다 ✕(삭제, "거래처" 제외)와 대분류·하위분류 추가가 나온다.
+ * 연필을 누르면 편집: 칸마다 ✕(삭제, "거래처" 제외)와 대분류·하위분류 추가가 나오고,
+ * 하위분류 칸이나 고른 대분류 칩을 한 번 더 누르면 이름을 바꿀 수 있다("거래처" 제외).
  */
 export function SourcePickerSheet({
   initialTree,
@@ -67,12 +76,14 @@ export function SourcePickerSheet({
   const subs = getMinorsOf(tree, activeTab)
   const [pendingDelete, setPendingDelete] = useState<DeleteCategoryInput | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [renaming, setRenaming] = useState<RenameTarget | null>(null)
 
   const summary = formatSaleSource(major, sub)
 
   function openSheet() {
     setTab(major && majors.includes(major) ? major : (majors[0] ?? ""))
     setIsEditing(false)
+    setRenaming(null)
     setOpen(true)
   }
 
@@ -82,8 +93,16 @@ export function SourcePickerSheet({
   }
 
   function onMajorChip(name: string) {
+    if (isEditing) {
+      // 편집 중에 이미 고른 대분류를 한 번 더 누르면 이름 바꾸기 ("거래처"는 못 바꾼다)
+      if (name === activeTab && name !== SOURCE_MAJOR_CLIENT) setRenaming({ major: name })
+      else {
+        setTab(name)
+        setRenaming(null)
+      }
+      return
+    }
     setTab(name)
-    if (isEditing) return
     // 하위분류가 없는 대분류(거래처 포함)는 누르면 바로 정한다
     if (name === SOURCE_MAJOR_CLIENT || getMinorsOf(tree, name).length === 0) {
       pick(name, "")
@@ -102,6 +121,22 @@ export function SourcePickerSheet({
     const result = await addSaleSourceAction({ kind: "minor", major: activeTab, name })
     if (!result.ok) return result.error
     setTree(result.tree)
+    return null
+  }
+
+  async function rename(target: RenameTarget, name: string): Promise<string | null> {
+    const result = await renameSaleSourceAction({ ...target, name })
+    if (!result.ok) return result.error
+    setTree(result.tree)
+    const newName = normalizeCategoryName(name)
+    if (target.minor === undefined) setTab(newName)
+    setRenaming(null)
+    // 지금 고른 출처의 이름을 바꿨다면 폼 값도 새 이름으로 (판은 닫지 않는다)
+    if (major === target.major) {
+      if (target.minor === undefined) onPick(newName, sub)
+      else if (sub === target.minor) onPick(major, newName)
+    }
+    toast.success("출처 이름을 바꿨습니다")
     return null
   }
 
@@ -160,7 +195,10 @@ export function SourcePickerSheet({
                   type="button"
                   aria-pressed={isEditing}
                   aria-label={isEditing ? "편집 끝내기" : "출처 편집"}
-                  onClick={() => setIsEditing((value) => !value)}
+                  onClick={() => {
+                    setIsEditing((value) => !value)
+                    setRenaming(null)
+                  }}
                   className={cn(
                     "flex size-10 items-center justify-center rounded-full",
                     isEditing ? "text-red-400" : "text-muted-foreground"
@@ -258,12 +296,19 @@ export function SourcePickerSheet({
                   >
                     <button
                       type="button"
-                      onClick={() => (isEditing ? undefined : pick(activeTab, name))}
+                      onClick={() =>
+                        isEditing
+                          ? setRenaming({ major: activeTab, minor: name })
+                          : pick(activeTab, name)
+                      }
                       aria-pressed={isSelected}
                       className={cn(
                         "flex h-14 w-full items-center justify-center px-2 text-center text-sm break-keep",
                         isSelected ? "font-semibold text-red-400" : "text-foreground",
-                        isEditing && "cursor-default"
+                        isEditing &&
+                          renaming?.major === activeTab &&
+                          renaming.minor === name &&
+                          "bg-muted"
                       )}
                     >
                       {name}
@@ -284,8 +329,22 @@ export function SourcePickerSheet({
             </div>
           ) : null}
 
-          {isEditing ? (
+          {isEditing && renaming ? (
+            <div className="p-4">
+              <CategoryRenamer
+                key={`${renaming.major}/${renaming.minor ?? ""}`}
+                current={renaming.minor ?? renaming.major}
+                label={`'${renaming.minor ?? renaming.major}' ${renaming.minor ? "하위분류" : "출처"} 이름 바꾸기`}
+                note="이미 등록한 매출의 출처 이름도 함께 바뀌어요."
+                onCancel={() => setRenaming(null)}
+                onSave={(name) => rename(renaming, name)}
+              />
+            </div>
+          ) : isEditing ? (
             <div className="flex flex-col gap-3 p-4">
+              <p className="text-xs text-muted-foreground">
+                이름을 누르면 바꿀 수 있어요. 대분류는 고른 칩을 한 번 더 누르세요.
+              </p>
               {activeTab && !isClientTab ? (
                 <CategoryAdder
                   label={`${activeTab}에 하위분류 추가`}
@@ -299,7 +358,7 @@ export function SourcePickerSheet({
             <div className="flex items-center justify-between gap-3 px-4 py-3">
               <p className="text-xs text-muted-foreground">
                 {editable
-                  ? "연필을 누르면 출처를 추가하거나 지울 수 있어요."
+                  ? "연필을 누르면 출처를 추가하거나 지우고, 이름을 바꿀 수 있어요."
                   : "출처를 누르면 정해져요."}
               </p>
               {major ? (

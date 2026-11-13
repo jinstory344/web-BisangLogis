@@ -7,10 +7,12 @@ import {
   nextSortOrder,
   type DeleteCategoryInput,
   type NewCategoryInput,
+  type RenameCategoryInput,
 } from "@/lib/constants/expense-categories"
 import {
   checkDeleteSaleSource,
   checkNewSaleSource,
+  checkRenameSaleSource,
   type SaleSourceTree,
 } from "@/lib/constants/sale-sources"
 import { createClient } from "@/lib/supabase/server"
@@ -44,6 +46,17 @@ function parseDeleteCategoryInput(input: unknown): DeleteCategoryInput | null {
   if (value.minor === undefined) return { major: value.major }
   if (typeof value.minor === "string") {
     return { major: value.major, minor: value.minor }
+  }
+  return null
+}
+
+function parseRenameCategoryInput(input: unknown): RenameCategoryInput | null {
+  if (typeof input !== "object" || input === null) return null
+  const value = input as Record<string, unknown>
+  if (typeof value.major !== "string" || typeof value.name !== "string") return null
+  if (value.minor === undefined) return { major: value.major, name: value.name }
+  if (typeof value.minor === "string") {
+    return { major: value.major, minor: value.minor, name: value.name }
   }
   return null
 }
@@ -164,6 +177,106 @@ export async function deleteSaleSourceAction(
 
   revalidatePath("/sales")
   revalidatePath("/new")
+  const next = await getSaleSources()
+  return { ok: true, tree: next.tree }
+}
+
+/**
+ * 매출 출처 이름 바꾸기. 출처 목록뿐 아니라 이미 등록한 매출(삭제한 것 포함)의 출처 이름도
+ * 새 이름으로 바꾼다 — 목록·통계·검색에서 옛 이름과 새 이름이 따로 나뉘지 않게.
+ * 대분류를 바꾸면 그 아래 하위분류 행과 그 대분류의 매출이 모두 새 대분류로 옮겨 간다.
+ * 금액 열은 건드리지 않는다 (출처 글자만 바꾼다).
+ */
+export async function renameSaleSourceAction(
+  rawInput: RenameCategoryInput
+): Promise<SourceActionResult> {
+  const input = parseRenameCategoryInput(rawInput)
+  if (!input) return fail("입력값이 올바르지 않아요")
+
+  const { tree, editable } = await getSaleSources()
+  if (!editable) return fail("출처를 저장할 수 없는 상태예요. 관리자에게 문의하세요")
+
+  const check = checkRenameSaleSource(tree, input)
+  if (!check.ok) return fail(check.error)
+  const newName = check.name
+  const isMajor = input.minor === undefined
+
+  const supabase = await createClient()
+
+  // 1) 출처 목록
+  let sourceQuery = supabase
+    .from("sale_sources")
+    .select("*")
+    .is("deleted_at", null)
+    .eq("major", input.major)
+  if (!isMajor) sourceQuery = sourceQuery.eq("sub", input.minor as string)
+  const { data: sourceRows, error: sourceFetchError } = await sourceQuery
+  if (sourceFetchError) return fail(`출처 조회 실패: ${sourceFetchError.message}`)
+  if (!sourceRows || sourceRows.length === 0) return fail("출처를 찾을 수 없어요")
+
+  const { data: renamedSources, error: sourceError } = await supabase
+    .from("sale_sources")
+    .update(isMajor ? { major: newName } : { sub: newName })
+    .in(
+      "id",
+      sourceRows.map((row) => row.id)
+    )
+    .select("*")
+  if (sourceError) {
+    if (sourceError.code === "23505") return fail("이미 있는 출처예요")
+    return fail(`출처 이름 바꾸기 실패: ${sourceError.message}`)
+  }
+
+  // 2) 이미 등록한 매출
+  let saleQuery = supabase.from("sales").select("*").eq("source_major", input.major)
+  if (!isMajor) saleQuery = saleQuery.eq("source_sub", input.minor as string)
+  const { data: saleRows, error: saleFetchError } = await saleQuery
+  if (saleFetchError) {
+    return fail(`출처 이름은 바꿨지만 매출 조회에 실패했어요: ${saleFetchError.message}`)
+  }
+
+  let renamedSales: typeof saleRows = []
+  if (saleRows && saleRows.length > 0) {
+    const { data, error } = await supabase
+      .from("sales")
+      .update(isMajor ? { source_major: newName } : { source_sub: newName })
+      .in(
+        "id",
+        saleRows.map((row) => row.id)
+      )
+      .select("*")
+    if (error) {
+      return fail(`출처 이름은 바꿨지만 매출에 반영하지 못했어요: ${error.message}`)
+    }
+    renamedSales = data ?? []
+  }
+
+  // 3) 변경 이력
+  const beforeSource = new Map(sourceRows.map((row) => [row.id, row]))
+  const beforeSale = new Map((saleRows ?? []).map((row) => [row.id, row]))
+  await Promise.all([
+    ...(renamedSources ?? []).map((row) =>
+      recordAuditLog(supabase, {
+        tableName: "sale_sources",
+        recordId: row.id,
+        action: "UPDATE",
+        beforeData: beforeSource.get(row.id) ?? null,
+        afterData: row,
+      })
+    ),
+    ...renamedSales.map((row) =>
+      recordAuditLog(supabase, {
+        tableName: "sales",
+        recordId: row.id,
+        action: "UPDATE",
+        beforeData: beforeSale.get(row.id) ?? null,
+        afterData: row,
+      })
+    ),
+  ])
+
+  // 홈(장부)·검색·매출 목록에 출처가 보이므로 전체를 새로 그린다.
+  revalidatePath("/", "layout")
   const next = await getSaleSources()
   return { ok: true, tree: next.tree }
 }
