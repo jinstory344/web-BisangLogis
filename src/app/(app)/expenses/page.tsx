@@ -5,7 +5,6 @@ import { ListPageHead } from "@/components/list/list-page-head"
 import { SummaryMonthNav } from "@/components/list/summary-month-nav"
 import { Button } from "@/components/ui/button"
 import { MonthSwipe } from "@/components/list/month-swipe"
-import { Tabs, TabsContent } from "@/components/ui/tabs"
 import { getCurrentMonthRangeInSeoul } from "@/lib/date"
 import { createClient } from "@/lib/supabase/server"
 import type { ExpenseRow } from "@/lib/supabase/database.types"
@@ -16,7 +15,6 @@ import { filterExpenses, summarizeExpenses } from "@/lib/expense-list"
 import { ExpenseFilters } from "./expense-filters"
 import { ExpenseList } from "./expense-list"
 import { ExpenseMobileControls } from "./expense-mobile-controls"
-import { ExpenseSummary } from "./expense-summary"
 import { getExpenseCategories } from "./categories"
 
 const PAGE_SIZE = 50
@@ -95,7 +93,7 @@ export default async function ExpensesPage({
 
   return (
     <div className="px-4 pb-4 md:p-6">
-      <Tabs defaultValue="list" className="gap-0 md:gap-2">
+      <div className="flex flex-col md:gap-2">
         <ListPageHead
           title="지출"
           desktopTitle="지출 관리"
@@ -108,13 +106,9 @@ export default async function ExpensesPage({
             </Button>
           }
           monthNav={<SummaryMonthNav from={from} to={to} />}
-          tabs={[
-            { value: "list", label: "목록" },
-            { value: "summary", label: "월간 집계" },
-          ]}
+          statsHref={`/stats?type=expenses&from=${from}`}
         />
 
-        <TabsContent value="list">
           <MonthSwipe className="flex flex-col gap-3 md:gap-4">
           <div className="hidden md:block">
             <ExpenseFilters
@@ -151,14 +145,7 @@ export default async function ExpensesPage({
             />
           )}
           </MonthSwipe>
-        </TabsContent>
-
-        <TabsContent value="summary" className="pt-3 md:pt-0">
-          <MonthSwipe>
-          <ExpenseSummary from={from} monthNav="desktop" categories={categories} />
-          </MonthSwipe>
-        </TabsContent>
-      </Tabs>
+      </div>
     </div>
   )
 }

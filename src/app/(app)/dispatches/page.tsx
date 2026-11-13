@@ -5,7 +5,6 @@ import { ListPageHead } from "@/components/list/list-page-head"
 import { SummaryMonthNav } from "@/components/list/summary-month-nav"
 import { Button } from "@/components/ui/button"
 import { MonthSwipe } from "@/components/list/month-swipe"
-import { Tabs, TabsContent } from "@/components/ui/tabs"
 import { getCurrentMonthRangeInSeoul } from "@/lib/date"
 import { createClient } from "@/lib/supabase/server"
 import type { DispatchRow } from "@/lib/supabase/database.types"
@@ -18,7 +17,6 @@ import {
 import { DispatchFilters } from "./dispatch-filters"
 import { DispatchList } from "./dispatch-list"
 import { DispatchMobileControls } from "./dispatch-mobile-controls"
-import { DispatchSummary } from "./dispatch-summary"
 
 const PAGE_SIZE = 50
 
@@ -94,7 +92,7 @@ export default async function DispatchesPage({
 
   return (
     <div className="px-4 pb-4 md:p-6">
-      <Tabs defaultValue="list" className="gap-0 md:gap-2">
+      <div className="flex flex-col md:gap-2">
         <ListPageHead
           title="배차"
           desktopTitle="배차 관리"
@@ -107,13 +105,9 @@ export default async function DispatchesPage({
             </Button>
           }
           monthNav={<SummaryMonthNav from={from} to={to} />}
-          tabs={[
-            { value: "list", label: "목록" },
-            { value: "summary", label: "월간 집계" },
-          ]}
+          statsHref={`/stats?type=dispatches&from=${from}`}
         />
 
-        <TabsContent value="list">
           <MonthSwipe className="flex flex-col gap-3 md:gap-4">
           <div className="hidden md:block">
             <DispatchFilters
@@ -150,14 +144,7 @@ export default async function DispatchesPage({
             />
           )}
           </MonthSwipe>
-        </TabsContent>
-
-        <TabsContent value="summary" className="pt-3 md:pt-0">
-          <MonthSwipe>
-          <DispatchSummary from={from} monthNav="desktop" />
-          </MonthSwipe>
-        </TabsContent>
-      </Tabs>
+      </div>
     </div>
   )
 }
