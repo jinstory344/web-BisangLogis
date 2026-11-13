@@ -177,7 +177,7 @@ function PhoneLink({ phone }: { phone: string }) {
   )
 }
 
-function DispatchActionSheetBody({
+export function DispatchActionSheetBody({
   dispatch,
   clientName,
   onDelete,

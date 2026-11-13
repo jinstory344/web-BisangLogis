@@ -1,5 +1,6 @@
 "use client"
 
+import { useRouter } from "next/navigation"
 import { useState, useTransition } from "react"
 import { toast } from "sonner"
 
@@ -55,12 +56,15 @@ export function LedgerEntryActions({
   const [cancelPayTarget, setCancelPayTarget] = useState<DayLedgerEntry | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<DayLedgerEntry | null>(null)
   const [isPending, startTransition] = useTransition()
+  const router = useRouter()
 
   function run(task: () => Promise<void>, success: string, failure: string, done: () => void) {
     startTransition(async () => {
       try {
         await task()
         toast.success(success)
+        // 비상·검색 등 지금 보고 있는 화면의 합계·목록을 새로 받는다
+        router.refresh()
       } catch (err) {
         toast.error(err instanceof Error ? err.message : failure)
       } finally {

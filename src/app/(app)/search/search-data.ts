@@ -21,18 +21,8 @@ export async function searchClientIds(
   return (data ?? []).map((row) => row.id)
 }
 
-export type SearchDispatch = Pick<
-  DispatchRow,
-  | "id"
-  | "dispatch_date"
-  | "client_id"
-  | "origin"
-  | "destination"
-  | "plate_no_snapshot"
-  | "driver_name_snapshot"
-  | "freight_amount"
-  | "fee_amount"
->
+/** 누르면 뜨는 작업 시트(담당자·차량·화물·비고 등)에 행 전체가 필요하다 */
+export type SearchDispatch = DispatchRow
 
 /**
  * 기간과 상관없이 배차를 글자로 찾는다 (최근 날짜부터 최대 SEARCH_RESULT_LIMIT건).
@@ -50,9 +40,7 @@ export async function searchDispatches(
 }> {
   const { data, error } = await supabase
     .from("dispatches")
-    .select(
-      "id, dispatch_date, client_id, origin, destination, plate_no_snapshot, driver_name_snapshot, freight_amount, fee_amount"
-    )
+    .select("*")
     .is("deleted_at", null)
     .or(
       appendClientIdFilter(
