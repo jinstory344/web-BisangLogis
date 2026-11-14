@@ -80,6 +80,19 @@ function parseFeeLine(line: string): number | null {
   return m ? parseAmountToken(m[1]) : null
 }
 
+/** "서울86바7754"의 "86바7754"처럼 지역 이름을 뺀 번호 */
+function plateCore(plate: string): string {
+  return squash(plate).match(/\d{2,3}[가-힣]\d{4}$/)?.[0] ?? squash(plate)
+}
+
+/** 같은 번호의 차량. 지역 이름을 빼고 써도 찾는다(같은 번호가 여러 대면 정확히 같은 것만). */
+export function findVehicle(vehicles: VehicleOption[], plateNo: string): VehicleOption | undefined {
+  const exact = vehicles.find((v) => squash(v.plate_no) === squash(plateNo))
+  if (exact) return exact
+  const sameCore = vehicles.filter((v) => plateCore(v.plate_no) === plateCore(plateNo))
+  return sameCore.length === 1 ? sameCore[0] : undefined
+}
+
 const PLATE = /^((?:[가-힣]{2})?\d{2,3}[가-힣]\d{4})\s*(.*)$/
 const PHONE = /(01\d[-\s]?\d{3,4}[-\s]?\d{4})/
 
@@ -150,7 +163,7 @@ export function parseDispatchLines(
       const plateNo: string = plate[1]
       const phone: string | null = plate[2].match(PHONE)?.[1] ?? null
       const name: string | null = plate[2].replace(PHONE, "").trim() || null
-      const known: VehicleOption | undefined = ctx.vehicles.find((v) => squash(v.plate_no) === squash(plateNo))
+      const known: VehicleOption | undefined = findVehicle(ctx.vehicles, plateNo)
       vehicle = {
         vehicle_id: known?.id ?? null,
         plate_no_snapshot: known?.plate_no ?? plateNo,

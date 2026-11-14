@@ -233,6 +233,36 @@ async function handleDispatch(chatId: number, lines: string[]) {
   if (!parsed.ok) return askAgain(chatId, parsed.error)
   const d = parsed.value
 
+  // 차량 정보에 없는 차량이면 목록에도 추가한다(차주 이름이 있어야 차량을 등록할 수 있다).
+  let addedVehicle = false
+  if (!d.vehicle_id && d.plate_no_snapshot && d.driver_name_snapshot) {
+    const vehicleValues = {
+      plate_no: d.plate_no_snapshot,
+      driver_name: d.driver_name_snapshot,
+      driver_phone: d.driver_phone_snapshot,
+      vehicle_type: d.cargo_box_type ? CARGO_BOX_TYPE_LABELS[d.cargo_box_type] : null,
+    }
+    const { data: vehicle, error: vehicleError } = await supabase
+      .from("vehicles")
+      .insert(vehicleValues)
+      .select("id")
+      .single()
+    if (vehicle) {
+      await recordAuditLog(supabase, {
+        tableName: "vehicles",
+        recordId: vehicle.id,
+        action: "CREATE",
+        afterData: vehicleValues,
+      })
+      d.vehicle_id = vehicle.id
+      addedVehicle = true
+      revalidatePath("/vehicles")
+    } else {
+      // 같은 번호가 휴지통에 있는 경우 등 — 배차는 차량 연결 없이 그대로 저장한다
+      console.error("telegram vehicle insert failed", vehicleError)
+    }
+  }
+
   const { data: id, error } = await supabase.rpc("create_dispatch", {
     p_dispatch_date: d.dispatch_date,
     p_client_id: d.client_id,
@@ -269,13 +299,45 @@ async function handleDispatch(chatId: number, lines: string[]) {
     `${d.origin} → ${d.destination}`,
     `거래처: ${[d.client_name, d.contact_name, d.contact_phone].filter(Boolean).join(" · ")}`,
     `운임 ${d.freight_amount !== null ? `${won(d.freight_amount)}원` : "-"}${d.fee_amount ? ` · 수수료 ${won(d.fee_amount)}원` : ""}`,
-    vehicle.length > 0 ? `차량: ${vehicle.join(" ")}${d.vehicle_id ? "" : " (새 차량)"}` : null,
+    vehicle.length > 0
+      ? `차량: ${vehicle.join(" ")}${addedVehicle ? " (차량 정보에 새로 추가)" : d.vehicle_id ? "" : " (차량 정보에는 없음)"}`
+      : null,
     cargo.length > 0 ? `차종: ${cargo.join(" · ")}` : null,
     d.memo ? `비고: ${d.memo}` : null,
   ]
     .filter((line) => line !== null)
     .join("\n")
   await sendText(chatId, text, cancelButton("dispatches", id))
+}
+
+/**
+ * 배차를 취소할 때, 그 배차와 함께 봇이 차량 정보에 추가했던 차량이면(배차 직전 1분 안에 생겼고
+ * 다른 배차에 쓰이지 않음) 같이 뺀다. 잘못 쓴 번호가 차량 목록에 남지 않게.
+ */
+async function removeVehicleAddedWith(dispatchId: string): Promise<boolean> {
+  const supabase = createAdminClient()
+  const { data: dispatch } = await supabase
+    .from("dispatches")
+    .select("vehicle_id, created_at")
+    .eq("id", dispatchId)
+    .single()
+  if (!dispatch?.vehicle_id) return false
+
+  const [{ data: vehicle }, { count }] = await Promise.all([
+    supabase.from("vehicles").select("created_at").eq("id", dispatch.vehicle_id).is("deleted_at", null).single(),
+    supabase
+      .from("dispatches")
+      .select("id", { count: "exact", head: true })
+      .eq("vehicle_id", dispatch.vehicle_id)
+      .is("deleted_at", null),
+  ])
+  if (!vehicle || (count ?? 0) > 0) return false
+  const gap = new Date(dispatch.created_at).getTime() - new Date(vehicle.created_at).getTime()
+  if (gap < 0 || gap > 60_000) return false
+
+  await softDelete(supabase, "vehicles", dispatch.vehicle_id)
+  revalidatePath("/vehicles")
+  return true
 }
 
 async function handleCancel(query: NonNullable<TelegramUpdate["callback_query"]>) {
@@ -287,12 +349,14 @@ async function handleCancel(query: NonNullable<TelegramUpdate["callback_query"]>
   }
   try {
     const table = match[1] as CancelTable
-    await softDelete(createAdminClient(), table, match[2])
+    const supabase = createAdminClient()
+    await softDelete(supabase, table, match[2])
+    const removedVehicle = table === "dispatches" ? await removeVehicleAddedWith(match[2]) : false
     refreshApp(table)
     await callTelegram("editMessageText", {
       chat_id: message.chat.id,
       message_id: message.message_id,
-      text: `❌ 취소했어요 (앱 휴지통에서 되살릴 수 있어요)\n\n${message.text ?? ""}`,
+      text: `❌ 취소했어요${removedVehicle ? " · 함께 추가했던 차량도 뺐어요" : ""} (앱 휴지통에서 되살릴 수 있어요)\n\n${message.text ?? ""}`,
     })
     await callTelegram("answerCallbackQuery", { callback_query_id: query.id, text: "취소했어요" })
   } catch (error) {

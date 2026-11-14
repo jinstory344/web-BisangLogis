@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest"
 
 import {
+  findVehicle,
   parseCargoLine,
   parseDispatchLines,
   parseWeightLine,
@@ -86,6 +87,14 @@ describe("parseDispatchLines", () => {
 
   it("운임이 두 번이면 되묻는다", () => {
     expect(parseDispatchLines(["a", "b", "아토무역", "33만", "2만"], { today, clients, vehicles }).ok).toBe(false)
+  })
+})
+
+describe("findVehicle", () => {
+  it("지역 이름을 빼고 써도 등록 차량을 찾는다", () => {
+    expect(findVehicle(vehicles, "86바7754")?.id).toBe("v-1")
+    expect(findVehicle(vehicles, "서울 86바 7754")?.id).toBe("v-1")
+    expect(findVehicle(vehicles, "12가3456")).toBeUndefined()
   })
 })
 
