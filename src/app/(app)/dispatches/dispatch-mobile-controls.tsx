@@ -110,7 +110,7 @@ export function DispatchMobileControls({
                 onClick={() => setOpen(false)}
                 aria-current={option.clientId === clientId ? "true" : undefined}
                 className={cn(
-                  "flex h-11 items-center gap-2 rounded-md px-3 text-[15px] active:bg-muted",
+                  "flex h-9 items-center gap-2 rounded-md px-3 text-[15px] active:bg-muted",
                   option.clientId === clientId && "font-semibold"
                 )}
               >
