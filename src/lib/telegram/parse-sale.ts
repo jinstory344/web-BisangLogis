@@ -3,7 +3,8 @@ import type { PaymentMethod } from "@/lib/supabase/database.types"
 /**
  * 텔레그램 봇 메시지 → 매출 등록 값.
  * 줄 순서를 외우지 않아도 되게, 줄 모양으로 무엇인지 알아본다:
- * 금액(75만) · 날짜(11/14, 어제) · 지불방법(계산서/이체/현금) · 출처(카톡,스마일 / 우영)는 아무 줄에나,
+ * 금액(75만) · 날짜(11/14, 어제) · 지불방법(계산서/이체/현금) · 출처(지인,마상구 / 카톡,스마일 / 우영)
+ * · 사업자 정보(세금 주주부린물류)는 아무 줄에나,
  * 나머지 줄은 위에서부터 상차지 → 하차지 (그 뒤 줄은 비고).
  */
 
@@ -22,6 +23,8 @@ export type ParsedSale = {
   source_sub: string | null
   source_minor: string | null
   client_id: string | null
+  /** 사업자 정보(계산서 받을 상호) — "세금 주주부린물류" 줄에서 */
+  billing_entity_name: string | null
   memo: string | null
 }
 
@@ -44,6 +47,7 @@ export function detectKind(firstLine: string): EntryKind | null {
 export const MAX_AMOUNT = 99_999_999_999 // PRD 4.3 상한
 
 const PAYMENT_WORDS: Record<string, PaymentMethod> = {
+  세금: "TAX_INVOICE",
   계산서: "TAX_INVOICE",
   세금계산서: "TAX_INVOICE",
   전자계산서: "TAX_INVOICE",
@@ -199,6 +203,12 @@ function parseSourceLine(
   }
 }
 
+/** "세금 주주부린물류", "계산서: 주주부린물류" → 세금계산서 + 사업자 정보. 아니면 null */
+export function parseBillingLine(line: string): string | null {
+  const m = line.match(/^(?:세금계산서|세금|계산서)[\s,:：，]+(.+)$/)
+  return m ? m[1].trim() || null : null
+}
+
 /** 첫 줄(종류)을 뺀 나머지 줄로 매출 값을 만든다. */
 export function parseSaleLines(
   lines: string[],
@@ -208,6 +218,7 @@ export function parseSaleLines(
   let amount: number | null = null
   let payment: PaymentMethod | null = null
   let source: SourcePick | null = null
+  let billing: string | null = null
   const places: string[] = []
 
   for (const raw of lines) {
@@ -217,6 +228,13 @@ export function parseSaleLines(
     const parsedDate: string | null = date === null ? parseDateLine(line, ctx.today) : null
     if (parsedDate) {
       date = parsedDate
+      continue
+    }
+
+    const billingName = parseBillingLine(line)
+    if (billingName) {
+      billing = billingName
+      payment = "TAX_INVOICE"
       continue
     }
 
@@ -260,6 +278,7 @@ export function parseSaleLines(
       source_sub: source?.source_sub ?? null,
       source_minor: source?.source_minor ?? null,
       client_id: source?.client_id ?? null,
+      billing_entity_name: billing,
       memo: places.length > 2 ? places.slice(2).join(" / ") : null,
     },
   }

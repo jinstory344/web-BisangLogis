@@ -94,6 +94,7 @@ describe("parseSaleLines", () => {
         source_sub: null,
         source_minor: "우영로지스",
         client_id: "c-woo",
+        billing_entity_name: null,
         memo: null,
       },
     })
@@ -141,5 +142,30 @@ describe("parseSaleLines", () => {
   it("거래처 줄임말이 여러 곳에 맞으면 되묻는다", () => {
     const r = parseSaleLines(["10만", "a", "b", "아토"], ctx)
     expect(r.ok).toBe(false)
+  })
+
+  it("사용자 규칙: 출처 '지인,마상구' + 계산서 '세금 주주부린물류'", () => {
+    const r = parseSaleLines(
+      ["24만", "부산 바른씨", "안성 동원물류", "지인,마상구", "세금 주주부린물류"],
+      ctx
+    )
+    expect(r.ok && r.value).toMatchObject({
+      origin: "부산 바른씨",
+      destination: "안성 동원물류",
+      supply_amount: 240_000,
+      payment_method: "TAX_INVOICE",
+      source_major: "지인",
+      source_minor: "마상구",
+      client_id: null,
+      billing_entity_name: "주주부린물류",
+      memo: null,
+    })
+  })
+
+  it("계산서 줄은 순서와 상관없고 '계산서:'도 된다, '세금'만 쓰면 지불방법만", () => {
+    const r = parseSaleLines(["계산서: 주주부린물류", "24만", "a", "b"], ctx)
+    expect(r.ok && r.value.billing_entity_name).toBe("주주부린물류")
+    const onlyWord = parseSaleLines(["24만 세금", "a", "b"], ctx)
+    expect(onlyWord.ok && onlyWord.value).toMatchObject({ payment_method: "TAX_INVOICE", billing_entity_name: null })
   })
 })
