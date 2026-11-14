@@ -11,8 +11,6 @@ import {
 } from "react"
 import { useForm } from "react-hook-form"
 
-import { TaxInfoBadge } from "@/components/clients/tax-info-badge"
-import { ChoiceChips } from "@/components/form/choice-chips"
 import { FormSubmitBar, touchFormProps } from "@/components/form/form-submit-bar"
 import {
   AlertDialog,
@@ -36,8 +34,6 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { formatBizNo } from "@/lib/biz-no"
 import { type ClientDuplicate } from "@/lib/client-duplicates"
-import { getTaxInfoStatus } from "@/lib/client-tax-info"
-import { CLIENT_CATEGORY_OPTIONS } from "@/lib/constants/client"
 import { cn } from "@/lib/utils"
 import { clientFormSchema, type ClientFormValues } from "@/lib/validations/client"
 
@@ -99,8 +95,8 @@ function TextField({
 
 /**
  * 거래처 등록/수정 폼.
- * - 기본 정보(거래처명·구분·담당자·연락처): 배차에는 이것만 있으면 된다.
- * - 세금계산서 정보(사업자번호·대표자·주소·업태·종목·이메일): 접어 두는 선택 입력.
+ * - 거래처명·담당자·연락처: 배차에는 이것만 있으면 된다. (구분 내/타 거래처는 화면에서 뺐다 — 저장 값은 그대로 둔다)
+ * - 사업자 정보(사업자번호·대표자·주소·업태·종목·이메일): 접어 두는 선택 입력.
  *   매출은 이 정보 없이도 저장되고, 계산서를 발행할 때 채워도 된다. 모바일은 접고 데스크톱은 항상 펼친다.
  */
 export function ClientForm({
@@ -126,8 +122,6 @@ export function ClientForm({
     resolver: zodResolver(clientFormSchema),
     defaultValues,
   })
-
-  const taxStatus = getTaxInfoStatus(form.watch())
 
   async function onSubmit(values: ClientFormValues) {
     const fd = new FormData()
@@ -183,32 +177,9 @@ export function ClientForm({
         onSubmit={form.handleSubmit(onSubmit, onInvalid)}
         {...touchFormProps}
       >
-        <h2 className="text-sm font-semibold text-muted-foreground">
-          기본 정보
-        </h2>
-
         <TextField form={form} name="name" label="거래처명 *" />
 
-        <FormField
-          control={form.control}
-          name="category"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>구분</FormLabel>
-              <FormControl>
-                <ChoiceChips
-                  aria-label="거래처 구분"
-                  options={CLIENT_CATEGORY_OPTIONS}
-                  value={field.value}
-                  onChange={field.onChange}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <div className="grid gap-4 md:grid-cols-2">
+        <div className="grid md:grid-cols-2 md:gap-4">
           <TextField form={form} name="contact_name" label="담당자" />
           <TextField
             form={form}
@@ -224,12 +195,9 @@ export function ClientForm({
           aria-expanded={isTaxOpen}
           aria-controls={taxSectionId}
           onClick={() => setIsTaxOpen((open) => !open)}
-          className="mt-2 flex min-h-11 items-center justify-between gap-2 rounded-lg border px-3 text-left text-sm font-medium transition-colors outline-none hover:bg-muted focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 md:hidden"
+          className="mt-1 flex min-h-11 items-center gap-1.5 text-left text-sm text-muted-foreground outline-none focus-visible:ring-3 focus-visible:ring-ring/50 md:hidden"
         >
-          <span className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
-            <span className="shrink-0">세금계산서 정보</span>
-            <TaxInfoBadge status={taxStatus} />
-          </span>
+          <span>사업자 정보 (선택)</span>
           <ChevronDown
             aria-hidden
             className={cn(
@@ -240,23 +208,18 @@ export function ClientForm({
         </button>
         <div className="mt-2 hidden items-center gap-2 md:flex">
           <h2 className="text-sm font-semibold text-muted-foreground">
-            세금계산서 정보
+            사업자 정보 (선택)
           </h2>
-          <TaxInfoBadge status={taxStatus} />
         </div>
 
         <div
           id={taxSectionId}
-          className={cn("flex-col gap-4 md:flex", isTaxOpen ? "flex" : "hidden")}
+          className={cn("flex-col md:flex md:gap-4", isTaxOpen ? "flex" : "hidden")}
         >
-          <p className="text-xs text-muted-foreground">
-            계산서를 발행할 때 필요한 정보예요. 지금 몰라도 괜찮고, 나중에
-            채워도 돼요.
-          </p>
           <TextField
             form={form}
             name="biz_no"
-            label="사업자등록번호"
+            label="사업자번호"
             inputProps={{
               inputMode: "numeric",
               placeholder: "10자리 (하이픈 없이 입력 가능)",
@@ -264,14 +227,14 @@ export function ClientForm({
           />
           <TextField form={form} name="ceo_name" label="대표자명" />
           <TextField form={form} name="address" label="주소" />
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="grid md:grid-cols-2 md:gap-4">
             <TextField form={form} name="biz_type" label="업태" />
             <TextField form={form} name="biz_item" label="종목" />
           </div>
           <TextField
             form={form}
             name="contact_email"
-            label="세금계산서 수신 이메일"
+            label="이메일"
             inputProps={{ type: "email" }}
           />
         </div>
@@ -280,10 +243,10 @@ export function ClientForm({
           control={form.control}
           name="memo"
           render={({ field }) => (
-            <FormItem className="mt-2">
+            <FormItem>
               <FormLabel>비고</FormLabel>
               <FormControl>
-                <Textarea {...field} rows={3} />
+                <Textarea {...field} rows={1} className="min-h-11 md:min-h-16" />
               </FormControl>
               <FormMessage />
             </FormItem>

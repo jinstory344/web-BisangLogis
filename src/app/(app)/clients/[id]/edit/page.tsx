@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation"
 
+import { FormPageHeader } from "@/components/form/form-page-header"
 import { normalizeClientCategory } from "@/lib/constants/client"
 import { createClient } from "@/lib/supabase/server"
 import type { ClientFormValues } from "@/lib/validations/client"
@@ -41,14 +42,16 @@ export default async function EditClientPage({
 
   return (
     <div className="p-4 md:p-6">
-      <h1 className="text-2xl font-semibold">거래처 수정</h1>
-      <div className="mt-4 max-w-lg">
+      <div className="mx-auto flex max-w-lg flex-col gap-3">
+        <FormPageHeader title="거래처 수정" backHref="/clients" backLabel="거래처" />
+        <div>
         <ClientForm
           action={updateClientAction.bind(null, id)}
           defaultValues={defaultValues}
           submitLabel="저장"
           clientId={id}
         />
+        </div>
       </div>
     </div>
   )

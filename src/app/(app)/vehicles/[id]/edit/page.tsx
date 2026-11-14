@@ -1,11 +1,11 @@
 import { notFound } from "next/navigation"
 
+import { FormPageHeader } from "@/components/form/form-page-header"
 import { createClient } from "@/lib/supabase/server"
 import type { VehicleFormValues } from "@/lib/validations/vehicle"
 
 import { updateVehicleAction } from "../../actions"
 import { VehicleForm } from "../../vehicle-form"
-import { VehicleFormHeader } from "../../vehicle-form-header"
 
 export default async function EditVehiclePage({
   params,
@@ -37,7 +37,7 @@ export default async function EditVehiclePage({
   return (
     <div className="p-4 md:p-6">
       <div className="mx-auto flex max-w-lg flex-col gap-3">
-        <VehicleFormHeader title="차량 정보 수정" />
+        <FormPageHeader title="차량 정보 수정" backHref="/vehicles" backLabel="차량 정보" />
         <div>
         <VehicleForm
           action={updateVehicleAction.bind(null, id)}
