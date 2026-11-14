@@ -7,6 +7,7 @@ import { recordAuditLog } from "@/lib/audit/log"
 import { nullifyEmptyStrings } from "@/lib/nullify-empty"
 import { softDelete } from "@/lib/soft-delete/soft-delete"
 import { createClient } from "@/lib/supabase/server"
+import { MAX_PINNED_VEHICLES, movePinned, togglePinned } from "@/lib/vehicle-list"
 import { vehicleFormSchema } from "@/lib/validations/vehicle"
 
 const DUPLICATE_PLATE_MESSAGE = "이미 등록된 차량번호입니다"
@@ -145,4 +146,55 @@ export async function deleteVehicleAction(id: string): Promise<void> {
   const supabase = await createClient()
   await softDelete(supabase, "vehicles", id)
   revalidatePath("/vehicles")
+}
+
+/** 고정된 차량 id를 순서대로 */
+async function getPinnedIds(
+  supabase: Awaited<ReturnType<typeof createClient>>
+): Promise<string[]> {
+  const { data, error } = await supabase
+    .from("vehicles")
+    .select("id")
+    .is("deleted_at", null)
+    .not("pin_order", "is", null)
+    .order("pin_order")
+  if (error) throw new Error(`고정 목록 조회 실패: ${error.message}`)
+  return data.map((row) => row.id)
+}
+
+/** 새 순서대로 pin_order를 1부터 다시 매기고, 빠진 차량은 고정을 푼다. */
+async function savePinnedOrder(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  before: string[],
+  after: string[]
+): Promise<void> {
+  const removed = before.filter((id) => !after.includes(id))
+  const updates = [
+    ...removed.map((id) => supabase.from("vehicles").update({ pin_order: null }).eq("id", id)),
+    ...after
+      .map((id, index) => ({ id, order: index + 1 }))
+      .filter(({ id, order }) => before.indexOf(id) + 1 !== order)
+      .map(({ id, order }) => supabase.from("vehicles").update({ pin_order: order }).eq("id", id)),
+  ]
+  const results = await Promise.all(updates)
+  const failed = results.find((r) => r.error)
+  if (failed?.error) throw new Error(`고정 저장 실패: ${failed.error.message}`)
+  revalidatePath("/vehicles")
+}
+
+/** 상단 고정 켜기·끄기 (최대 MAX_PINNED_VEHICLES대) */
+export async function toggleVehiclePinAction(id: string): Promise<{ error: string | null }> {
+  const supabase = await createClient()
+  const before = await getPinnedIds(supabase)
+  const after = togglePinned(before, id)
+  if (!after) return { error: `고정은 ${MAX_PINNED_VEHICLES}대까지예요. 하나를 풀고 다시 눌러 주세요.` }
+  await savePinnedOrder(supabase, before, after)
+  return { error: null }
+}
+
+/** 고정 순서 한 칸 위(-1)·아래(+1) */
+export async function moveVehiclePinAction(id: string, delta: -1 | 1): Promise<void> {
+  const supabase = await createClient()
+  const before = await getPinnedIds(supabase)
+  await savePinnedOrder(supabase, before, movePinned(before, id, delta))
 }

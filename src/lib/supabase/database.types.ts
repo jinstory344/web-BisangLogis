@@ -59,6 +59,8 @@ export type VehicleRow = BaseColumns & {
   carrier_name: string | null
   vehicle_type: string | null
   memo: string | null
+  /** 차량 정보 상단 고정 순서(1~10). null이면 고정 안 함. */
+  pin_order: number | null
 }
 
 /**
