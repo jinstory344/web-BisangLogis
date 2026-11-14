@@ -29,6 +29,7 @@ describe("parseDispatchLines", () => {
         client_id: "c-ato",
         client_name: "아토무역",
         contact_name: "이재근",
+        contact_phone: null,
         origin: "부산2곳",
         destination: "현대그린",
         dropoff_type: "NEXT_DAY",
@@ -62,6 +63,19 @@ describe("parseDispatchLines", () => {
       cargo_box_type: "WING",
       pallet_count: null,
       contact_name: null,
+    })
+  })
+
+  it("담당자·차주 이름 뒤에 연락처를 쓰면 둘 다 들어간다", () => {
+    const r = parseDispatchLines(
+      ["a", "b", "아토무역 이재근 010-1234-5678", "서울86바7754 김진승 01098765432"],
+      { today, clients, vehicles }
+    )
+    expect(r.ok && r.value).toMatchObject({
+      contact_name: "이재근",
+      contact_phone: "010-1234-5678",
+      driver_name_snapshot: "김진승",
+      driver_phone_snapshot: "01098765432",
     })
   })
 

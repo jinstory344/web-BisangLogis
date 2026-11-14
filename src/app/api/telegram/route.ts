@@ -53,11 +53,13 @@ const HELP = [
   "현대그린",
   "익착",
   "33만",
-  "아토무역 이재근",
-  "서울86바7754 김진승",
+  "아토무역 이재근 010-1234-5678",
+  "서울86바7754 김진승 010-9876-5432",
   "냉동3",
   "1.6",
-  "(하차일 안 쓰면 당착 / 수수료는 수2만 / 냉동3 = 냉동탑 3파레트 / 1.6 = 1.6톤)",
+  "(하차일 안 쓰면 당착 / 수수료는 수2만 / 냉동3 = 냉동탑 3파레트 / 1.6 = 1.6톤",
+  " 거래처 줄 = 거래처 담당자 연락처, 차량 줄 = 차량번호 차주 연락처, 연락처는 빼도 돼요.",
+  " 등록된 차량이면 차주 연락처는 자동)",
 ].join("\n")
 
 type TelegramUpdate = {
@@ -244,7 +246,7 @@ async function handleDispatch(chatId: number, lines: string[]) {
     p_driver_name_snapshot: d.driver_name_snapshot,
     p_driver_phone_snapshot: d.driver_phone_snapshot,
     p_contact_name: d.contact_name,
-    p_contact_phone: null,
+    p_contact_phone: d.contact_phone,
     p_memo: d.memo,
     p_cargo_box_type: d.cargo_box_type,
     p_freight_amount: d.freight_amount,
@@ -265,7 +267,7 @@ async function handleDispatch(chatId: number, lines: string[]) {
   const text = [
     `✅ 배차 등록 (${shortDate(d.dispatch_date)} · ${DROPOFF_TYPE_LABELS[d.dropoff_type]})`,
     `${d.origin} → ${d.destination}`,
-    `거래처: ${d.client_name}${d.contact_name ? ` · ${d.contact_name}` : ""}`,
+    `거래처: ${[d.client_name, d.contact_name, d.contact_phone].filter(Boolean).join(" · ")}`,
     `운임 ${d.freight_amount !== null ? `${won(d.freight_amount)}원` : "-"}${d.fee_amount ? ` · 수수료 ${won(d.fee_amount)}원` : ""}`,
     vehicle.length > 0 ? `차량: ${vehicle.join(" ")}${d.vehicle_id ? "" : " (새 차량)"}` : null,
     cargo.length > 0 ? `차종: ${cargo.join(" · ")}` : null,

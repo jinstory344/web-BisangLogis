@@ -11,8 +11,8 @@ import {
 
 /**
  * 텔레그램 배차 메시지. 줄 모양으로 알아보는 것(아무 줄에나):
- * 날짜 · 당착/익착(기본 당착) · 운임(33만) · 수수료(수2만) · 거래처+담당자(아토무역 이재근)
- * · 차량번호+차주(서울86바7754 김진승) · 차종+파레트(냉동3) · 무게(1.6, 1.6톤).
+ * 날짜 · 당착/익착(기본 당착) · 운임(33만) · 수수료(수2만) · 거래처+담당자+연락처(아토무역 이재근 010-...)
+ * · 차량번호+차주+연락처(서울86바7754 김진승 010-...) · 차종+파레트(냉동3) · 무게(1.6, 1.6톤).
  * 나머지 줄은 위에서부터 상차지 → 하차지 (그 뒤 줄은 비고).
  */
 
@@ -28,6 +28,7 @@ export type ParsedDispatch = {
   client_id: string
   client_name: string
   contact_name: string | null
+  contact_phone: string | null
   origin: string
   destination: string
   dropoff_type: DropoffType
@@ -90,7 +91,7 @@ export function parseDispatchLines(
   let dropoff: DropoffType | null = null
   let freight: number | null = null
   let fee: number | null = null
-  let client: { id: string; name: string; contact: string | null } | null = null
+  let client: { id: string; name: string; contact: string | null; phone: string | null } | null = null
   let vehicle: Pick<
     ParsedDispatch,
     "vehicle_id" | "plate_no_snapshot" | "driver_name_snapshot" | "driver_phone_snapshot"
@@ -160,13 +161,14 @@ export function parseDispatchLines(
     }
 
     if (client === null) {
-      const [head, ...contact] = line.split(/[\s,，]+/)
+      const phone: string | null = line.match(PHONE)?.[1] ?? null
+      const [head, ...contact] = line.replace(PHONE, " ").split(/[\s,，]+/).filter(Boolean)
       const found = findByPrefix(ctx.clients, (c) => c.name, head)
       if (found === "ambiguous") {
         return { ok: false, error: `"${head}"(으)로 시작하는 거래처가 여러 곳이에요. 이름을 조금 더 써 주세요.` }
       }
       if (found) {
-        client = { id: found.id, name: found.name, contact: contact.join(" ") || null }
+        client = { id: found.id, name: found.name, contact: contact.join(" ") || null, phone }
         continue
       }
     }
@@ -191,6 +193,7 @@ export function parseDispatchLines(
       client_id: client.id,
       client_name: client.name,
       contact_name: client.contact,
+      contact_phone: client.phone,
       origin: places[0],
       destination: places[1],
       dropoff_type: dropoff ?? "SAME_DAY",
