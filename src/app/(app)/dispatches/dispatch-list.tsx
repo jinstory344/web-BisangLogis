@@ -187,7 +187,6 @@ export function DispatchList({
         <DispatchMobileList
           dispatches={dispatches}
           clientNameMap={clientNameMap}
-          totalCount={totalCount}
           filteredTotals={
             searchParams.get("client_id") ? summary : null
           }

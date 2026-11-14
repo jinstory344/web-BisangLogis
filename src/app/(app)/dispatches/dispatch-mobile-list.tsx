@@ -25,8 +25,6 @@ import type { DispatchRow } from "@/lib/supabase/database.types"
 interface DispatchMobileListProps {
   dispatches: DispatchRow[]
   clientNameMap: Record<string, string>
-  /** 거래처 필터에 맞는 전체 건수 (페이지가 아니라 필터 전체 기준) */
-  totalCount: number
   /** 거래처 필터가 걸려 있을 때만 목록 위에 그 거래처의 운임·수수료 합계를 보여 준다. */
   filteredTotals: { freightAmount: number; feeAmount: number } | null
   onDelete: (dispatch: DispatchRow) => void
@@ -56,7 +54,6 @@ function vehicleLine(dispatch: DispatchRow): string {
 export function DispatchMobileList({
   dispatches,
   clientNameMap,
-  totalCount,
   filteredTotals,
   onDelete,
 }: DispatchMobileListProps) {
@@ -83,12 +80,14 @@ export function DispatchMobileList({
 
   return (
     <div className="flex flex-col gap-3">
-      <p className="flex min-h-9 items-center text-xs text-muted-foreground">
-        {totalCount}건
-        {filteredTotals
-          ? ` · 운임 ${formatKRW(filteredTotals.freightAmount)} · 수수료 ${formatKRW(filteredTotals.feeAmount)}`
-          : ""}
-      </p>
+      {/* 건수는 위 거래처 줄에 있다. 거래처로 걸렀을 때만 그 거래처의 운임·수수료를 보여 준다 */}
+      {filteredTotals ? (
+        <p className="flex min-h-9 items-center text-xs text-muted-foreground tabular-nums">
+          운임 {formatKRW(filteredTotals.freightAmount)} · 수수료 {formatKRW(filteredTotals.feeAmount)}
+        </p>
+      ) : (
+        <div aria-hidden className="h-1" />
+      )}
 
       {groups.map((group) => (
         <section key={group.date} className="-mx-4 -mt-3 overflow-hidden border-b">
