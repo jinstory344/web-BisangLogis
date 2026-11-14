@@ -84,3 +84,60 @@ export function togglePinned(ids: string[], id: string): string[] | null {
   if (ids.length >= MAX_PINNED_VEHICLES) return null
   return [...ids, id]
 }
+
+export interface VehicleDispatchItem {
+  id: string
+  dispatch_date: string
+  origin: string
+  destination: string
+  freight_amount: number | null
+  client_name: string | null
+}
+
+/** 차량 판에 미리 넣어 두는 최근 배차 (차량마다 이만큼까지) */
+export const RECENT_DISPATCHES_PER_VEHICLE = 50
+
+/**
+ * 최근 배차들(최근 날짜부터)을 차량별로 나눈다: 차량에 연결된 배차, 또는 연결 없이 같은 번호로 적힌 배차.
+ * 차량마다 RECENT_DISPATCHES_PER_VEHICLE건까지 담고, total은 받은 배차 안에서 센 건수.
+ */
+export function groupRecentDispatchesByVehicle(
+  vehicles: readonly { id: string; plate_no: string }[],
+  dispatches: readonly {
+    id: string
+    dispatch_date: string
+    origin: string
+    destination: string
+    freight_amount: number | null
+    client_id: string | null
+    vehicle_id: string | null
+    plate_no_snapshot: string | null
+  }[],
+  clientNames: ReadonlyMap<string, string>
+): Record<string, { items: VehicleDispatchItem[]; total: number }> {
+  const byPlate = new Map(vehicles.map((v) => [v.plate_no.replace(/\s/g, ""), v.id]))
+  const known = new Set(vehicles.map((v) => v.id))
+  const result: Record<string, { items: VehicleDispatchItem[]; total: number }> = {}
+  for (const d of dispatches) {
+    const vehicleId =
+      d.vehicle_id && known.has(d.vehicle_id)
+        ? d.vehicle_id
+        : d.plate_no_snapshot
+          ? byPlate.get(d.plate_no_snapshot.replace(/\s/g, ""))
+          : undefined
+    if (!vehicleId) continue
+    const bucket = (result[vehicleId] ??= { items: [], total: 0 })
+    bucket.total += 1
+    if (bucket.items.length < RECENT_DISPATCHES_PER_VEHICLE) {
+      bucket.items.push({
+        id: d.id,
+        dispatch_date: d.dispatch_date,
+        origin: d.origin,
+        destination: d.destination,
+        freight_amount: d.freight_amount,
+        client_name: d.client_id ? (clientNames.get(d.client_id) ?? null) : null,
+      })
+    }
+  }
+  return result
+}

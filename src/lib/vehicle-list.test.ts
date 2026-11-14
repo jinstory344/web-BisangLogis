@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest"
 
 import {
+  groupRecentDispatchesByVehicle,
   movePinned,
   parseVehicleSort,
   sortVehicles,
@@ -68,5 +69,30 @@ describe("고정 순서", () => {
     const ten = Array.from({ length: 10 }, (_, i) => `p${i}`)
     expect(togglePinned(ten, "new")).toBeNull()
     expect(togglePinned(ten, "p3")).toHaveLength(9)
+  })
+})
+
+describe("groupRecentDispatchesByVehicle", () => {
+  it("차량 연결 또는 같은 번호로 나누고 거래처 이름을 붙인다", () => {
+    const base = { origin: "a", destination: "b", freight_amount: 100, dispatch_date: "2026-11-01" }
+    const result = groupRecentDispatchesByVehicle(
+      [
+        { id: "v1", plate_no: "서울86바1234" },
+        { id: "v2", plate_no: "12가3456" },
+      ],
+      [
+        { ...base, id: "d1", client_id: "c1", vehicle_id: "v1", plate_no_snapshot: "서울86바1234" },
+        { ...base, id: "d2", client_id: null, vehicle_id: null, plate_no_snapshot: "서울 86바1234" },
+        { ...base, id: "d3", client_id: null, vehicle_id: null, plate_no_snapshot: "99하9999" },
+        { ...base, id: "d4", client_id: null, vehicle_id: "v2", plate_no_snapshot: null },
+      ],
+      new Map([["c1", "우영로지스"]])
+    )
+    expect(result.v1.total).toBe(2)
+    expect(result.v1.items.map((i) => [i.id, i.client_name])).toEqual([
+      ["d1", "우영로지스"],
+      ["d2", null],
+    ])
+    expect(result.v2.items.map((i) => i.id)).toEqual(["d4"])
   })
 })

@@ -28,7 +28,11 @@ import { formatPhoneNumber } from "@/lib/phone"
 import type { VehicleRow } from "@/lib/supabase/database.types"
 import { cn } from "@/lib/utils"
 import { vehicleSpecLabel } from "@/lib/validations/vehicle"
-import { MAX_PINNED_VEHICLES, vehicleCopyText } from "@/lib/vehicle-list"
+import {
+  MAX_PINNED_VEHICLES,
+  vehicleCopyText,
+  type VehicleDispatchItem,
+} from "@/lib/vehicle-list"
 
 import {
   deleteVehicleAction,
@@ -41,12 +45,15 @@ import { VehicleDispatchHistory } from "./vehicle-dispatch-history"
 export function VehicleList({
   pinned,
   others,
+  recentDispatches,
   sortDirHref,
   sortDir,
   isNameSort,
 }: {
   pinned: VehicleRow[]
   others: VehicleRow[]
+  /** 차량 id → 최근 배차 (목록과 함께 미리 받아 둔 것) */
+  recentDispatches: Record<string, { items: VehicleDispatchItem[]; total: number }>
   /** "전체" 줄 오른쪽 오름·내림차순 버튼이 갈 주소 */
   sortDirHref: string
   sortDir: "asc" | "desc"
@@ -229,8 +236,9 @@ export function VehicleList({
                 </dl>
                 <VehicleDispatchHistory
                   key={sheetVehicle.id}
-                  vehicleId={sheetVehicle.id}
                   plateNo={sheetVehicle.plate_no}
+                  items={recentDispatches[sheetVehicle.id]?.items ?? []}
+                  total={recentDispatches[sheetVehicle.id]?.total ?? 0}
                 />
                 <Button variant="outline" className="h-11" asChild>
                   <Link href={`/vehicles/${sheetVehicle.id}/edit`}>수정</Link>

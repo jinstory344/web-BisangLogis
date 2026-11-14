@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server"
 import type { VehicleRow } from "@/lib/supabase/database.types"
 import { cn } from "@/lib/utils"
 import {
+  groupRecentDispatchesByVehicle,
   parseVehicleSort,
   sortVehicles,
   VEHICLE_SORT_OPTIONS,
@@ -53,12 +54,27 @@ export default async function VehiclesPage({
     }
   }
 
-  const [{ data, error }, counts] = await Promise.all([
+  // 차량 판의 "최근 배차"를 누르는 순간 바로 보이도록 목록과 함께 미리 받아 둔다(판을 열 때 서버를 다녀오지 않게).
+  // shortcut: 최근 1000건 안에서만 차량별로 나눈다 — 더 오래된 건은 판 아래 "검색에서 전체 보기"로 본다.
+  const [{ data, error }, counts, recentRes, clientsRes] = await Promise.all([
     request,
     sort === "dispatch" ? countDispatchesByVehicle() : Promise.resolve(new Map<string, number>()),
+    supabase
+      .from("dispatches")
+      .select("id, dispatch_date, origin, destination, freight_amount, client_id, vehicle_id, plate_no_snapshot")
+      .is("deleted_at", null)
+      .order("dispatch_date", { ascending: false })
+      .order("created_at", { ascending: false })
+      .limit(1000),
+    supabase.from("clients").select("id, name"),
   ])
 
   const vehicles = (data ?? []) as VehicleRow[]
+  const recentDispatches = groupRecentDispatchesByVehicle(
+    vehicles,
+    recentRes.data ?? [],
+    new Map((clientsRes.data ?? []).map((c) => [c.id, c.name]))
+  )
   const pinned = vehicles
     .filter((v) => v.pin_order !== null)
     .sort((a, b) => (a.pin_order ?? 0) - (b.pin_order ?? 0))
@@ -116,6 +132,7 @@ export default async function VehiclesPage({
           <VehicleList
             pinned={pinned}
             others={others}
+            recentDispatches={recentDispatches}
             sortDir={dir}
             isNameSort={sort === "name"}
             sortDirHref={hrefWith({
