@@ -94,7 +94,7 @@ describe("parseSaleLines", () => {
         source_sub: null,
         source_minor: "우영로지스",
         client_id: "c-woo",
-        billing_entity_name: null,
+        billing_entity_name: "우영로지스",
         memo: null,
       },
     })
@@ -167,5 +167,10 @@ describe("parseSaleLines", () => {
     expect(r.ok && r.value.billing_entity_name).toBe("주주부린물류")
     const onlyWord = parseSaleLines(["24만 세금", "a", "b"], ctx)
     expect(onlyWord.ok && onlyWord.value).toMatchObject({ payment_method: "TAX_INVOICE", billing_entity_name: null })
+  })
+
+  it("사업자 정보를 거래처 앞글자로 쓰면 전체 이름으로 바꾼다", () => {
+    const r = parseSaleLines(["10만", "a", "b", "지인,마상구", "세금 조은"], ctx)
+    expect(r.ok && r.value.billing_entity_name).toBe("조은물류")
   })
 })

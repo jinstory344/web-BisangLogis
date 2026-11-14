@@ -209,6 +209,16 @@ export function parseBillingLine(line: string): string | null {
   return m ? m[1].trim() || null : null
 }
 
+function resolveBilling(
+  written: string | null,
+  source: SourcePick | null,
+  clients: ClientOption[]
+): string | null {
+  if (!written) return source?.client_id ? source.source_minor : null
+  const client = findByPrefix(clients, (c) => c.name, written)
+  return client && client !== "ambiguous" ? client.name : written
+}
+
 /** 첫 줄(종류)을 뺀 나머지 줄로 매출 값을 만든다. */
 export function parseSaleLines(
   lines: string[],
@@ -278,7 +288,8 @@ export function parseSaleLines(
       source_sub: source?.source_sub ?? null,
       source_minor: source?.source_minor ?? null,
       client_id: source?.client_id ?? null,
-      billing_entity_name: billing,
+      // 앱 매출 폼처럼: 사업자 정보를 안 쓰면 거래처 이름으로, 쓴 이름이 거래처 앞글자면 전체 이름으로
+      billing_entity_name: resolveBilling(billing, source, ctx.clients),
       memo: places.length > 2 ? places.slice(2).join(" / ") : null,
     },
   }
