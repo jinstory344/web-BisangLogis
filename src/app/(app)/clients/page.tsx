@@ -2,22 +2,18 @@ import Link from "next/link"
 import { Plus } from "lucide-react"
 
 import { SearchBox } from "@/components/common/search-box"
-import { Button } from "@/components/ui/button"
-import { parseClientCategoryFilter } from "@/lib/constants/client"
 import { createClient } from "@/lib/supabase/server"
 import type { ClientRow } from "@/lib/supabase/database.types"
 
-import { ClientCategoryFilterChips } from "./client-category-filter"
 import { ClientList } from "./client-list"
 
 export default async function ClientsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; category?: string }>
+  searchParams: Promise<{ q?: string }>
 }) {
-  const { q, category } = await searchParams
+  const { q } = await searchParams
   const query = q?.trim() ?? ""
-  const categoryFilter = parseClientCategoryFilter(category)
 
   const supabase = await createClient()
   let request = supabase
@@ -27,32 +23,27 @@ export default async function ClientsPage({
     .order("name")
 
   if (query) {
-    request = request.or(`name.ilike.%${query}%,biz_no.ilike.%${query}%`)
-  }
-  if (categoryFilter !== "ALL") {
-    request = request.eq("category", categoryFilter)
+    request = request.or(`name.ilike.%${query}%,biz_no.ilike.%${query}%,contact_name.ilike.%${query}%`)
   }
 
   const { data, error } = await request
 
   return (
-    <div className="p-4 md:p-6">
+    <div className="mx-auto max-w-2xl p-4 md:p-6">
       <div className="flex items-center justify-between gap-4">
-        <h1 className="text-2xl font-semibold">거래처 관리</h1>
-        <Button asChild size="sm">
-          <Link href="/clients/new">
-            <Plus />
-            거래처 등록
-          </Link>
-        </Button>
+        <h1 className="text-2xl font-semibold">거래처</h1>
+        <Link
+          href="/clients/new"
+          prefetch
+          aria-label="거래처 등록"
+          className="-mr-2 flex size-10 items-center justify-center rounded-full text-foreground hover:bg-muted"
+        >
+          <Plus className="size-7" strokeWidth={1.75} />
+        </Link>
       </div>
 
-      <div className="mt-4 flex flex-col gap-3">
-        <ClientCategoryFilterChips />
-        <SearchBox
-          defaultValue={query}
-          placeholder="거래처명 또는 사업자번호 검색"
-        />
+      <div className="mt-3">
+        <SearchBox defaultValue={query} placeholder="거래처명 또는 담당자 검색" />
       </div>
 
       {error ? (
@@ -60,7 +51,7 @@ export default async function ClientsPage({
           거래처 목록을 불러오지 못했습니다: {error.message}
         </p>
       ) : (
-        <div className="mt-4">
+        <div className="mt-2">
           <ClientList clients={(data ?? []) as ClientRow[]} />
         </div>
       )}

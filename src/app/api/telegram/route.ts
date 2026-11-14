@@ -233,15 +233,14 @@ async function handleDispatch(chatId: number, lines: string[]) {
   if (!parsed.ok) return askAgain(chatId, parsed.error)
   const d = parsed.value
 
-  // 차량 정보에 없는 차량이면 목록에도 추가한다(차주 이름이 있어야 차량을 등록할 수 있다).
+  // 차량 정보에 없는 차량이면 번호·차주·연락처만 목록에 추가한다(차주 이름이 있어야 차량을 등록할 수 있다).
   let addedVehicle = false
   if (!d.vehicle_id && d.plate_no_snapshot && d.driver_name_snapshot) {
     const vehicleValues = {
       plate_no: d.plate_no_snapshot,
       driver_name: d.driver_name_snapshot,
       driver_phone: d.driver_phone_snapshot,
-      vehicle_type: d.cargo_box_type ? CARGO_BOX_TYPE_LABELS[d.cargo_box_type] : null,
-      pallet_count: d.pallet_count,
+      // 차종·파렛수는 이 배차의 물량 정보라 차량 정보에는 넣지 않는다(사용자 요청)
     }
     const { data: vehicle, error: vehicleError } = await supabase
       .from("vehicles")
