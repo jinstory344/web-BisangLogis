@@ -241,6 +241,7 @@ async function handleDispatch(chatId: number, lines: string[]) {
       driver_name: d.driver_name_snapshot,
       driver_phone: d.driver_phone_snapshot,
       vehicle_type: d.cargo_box_type ? CARGO_BOX_TYPE_LABELS[d.cargo_box_type] : null,
+      pallet_count: d.pallet_count,
     }
     const { data: vehicle, error: vehicleError } = await supabase
       .from("vehicles")

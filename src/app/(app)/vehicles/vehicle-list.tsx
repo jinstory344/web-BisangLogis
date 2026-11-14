@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { ArrowDown, ArrowUp, ChevronDown, ChevronUp, Copy, Star } from "lucide-react"
+import { ArrowDownWideNarrow, ArrowUpNarrowWide, ChevronDown, ChevronUp, Copy, Star } from "lucide-react"
 import { useState, useTransition } from "react"
 import { toast } from "sonner"
 
@@ -26,6 +26,7 @@ import {
 import { formatPhoneNumber } from "@/lib/phone"
 import type { VehicleRow } from "@/lib/supabase/database.types"
 import { cn } from "@/lib/utils"
+import { vehicleSpecLabel } from "@/lib/validations/vehicle"
 import { MAX_PINNED_VEHICLES, vehicleCopyText } from "@/lib/vehicle-list"
 
 import {
@@ -40,12 +41,15 @@ export function VehicleList({
   others,
   sortDirHref,
   sortDir,
+  isNameSort,
 }: {
   pinned: VehicleRow[]
   others: VehicleRow[]
   /** "전체" 줄 오른쪽 오름·내림차순 버튼이 갈 주소 */
   sortDirHref: string
   sortDir: "asc" | "desc"
+  /** 지금 차주 이름순으로 보고 있는지 */
+  isNameSort: boolean
 }) {
   const [sheetVehicle, setSheetVehicle] = useState<VehicleRow | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<{
@@ -161,14 +165,26 @@ export function VehicleList({
           <span>
             <span className="font-semibold text-foreground">전체</span> {others.length}대
           </span>
+          {/* 차주 이름 가나다순(↑)·역순(↓). 다른 정렬 중이면 흐리게, 누르면 이름순으로 */}
           <Link
             href={sortDirHref}
             replace
             scroll={false}
-            className="inline-flex h-8 items-center gap-1 rounded-full bg-muted px-3 text-foreground"
+            aria-label={
+              isNameSort
+                ? `차주 이름 ${sortDir === "asc" ? "가나다순" : "역순"}, 누르면 반대로`
+                : "차주 이름순으로 보기"
+            }
+            className={cn(
+              "-mr-2 flex size-9 items-center justify-center rounded-full",
+              isNameSort ? "text-foreground" : "text-muted-foreground/60"
+            )}
           >
-            {sortDir === "desc" ? <ArrowDown className="size-3.5" /> : <ArrowUp className="size-3.5" />}
-            {sortDir === "desc" ? "내림차순" : "오름차순"}
+            {isNameSort && sortDir === "desc" ? (
+              <ArrowDownWideNarrow className="size-[18px]" />
+            ) : (
+              <ArrowUpNarrowWide className="size-[18px]" />
+            )}
           </Link>
         </div>
         <ul className="border-t">{others.map((v) => row(v, null))}</ul>
@@ -188,8 +204,8 @@ export function VehicleList({
               <div className="flex flex-col gap-3 px-4">
                 <dl className="flex flex-col gap-1.5 text-sm">
                   {[
-                    { label: "사업자명", value: sheetVehicle.carrier_name },
                     { label: "차종", value: sheetVehicle.vehicle_type },
+                    { label: "파렛수", value: sheetVehicle.pallet_count ? `${sheetVehicle.pallet_count}p` : null },
                     { label: "메모", value: sheetVehicle.memo },
                   ]
                     .filter((d) => d.value)
@@ -284,9 +300,9 @@ function VehicleRowItem({
       <div className="pointer-events-none min-w-0 flex-1">
         <p className="flex items-center gap-1.5 text-[15px] leading-snug font-semibold">
           <span className="truncate">{vehicle.plate_no}</span>
-          {vehicle.vehicle_type ? (
+          {vehicleSpecLabel(vehicle) ? (
             <span className="shrink-0 rounded-md border px-1.5 text-[11px] font-normal text-muted-foreground">
-              {vehicle.vehicle_type}
+              {vehicleSpecLabel(vehicle)}
             </span>
           ) : null}
         </p>

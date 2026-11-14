@@ -4,7 +4,8 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { startTransition, useActionState } from "react"
 import { useForm } from "react-hook-form"
 
-import { Button } from "@/components/ui/button"
+import { FormSubmitBar, touchFormProps } from "@/components/form/form-submit-bar"
+import { SheetChoice } from "@/components/form/sheet-choice"
 import {
   Form,
   FormControl,
@@ -14,18 +15,16 @@ import {
   FormMessage,
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import {
+  PALLET_COUNT_OPTIONS,
+  VEHICLE_BODY_TYPES,
   vehicleFormSchema,
   type VehicleFormValues,
 } from "@/lib/validations/vehicle"
+
+const BODY_TYPE_OPTIONS = VEHICLE_BODY_TYPES.map((v) => ({ value: v, label: v }))
+const PALLET_OPTIONS = PALLET_COUNT_OPTIONS.map((n) => ({ value: String(n), label: `${n}p` }))
 
 import type { VehicleActionState } from "./actions"
 
@@ -63,7 +62,7 @@ export function VehicleForm({
     <Form {...form}>
       <form
         onSubmit={form.handleSubmit(onSubmit)}
-        className="flex flex-col gap-4 pb-24 md:pb-0"
+        {...touchFormProps}
       >
         <FormField
           control={form.control}
@@ -72,7 +71,7 @@ export function VehicleForm({
             <FormItem>
               <FormLabel>차량번호 *</FormLabel>
               <FormControl>
-                <Input {...field} autoFocus />
+                <Input {...field} autoFocus placeholder="서울86바1234" />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -83,9 +82,9 @@ export function VehicleForm({
           name="driver_name"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>이름 *</FormLabel>
+              <FormLabel>차주 *</FormLabel>
               <FormControl>
-                <Input {...field} />
+                <Input {...field} placeholder="이름" />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -98,20 +97,7 @@ export function VehicleForm({
             <FormItem>
               <FormLabel>연락처</FormLabel>
               <FormControl>
-                <Input {...field} type="tel" />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="carrier_name"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>사업자명</FormLabel>
-              <FormControl>
-                <Input {...field} />
+                <Input {...field} type="tel" inputMode="tel" placeholder="010-0000-0000" />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -122,23 +108,33 @@ export function VehicleForm({
           name="vehicle_type"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>차종/톤수</FormLabel>
-              <Select value={field.value} onValueChange={field.onChange}>
-                <FormControl>
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="차종/톤수 선택" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {Array.from({ length: 17 }, (_, i) => `${i + 2}p`).map(
-                    (option) => (
-                      <SelectItem key={option} value={option}>
-                        {option}
-                      </SelectItem>
-                    )
-                  )}
-                </SelectContent>
-              </Select>
+              <FormLabel>차종</FormLabel>
+              <SheetChoice
+                title="차종"
+                options={BODY_TYPE_OPTIONS}
+                value={field.value}
+                placeholder="차종 선택"
+                allowDeselect
+                onChange={field.onChange}
+              />
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="pallet_count"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>파렛수</FormLabel>
+              <SheetChoice
+                title="파렛수"
+                options={PALLET_OPTIONS}
+                value={field.value}
+                placeholder="파렛수 선택"
+                allowDeselect
+                onChange={field.onChange}
+              />
               <FormMessage />
             </FormItem>
           )}
@@ -150,7 +146,7 @@ export function VehicleForm({
             <FormItem>
               <FormLabel>비고</FormLabel>
               <FormControl>
-                <Textarea {...field} rows={3} />
+                <Textarea {...field} rows={1} className="min-h-11 md:min-h-16" />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -163,15 +159,9 @@ export function VehicleForm({
           </p>
         ) : null}
 
-        <div className="fixed inset-x-0 bottom-[calc(3.5rem+env(safe-area-inset-bottom))] border-t bg-background p-3 md:static md:bottom-auto md:border-0 md:p-0">
-          <Button
-            type="submit"
-            className="w-full md:w-auto"
-            disabled={isPending}
-          >
-            {isPending ? "저장 중..." : submitLabel}
-          </Button>
-        </div>
+        <FormSubmitBar disabled={isPending}>
+          {isPending ? "저장 중..." : submitLabel}
+        </FormSubmitBar>
       </form>
     </Form>
   )

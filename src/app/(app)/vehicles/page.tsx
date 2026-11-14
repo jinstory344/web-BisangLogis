@@ -6,7 +6,6 @@ import { createClient } from "@/lib/supabase/server"
 import type { VehicleRow } from "@/lib/supabase/database.types"
 import { cn } from "@/lib/utils"
 import {
-  defaultSortDir,
   parseVehicleSort,
   sortVehicles,
   VEHICLE_SORT_OPTIONS,
@@ -89,7 +88,7 @@ export default async function VehiclesPage({
       </div>
 
       <div className="mt-2.5 flex gap-1.5 overflow-x-auto">
-        {VEHICLE_SORT_OPTIONS.map((option) => (
+        {VEHICLE_SORT_OPTIONS.filter((option) => option.value !== "name").map((option) => (
           <Link
             key={option.value}
             href={hrefWith({ q: query || undefined, sort: option.value === "recent" ? undefined : option.value })}
@@ -118,10 +117,12 @@ export default async function VehiclesPage({
             pinned={pinned}
             others={others}
             sortDir={dir}
+            isNameSort={sort === "name"}
             sortDirHref={hrefWith({
               q: query || undefined,
-              sort: sort === "recent" ? undefined : sort,
-              dir: dir === defaultSortDir(sort) ? (dir === "asc" ? "desc" : "asc") : undefined,
+              sort: "name",
+              // 이름순이면 방향만 뒤집고, 다른 정렬이면 이름 가나다순으로
+              dir: sort === "name" && dir === "asc" ? "desc" : undefined,
             })}
           />
         </div>

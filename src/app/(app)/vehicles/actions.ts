@@ -4,11 +4,10 @@ import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
 
 import { recordAuditLog } from "@/lib/audit/log"
-import { nullifyEmptyStrings } from "@/lib/nullify-empty"
 import { softDelete } from "@/lib/soft-delete/soft-delete"
 import { createClient } from "@/lib/supabase/server"
 import { MAX_PINNED_VEHICLES, movePinned, togglePinned } from "@/lib/vehicle-list"
-import { vehicleFormSchema } from "@/lib/validations/vehicle"
+import { toVehicleDbValues, vehicleFormSchema } from "@/lib/validations/vehicle"
 
 const DUPLICATE_PLATE_MESSAGE = "이미 등록된 차량번호입니다"
 
@@ -56,8 +55,7 @@ export async function createVehicleAction(
   }
 
   const supabase = await createClient()
-  const { plate_no, driver_name, ...optional } = parsed.data
-  const values = { plate_no, driver_name, ...nullifyEmptyStrings(optional) }
+  const values = toVehicleDbValues(parsed.data)
 
   const { data, error } = await supabase
     .from("vehicles")
@@ -93,8 +91,7 @@ export async function updateVehicleAction(
   }
 
   const supabase = await createClient()
-  const { plate_no, driver_name, ...optional } = parsed.data
-  const values = { plate_no, driver_name, ...nullifyEmptyStrings(optional) }
+  const values = toVehicleDbValues(parsed.data)
 
   const { data: before, error: fetchError } = await supabase
     .from("vehicles")
