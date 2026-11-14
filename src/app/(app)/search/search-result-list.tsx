@@ -1,5 +1,6 @@
 "use client"
 
+import { ChevronDown } from "lucide-react"
 import { SaleSourceCell } from "@/components/ledger/sale-source-cell"
 import { useRouter } from "next/navigation"
 import { useState, useTransition, type ReactNode } from "react"
@@ -19,7 +20,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Sheet, SheetContent } from "@/components/ui/sheet"
 import { formatKRW } from "@/lib/money"
-import { formatSearchDate } from "@/lib/search"
+import { formatSearchDate, groupDispatchesByMonth } from "@/lib/search"
 import { cn } from "@/lib/utils"
 
 import { deleteDispatchAction } from "../dispatches/actions"
@@ -188,6 +189,8 @@ export function SearchDispatchList({
   const [isSheetOpen, setIsSheetOpen] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState<SearchDispatch | null>(null)
   const [isPending, startTransition] = useTransition()
+  /** 사용자가 펼치거나 접은 달 (없으면 가장 최근 달만 펼침) */
+  const [openMonths, setOpenMonths] = useState<Record<string, boolean>>({})
 
   if (dispatches.length === 0) return <EmptyMessage>{emptyMessage}</EmptyMessage>
 
@@ -213,31 +216,60 @@ export function SearchDispatchList({
 
   return (
     <>
-      <ul className={LIST_CLASS}>
-        {dispatches.map((dispatch) => (
-          <ResultRow
-            key={dispatch.id}
-            onOpen={() => {
-              setSheetDispatch(dispatch)
-              setIsSheetOpen(true)
-            }}
-            date={dispatch.dispatch_date}
-            side={clientNameOf(dispatch)}
-            title={`${dispatch.origin} → ${dispatch.destination}`}
-            sub={vehicleLine(dispatch)}
-            amount={
-              dispatch.freight_amount != null ? formatKRW(dispatch.freight_amount) : "-"
-            }
-            note={
-              dispatch.fee_amount > 0 ? (
-                <span className="text-xs text-muted-foreground tabular-nums">
-                  수수료 {formatKRW(dispatch.fee_amount)}
+      {/* 달별로 묶고, 달 줄을 누르면 펼치고 접는다. 가장 최근 달은 처음부터 펼쳐 둔다 */}
+      <div className="-mx-4 flex flex-col md:mx-0">
+        {groupDispatchesByMonth(dispatches).map((group, index) => {
+          const isOpen = openMonths[group.month] ?? index === 0
+          return (
+            <section key={group.month} className="border-b">
+              <button
+                type="button"
+                aria-expanded={isOpen}
+                onClick={() => setOpenMonths({ ...openMonths, [group.month]: !isOpen })}
+                className="flex min-h-12 w-full items-center justify-between gap-2 bg-muted/40 px-4 text-left"
+              >
+                <span className="flex items-center gap-1 font-semibold">
+                  {group.label}
+                  <ChevronDown
+                    aria-hidden
+                    className={cn("size-4 transition-transform", isOpen ? "" : "-rotate-90")}
+                  />
                 </span>
-              ) : null
-            }
-          />
-        ))}
-      </ul>
+                <span className="text-[13px] text-muted-foreground tabular-nums">
+                  {group.rows.length}건 · {formatKRW(group.freight)}
+                </span>
+              </button>
+              {isOpen ? (
+                <ul className="divide-y border-t">
+                  {group.rows.map((dispatch) => (
+                    <ResultRow
+                      key={dispatch.id}
+                      onOpen={() => {
+                        setSheetDispatch(dispatch)
+                        setIsSheetOpen(true)
+                      }}
+                      date={dispatch.dispatch_date}
+                      side={clientNameOf(dispatch)}
+                      title={`${dispatch.origin} → ${dispatch.destination}`}
+                      sub={vehicleLine(dispatch)}
+                      amount={
+                        dispatch.freight_amount != null ? formatKRW(dispatch.freight_amount) : "-"
+                      }
+                      note={
+                        dispatch.fee_amount > 0 ? (
+                          <span className="text-xs text-muted-foreground tabular-nums">
+                            수수료 {formatKRW(dispatch.fee_amount)}
+                          </span>
+                        ) : null
+                      }
+                    />
+                  ))}
+                </ul>
+              ) : null}
+            </section>
+          )
+        })}
+      </div>
 
       <Sheet open={isSheetOpen && sheetDispatch !== null} onOpenChange={setIsSheetOpen}>
         <SheetContent side="bottom" className="max-h-[85svh] gap-0 overflow-y-auto pb-6">

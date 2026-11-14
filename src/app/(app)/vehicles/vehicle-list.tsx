@@ -15,6 +15,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
+import { CallButton } from "@/components/common/call-button"
 import { Button } from "@/components/ui/button"
 import {
   Sheet,
@@ -35,6 +36,7 @@ import {
   moveVehiclePinAction,
   toggleVehiclePinAction,
 } from "./actions"
+import { VehicleDispatchHistory } from "./vehicle-dispatch-history"
 
 export function VehicleList({
   pinned,
@@ -191,23 +193,32 @@ export function VehicleList({
       </section>
 
       <Sheet open={sheetVehicle !== null} onOpenChange={(open) => !open && setSheetVehicle(null)}>
-        <SheetContent side="bottom" className="gap-0 pb-6">
+        <SheetContent side="bottom" className="max-h-[90svh] gap-0 overflow-y-auto pb-6">
           {sheetVehicle ? (
             <>
               <SheetHeader className="pr-12">
                 <SheetTitle>{sheetVehicle.plate_no}</SheetTitle>
-                <SheetDescription>
-                  {sheetVehicle.driver_name}
-                  {sheetVehicle.driver_phone ? ` · ${formatPhoneNumber(sheetVehicle.driver_phone)}` : ""}
-                </SheetDescription>
+                <div className="flex items-center justify-between gap-2">
+                  <SheetDescription>
+                    {[
+                      sheetVehicle.driver_name,
+                      sheetVehicle.driver_phone ? formatPhoneNumber(sheetVehicle.driver_phone) : null,
+                      vehicleSpecLabel(sheetVehicle) || null,
+                    ]
+                      .filter(Boolean)
+                      .join(" · ")}
+                  </SheetDescription>
+                  {sheetVehicle.driver_phone ? (
+                    <CallButton
+                      phone={sheetVehicle.driver_phone}
+                      label={`${sheetVehicle.driver_name}에게 전화`}
+                    />
+                  ) : null}
+                </div>
               </SheetHeader>
               <div className="flex flex-col gap-3 px-4">
                 <dl className="flex flex-col gap-1.5 text-sm">
-                  {[
-                    { label: "차종", value: sheetVehicle.vehicle_type },
-                    { label: "파렛수", value: sheetVehicle.pallet_count ? `${sheetVehicle.pallet_count}p` : null },
-                    { label: "메모", value: sheetVehicle.memo },
-                  ]
+                  {[{ label: "메모", value: sheetVehicle.memo }]
                     .filter((d) => d.value)
                     .map((d) => (
                       <div key={d.label} className="flex gap-3">
@@ -216,20 +227,14 @@ export function VehicleList({
                       </div>
                     ))}
                 </dl>
-                <div className="grid grid-cols-2 gap-2">
-                  {sheetVehicle.driver_phone ? (
-                    <Button variant="outline" className="h-11" asChild>
-                      <a href={`tel:${sheetVehicle.driver_phone.replace(/\D/g, "")}`}>전화 걸기</a>
-                    </Button>
-                  ) : (
-                    <Button variant="outline" className="h-11" onClick={() => handleCopy(sheetVehicle)}>
-                      복사
-                    </Button>
-                  )}
-                  <Button variant="outline" className="h-11" asChild>
-                    <Link href={`/vehicles/${sheetVehicle.id}/edit`}>수정</Link>
-                  </Button>
-                </div>
+                <VehicleDispatchHistory
+                  key={sheetVehicle.id}
+                  vehicleId={sheetVehicle.id}
+                  plateNo={sheetVehicle.plate_no}
+                />
+                <Button variant="outline" className="h-11" asChild>
+                  <Link href={`/vehicles/${sheetVehicle.id}/edit`}>수정</Link>
+                </Button>
                 <Button
                   type="button"
                   variant="ghost"

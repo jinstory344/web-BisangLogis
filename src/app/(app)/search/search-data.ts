@@ -2,8 +2,6 @@ import { appendClientIdFilter, buildIlikeOrFilter } from "@/lib/search"
 import type { DispatchRow } from "@/lib/supabase/database.types"
 import { createClient } from "@/lib/supabase/server"
 
-import { SEARCH_RESULT_LIMIT } from "../ledger-data"
-
 type Supabase = Awaited<ReturnType<typeof createClient>>
 
 /** 이름에 검색어가 들어간 거래처 id (매출·배차를 거래처 이름으로도 찾기 위해) */
@@ -21,11 +19,14 @@ export async function searchClientIds(
   return (data ?? []).map((row) => row.id)
 }
 
+/** 배차는 달별로 접어 보여 주므로 매출·지출보다 많이 가져온다 (차량번호로 몇 년 치를 보는 경우) */
+export const DISPATCH_SEARCH_LIMIT = 500
+
 /** 누르면 뜨는 작업 시트(담당자·차량·화물·비고 등)에 행 전체가 필요하다 */
 export type SearchDispatch = DispatchRow
 
 /**
- * 기간과 상관없이 배차를 글자로 찾는다 (최근 날짜부터 최대 SEARCH_RESULT_LIMIT건).
+ * 기간과 상관없이 배차를 글자로 찾는다 (최근 날짜부터 최대 DISPATCH_SEARCH_LIMIT건).
  * 상차지·하차지·차량번호·기사·담당자·배차자·비고, 그리고 이름이 맞는 거래처의 배차.
  * 화면에 보여 줄 거래처 이름도 함께 돌려준다.
  */
@@ -61,7 +62,7 @@ export async function searchDispatches(
     )
     .order("dispatch_date", { ascending: false })
     .order("created_at", { ascending: false })
-    .limit(SEARCH_RESULT_LIMIT)
+    .limit(DISPATCH_SEARCH_LIMIT)
   if (error) throw new Error(error.message)
   const dispatches = data ?? []
 
@@ -78,6 +79,6 @@ export async function searchDispatches(
   return {
     dispatches,
     clientNameMap,
-    isTruncated: dispatches.length >= SEARCH_RESULT_LIMIT,
+    isTruncated: dispatches.length >= DISPATCH_SEARCH_LIMIT,
   }
 }

@@ -1,11 +1,12 @@
 "use client"
 
 import { SaleSourceCell } from "@/components/ledger/sale-source-cell"
-import { Check, Phone } from "lucide-react"
+import { Check } from "lucide-react"
 import Link from "next/link"
 import { useMemo, useState } from "react"
 
 import { ReturnToLink } from "@/components/common/return-to-link"
+import { CallButton } from "@/components/common/call-button"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import {
@@ -292,13 +293,11 @@ export function SaleActionSheetBody({
         </p>
 
         {phone ? (
-          <a
-            href={`tel:${phone.replace(/[^\d+]/g, "")}`}
-            className="inline-flex w-fit items-center gap-1.5 text-sm font-medium underline underline-offset-2"
-          >
-            <Phone className="size-4" aria-hidden />
-            {formatPhoneNumber(phone)}
-          </a>
+          <p className="flex items-center gap-2 text-sm">
+            <span className="text-muted-foreground">오더자 연락처</span>
+            <span className="tabular-nums">{formatPhoneNumber(phone)}</span>
+            <CallButton phone={phone} label="오더자에게 전화" />
+          </p>
         ) : null}
 
         {sale.payment_status === "UNPAID" ? (

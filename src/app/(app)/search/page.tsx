@@ -22,7 +22,7 @@ import { cn } from "@/lib/utils"
 import { SEARCH_RESULT_LIMIT, searchLedgerEntries } from "../ledger-data"
 
 import { SearchBox } from "./search-box"
-import { searchClientIds, searchDispatches } from "./search-data"
+import { DISPATCH_SEARCH_LIMIT, searchClientIds, searchDispatches } from "./search-data"
 import { SearchDispatchList, SearchLedgerList } from "./search-result-list"
 
 /**
@@ -149,7 +149,7 @@ export default async function SearchPage({
 
           {isTruncated ? (
             <p className="py-1 text-center text-[11px] text-muted-foreground">
-              최근 {SEARCH_RESULT_LIMIT}건까지만 보여요(합계도 이 건들 기준). 검색어를
+              최근 {tab === "ledger" ? SEARCH_RESULT_LIMIT : DISPATCH_SEARCH_LIMIT}건까지만 보여요(합계도 이 건들 기준). 검색어를
               더 자세히 넣어 보세요.
             </p>
           ) : null}

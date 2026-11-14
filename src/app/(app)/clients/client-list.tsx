@@ -14,6 +14,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
+import { CallButton } from "@/components/common/call-button"
 import { Button } from "@/components/ui/button"
 import {
   Sheet,
@@ -114,11 +115,19 @@ export function ClientList({ clients }: { clients: ClientRow[] }) {
             <>
               <SheetHeader className="pr-12">
                 <SheetTitle>{sheetClient.name}</SheetTitle>
-                <SheetDescription>
-                  {[sheetClient.contact_name, sheetClient.contact_phone ? formatPhoneNumber(sheetClient.contact_phone) : null]
-                    .filter(Boolean)
-                    .join(" · ") || "담당자 정보 없음"}
-                </SheetDescription>
+                <div className="flex items-center justify-between gap-2">
+                  <SheetDescription>
+                    {[sheetClient.contact_name, sheetClient.contact_phone ? formatPhoneNumber(sheetClient.contact_phone) : null]
+                      .filter(Boolean)
+                      .join(" · ") || "담당자 정보 없음"}
+                  </SheetDescription>
+                  {sheetClient.contact_phone ? (
+                    <CallButton
+                      phone={sheetClient.contact_phone}
+                      label={`${sheetClient.contact_name ?? sheetClient.name}에게 전화`}
+                    />
+                  ) : null}
+                </div>
               </SheetHeader>
               <div className="flex flex-col gap-3 px-4">
                 <dl className="flex flex-col gap-1.5 text-sm">
@@ -137,20 +146,9 @@ export function ClientList({ clients }: { clients: ClientRow[] }) {
                       </div>
                     ))}
                 </dl>
-                <div className="grid grid-cols-2 gap-2">
-                  {sheetClient.contact_phone ? (
-                    <Button variant="outline" className="h-11" asChild>
-                      <a href={`tel:${sheetClient.contact_phone.replace(/\D/g, "")}`}>전화 걸기</a>
-                    </Button>
-                  ) : null}
-                  <Button
-                    variant="outline"
-                    className={sheetClient.contact_phone ? "h-11" : "col-span-2 h-11"}
-                    asChild
-                  >
-                    <Link href={`/clients/${sheetClient.id}/edit`}>수정</Link>
-                  </Button>
-                </div>
+                <Button variant="outline" className="h-11" asChild>
+                  <Link href={`/clients/${sheetClient.id}/edit`}>수정</Link>
+                </Button>
                 <Button
                   type="button"
                   variant="ghost"

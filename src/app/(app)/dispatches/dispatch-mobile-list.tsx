@@ -1,11 +1,11 @@
 "use client"
 
-import { Phone } from "lucide-react"
 import Link from "next/link"
 import { useMemo, useState, type ReactNode } from "react"
 
 import { ReturnToLink } from "@/components/common/return-to-link"
 import { DayHeader } from "@/components/list/day-header"
+import { CallButton } from "@/components/common/call-button"
 import { Button } from "@/components/ui/button"
 import {
   Sheet,
@@ -167,13 +167,10 @@ export function DispatchMobileList({
 
 function PhoneLink({ phone }: { phone: string }) {
   return (
-    <a
-      href={`tel:${phone.replace(/[^\d+]/g, "")}`}
-      className="inline-flex items-center gap-1 font-medium underline underline-offset-2"
-    >
-      <Phone className="size-3.5" aria-hidden />
-      {formatPhoneNumber(phone)}
-    </a>
+    <span className="inline-flex items-center gap-2">
+      <span className="tabular-nums">{formatPhoneNumber(phone)}</span>
+      <CallButton phone={phone} />
+    </span>
   )
 }
 

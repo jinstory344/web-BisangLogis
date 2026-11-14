@@ -61,3 +61,35 @@ export function formatSearchDate(date: string): string {
   const [year, month, day] = date.split("-")
   return `${year}. ${Number(month)}. ${Number(day)}.`
 }
+
+export interface DispatchMonthGroup<T> {
+  /** "2026-11" */
+  month: string
+  /** "2026년 11월" */
+  label: string
+  rows: T[]
+  freight: number
+}
+
+/** 검색 배차 결과를 달별로 묶는다 (최근 날짜부터 들어온 순서를 그대로 지킨다). */
+export function groupDispatchesByMonth<
+  T extends { dispatch_date: string; freight_amount: number | null },
+>(rows: readonly T[]): DispatchMonthGroup<T>[] {
+  const groups: DispatchMonthGroup<T>[] = []
+  for (const row of rows) {
+    const month = row.dispatch_date.slice(0, 7)
+    let group = groups.at(-1)
+    if (!group || group.month !== month) {
+      group = {
+        month,
+        label: `${month.slice(0, 4)}년 ${Number(month.slice(5, 7))}월`,
+        rows: [],
+        freight: 0,
+      }
+      groups.push(group)
+    }
+    group.rows.push(row)
+    group.freight += row.freight_amount ?? 0
+  }
+  return groups
+}

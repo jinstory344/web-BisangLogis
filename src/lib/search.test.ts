@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest"
 
 import {
+  groupDispatchesByMonth,
   appendClientIdFilter,
   buildIlikeOrFilter,
   formatSearchDate,
@@ -88,5 +89,19 @@ describe("formatSearchDate", () => {
   it("연도까지, 월·일 앞의 0은 뺀다", () => {
     expect(formatSearchDate("2026-10-02")).toBe("2026. 10. 2.")
     expect(formatSearchDate("2025-01-15")).toBe("2025. 1. 15.")
+  })
+})
+
+describe("groupDispatchesByMonth", () => {
+  it("달이 바뀔 때마다 묶고 운임을 더한다", () => {
+    const groups = groupDispatchesByMonth([
+      { dispatch_date: "2026-11-16", freight_amount: 320000 },
+      { dispatch_date: "2026-11-05", freight_amount: null },
+      { dispatch_date: "2026-10-31", freight_amount: 100000 },
+    ])
+    expect(groups.map((g) => [g.label, g.rows.length, g.freight])).toEqual([
+      ["2026년 11월", 2, 320000],
+      ["2026년 10월", 1, 100000],
+    ])
   })
 })
