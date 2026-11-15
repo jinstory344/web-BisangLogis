@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest"
 
 import {
+  collectPeople,
   parseSearchFilters,
   parseSmartQuery,
   searchHref,
@@ -179,5 +180,22 @@ describe("parseSmartQuery", () => {
   })
   it("앞글자가 여러 거래처에 맞으면 글자로 남긴다", () => {
     expect(parseSmartQuery("아토 배차", ctx)).toEqual({ query: "아토", tab: "dispatch", period: undefined, filters: {} })
+  })
+})
+
+describe("collectPeople", () => {
+  it("검색어가 들어간 이름을 역할과 함께 모은다", () => {
+    expect(
+      collectPeople("승우", [
+        { name: "허승우", role: "차주" },
+        { name: "양승우", role: "오더자" },
+        { name: "허승우", role: "담당자" },
+        { name: "김진승", role: "차주" },
+        { name: null, role: "차주" },
+      ])
+    ).toEqual([
+      { name: "양승우", roles: ["오더자"] },
+      { name: "허승우", roles: ["차주", "담당자"] },
+    ])
   })
 })

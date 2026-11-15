@@ -161,6 +161,8 @@ export interface SearchFilters {
   unpaid?: boolean
   /** 거래처 담당자 이름 (배차만 거른다) */
   contact?: string
+  /** 사람 이름 (동명이인 나누기): 매출 오더자, 배차 차주·담당자가 이 이름인 것만 */
+  person?: string
 }
 
 const UUID_RE = /^[0-9a-f-]{36}$/
@@ -172,6 +174,7 @@ export function parseSearchFilters(params: {
   category?: string | string[]
   unpaid?: string | string[]
   contact?: string | string[]
+  person?: string | string[]
 }): SearchFilters {
   const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v) ?? ""
   const clientId = one(params.client_id)
@@ -182,19 +185,20 @@ export function parseSearchFilters(params: {
     category: category || undefined,
     unpaid: one(params.unpaid) === "1" || undefined,
     contact: (UUID_RE.test(clientId) && normalizeSearchQuery(one(params.contact))) || undefined,
+    person: normalizeSearchQuery(one(params.person)) || undefined,
   }
 }
 
 /** 탭을 바꿀 때 그 탭에 안 맞는 조건은 뺀다 (지출엔 거래처·미입금 없음, 배차엔 항목·미입금 없음, 매출엔 항목 없음) */
 export function filtersForTab(tab: SearchTab, f: SearchFilters): SearchFilters {
   if (tab === "expense") return { category: f.category }
-  if (tab === "dispatch") return { clientId: f.clientId, clientName: f.clientName, contact: f.contact }
-  if (tab === "sale") return { clientId: f.clientId, clientName: f.clientName, unpaid: f.unpaid }
-  return { clientId: f.clientId, clientName: f.clientName, category: f.category, contact: f.contact }
+  if (tab === "dispatch") return { clientId: f.clientId, clientName: f.clientName, contact: f.contact, person: f.person }
+  if (tab === "sale") return { clientId: f.clientId, clientName: f.clientName, unpaid: f.unpaid, person: f.person }
+  return { clientId: f.clientId, clientName: f.clientName, category: f.category, contact: f.contact, person: f.person }
 }
 
 export function hasFilters(f: SearchFilters): boolean {
-  return Boolean(f.clientId || f.category || f.unpaid || f.contact)
+  return Boolean(f.clientId || f.category || f.unpaid || f.contact || f.person)
 }
 
 /** 통합검색 주소 (빈 값은 뺀다) */
@@ -218,6 +222,7 @@ export function searchHref(
   if (filters.category) params.set("category", filters.category)
   if (filters.unpaid) params.set("unpaid", "1")
   if (filters.contact) params.set("contact", filters.contact)
+  if (filters.person) params.set("person", filters.person)
   const text = params.toString()
   return text ? `/search?${text}` : "/search"
 }
@@ -293,4 +298,22 @@ export function countByMonth(dates: readonly string[]): Record<string, number> {
     counts[month] = (counts[month] ?? 0) + 1
   }
   return counts
+}
+
+/** 검색어가 들어간 사람 이름들을 역할과 함께 (동명이인 칩): [{name: "허승우", roles: ["차주"]}, ...] */
+export function collectPeople(
+  query: string,
+  rows: { name: string | null | undefined; role: string }[]
+): { name: string; roles: string[] }[] {
+  const byName = new Map<string, Set<string>>()
+  for (const row of rows) {
+    const name = row.name?.trim()
+    if (!name || !name.includes(query)) continue
+    const roles = byName.get(name) ?? new Set<string>()
+    roles.add(row.role)
+    byName.set(name, roles)
+  }
+  return [...byName.entries()]
+    .map(([name, roles]) => ({ name, roles: [...roles] }))
+    .sort((a, b) => a.name.localeCompare(b.name, "ko"))
 }

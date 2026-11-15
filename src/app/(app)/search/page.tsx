@@ -37,7 +37,13 @@ import { SearchBox } from "./search-box"
 import { getClientContacts } from "../clients/actions"
 
 import { EntityCards } from "./entity-cards"
-import { searchClientIds, searchDispatchAmounts, searchDispatches, searchEntities } from "./search-data"
+import {
+  searchClientIds,
+  searchDispatchAmounts,
+  searchDispatches,
+  searchEntities,
+  searchPeople,
+} from "./search-data"
 import { SearchResultList, type SearchItem } from "./search-result-list"
 import { TargetFilter } from "./target-filter"
 
@@ -60,6 +66,7 @@ export default async function SearchPage({
     category?: string | string[]
     unpaid?: string | string[]
     contact?: string | string[]
+    person?: string | string[]
   }>
 }) {
   const params = await searchParams
@@ -143,7 +150,10 @@ export default async function SearchPage({
           ? searchEntities(supabase, query || filters.clientName || "")
           : Promise.resolve({ clients: [], vehicles: [] }),
       ])
-      const contactsByClient = await getClientContacts(entities.clients.map((c) => c.id))
+      const [contactsByClient, people] = await Promise.all([
+        getClientContacts(entities.clients.map((c) => c.id)),
+        query ? searchPeople(supabase, query) : Promise.resolve([]),
+      ])
       // 합계·건수는 목록(최근 몇백 건)이 아니라 조건에 맞는 전부로, 기간은 여기서 거른다
       const saleIn = amounts.sale.filter((r) => inPeriod(r.date, period))
       const expenseIn = amounts.expense.filter((r) => inPeriod(r.date, period))
@@ -230,6 +240,34 @@ export default async function SearchPage({
             period={period}
             filters={filters}
           />
+          {/* 동명이인: 검색어가 들어간 이름이 둘 이상이면 사람별로 나눠 보기 */}
+          {people.length > 1 ? (
+            <div className="flex flex-wrap gap-1.5 pb-2">
+              {[null, ...people].map((p) => {
+                const isOn = (filters.person ?? null) === (p?.name ?? null)
+                return (
+                  <Link
+                    key={p?.name ?? "all"}
+                    href={searchHref(query, tab, period, { ...filters, person: p?.name })}
+                    replace
+                    scroll={false}
+                    className={cn(
+                      "inline-flex h-9 items-center gap-1 rounded-full px-3.5 text-sm",
+                      isOn ? "bg-foreground font-semibold text-background" : "bg-muted text-foreground"
+                    )}
+                  >
+                    {p ? p.name : "모두"}
+                    {p ? (
+                      <span className={cn("text-xs", isOn ? "text-background/70" : "text-muted-foreground")}>
+                        {p.roles.join("·")}
+                      </span>
+                    ) : null}
+                  </Link>
+                )
+              })}
+            </div>
+          ) : null}
+
           <nav
             aria-label="검색 결과 종류"
             className="-mx-4 grid grid-cols-4 border-b px-2 md:mx-0 md:px-0"
@@ -282,6 +320,7 @@ export default async function SearchPage({
           period ? periodLabel(period, today) : null,
           filters.unpaid ? "미입금만" : null,
           filters.contact ? `담당 ${filters.contact}` : null,
+          filters.person && filters.person !== query ? filters.person : null,
         ]
           .filter(Boolean)
           .join(" · ") || "전체"

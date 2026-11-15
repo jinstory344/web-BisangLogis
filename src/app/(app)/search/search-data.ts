@@ -1,4 +1,4 @@
-import { appendClientIdFilter, buildIlikeOrFilter, type SearchFilters } from "@/lib/search"
+import { appendClientIdFilter, buildIlikeOrFilter, collectPeople, type SearchFilters } from "@/lib/search"
 import type { DispatchRow } from "@/lib/supabase/database.types"
 import { createClient } from "@/lib/supabase/server"
 
@@ -47,6 +47,9 @@ export async function searchDispatches(
   let request = supabase.from("dispatches").select("*").is("deleted_at", null)
   if (filters.clientId) request = request.eq("client_id", filters.clientId)
     if (filters.contact) request = request.eq("contact_name", filters.contact)
+    if (filters.person) {
+      request = request.or(`driver_name_snapshot.eq."${filters.person}",contact_name.eq."${filters.person}"`)
+    }
   if (query) {
     request = request.or(
       appendClientIdFilter(
@@ -98,6 +101,9 @@ export async function searchDispatchAmounts(
       .is("deleted_at", null)
     if (filters.clientId) request = request.eq("client_id", filters.clientId)
     if (filters.contact) request = request.eq("contact_name", filters.contact)
+    if (filters.person) {
+      request = request.or(`driver_name_snapshot.eq."${filters.person}",contact_name.eq."${filters.person}"`)
+    }
     if (query) {
       request = request.or(
         appendClientIdFilter(
@@ -141,4 +147,30 @@ export async function searchEntities(
   if (clients.error) throw new Error(clients.error.message)
   if (vehicles.error) throw new Error(vehicles.error.message)
   return { clients: clients.data ?? [], vehicles: vehicles.data ?? [] }
+}
+
+/** 검색어가 들어간 사람 이름(매출 오더자, 배차 차주·담당자, 차량 차주)을 역할과 함께 — 동명이인 칩용 */
+export async function searchPeople(
+  supabase: Supabase,
+  query: string
+): Promise<{ name: string; roles: string[] }[]> {
+  const like = `%${query}%`
+  const [sales, dispatches, vehicles] = await Promise.all([
+    supabase.from("sales").select("source_minor").is("deleted_at", null).ilike("source_minor", like).limit(300),
+    supabase
+      .from("dispatches")
+      .select("driver_name_snapshot, contact_name")
+      .is("deleted_at", null)
+      .or(`driver_name_snapshot.ilike.${like},contact_name.ilike.${like}`)
+      .limit(300),
+    supabase.from("vehicles").select("driver_name").is("deleted_at", null).ilike("driver_name", like).limit(50),
+  ])
+  return collectPeople(query, [
+    ...(sales.data ?? []).map((r) => ({ name: r.source_minor, role: "오더자" })),
+    ...(dispatches.data ?? []).flatMap((r) => [
+      { name: r.driver_name_snapshot, role: "차주" },
+      { name: r.contact_name, role: "담당자" },
+    ]),
+    ...(vehicles.data ?? []).map((r) => ({ name: r.driver_name, role: "차주" })),
+  ])
 }

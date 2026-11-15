@@ -187,7 +187,7 @@ function saleClientFilter(filters: SearchFilters): string {
 export function skippedKinds(filters: SearchFilters): { sale: boolean; expense: boolean; dispatch: boolean } {
   return {
     sale: Boolean(filters.category || filters.contact),
-    expense: Boolean(filters.clientId || filters.unpaid || filters.contact),
+    expense: Boolean(filters.clientId || filters.unpaid || filters.contact || filters.person),
     dispatch: Boolean(filters.category || filters.unpaid),
   }
 }
@@ -212,6 +212,7 @@ export async function searchLedgerEntries(
   let expenses = supabase.from("expenses").select(EXPENSE_ENTRY_COLUMNS).is("deleted_at", null)
   if (filters.clientId) sales = sales.or(saleClientFilter(filters))
   if (filters.unpaid) sales = sales.eq("payment_status", "UNPAID")
+  if (filters.person) sales = sales.eq("source_minor", filters.person)
   if (filters.category) expenses = expenses.eq("category_minor", filters.category)
   if (query) {
     sales = sales.or(
@@ -274,6 +275,7 @@ export async function searchLedgerAmounts(
       let q = supabase.from("sales").select("sale_date, supply_amount, payment_status").is("deleted_at", null)
       if (filters.clientId) q = q.or(saleClientFilter(filters))
       if (filters.unpaid) q = q.eq("payment_status", "UNPAID")
+      if (filters.person) q = q.eq("source_minor", filters.person)
       if (query) q = q.or(appendClientIdFilter(buildIlikeOrFilter(["origin", "destination", "source_major", "source_sub", "source_minor", "billing_entity_name", "memo"], query), clientIds))
       return q.order("id").range(a, b)
     }),

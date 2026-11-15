@@ -21,7 +21,7 @@ export function SearchBox({
   query: string
   tab?: string
   period?: { from: string; to: string } | null
-  filters?: { clientId?: string; clientName?: string; category?: string; unpaid?: boolean; contact?: string }
+  filters?: { clientId?: string; clientName?: string; category?: string; unpaid?: boolean; contact?: string; person?: string }
 }) {
   const inputRef = useRef<HTMLInputElement>(null)
 
