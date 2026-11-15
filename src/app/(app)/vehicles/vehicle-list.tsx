@@ -311,18 +311,21 @@ function VehicleRowItem({
         onClick={onOpen}
       />
       <div className="pointer-events-none min-w-0 flex-1">
-        <p className="flex items-center gap-1.5 text-[15px] leading-snug font-semibold">
+        {/* 첫 줄: 차주 이름(굵게) + 차량번호(보통 굵기) — 사람 이름으로 찾기 쉽게 */}
+        <p className="flex min-w-0 items-center gap-2 text-[15px] leading-snug">
+          <span className="shrink-0 font-semibold">{vehicle.driver_name}</span>
           <span className="truncate">{vehicle.plate_no}</span>
           {vehicleSpecLabel(vehicle) ? (
-            <span className="shrink-0 rounded-md border px-1.5 text-[11px] font-normal text-muted-foreground">
+            <span className="shrink-0 rounded-md border px-1.5 text-[11px] text-muted-foreground">
               {vehicleSpecLabel(vehicle)}
             </span>
           ) : null}
         </p>
-        <p className="mt-0.5 truncate text-[13px] text-muted-foreground">
-          {vehicle.driver_name}
-          {vehicle.driver_phone ? ` · ${formatPhoneNumber(vehicle.driver_phone)}` : ""}
-        </p>
+        {vehicle.driver_phone ? (
+          <p className="mt-0.5 truncate text-[13px] text-muted-foreground tabular-nums">
+            {formatPhoneNumber(vehicle.driver_phone)}
+          </p>
+        ) : null}
       </div>
 
       {reorder ? (
