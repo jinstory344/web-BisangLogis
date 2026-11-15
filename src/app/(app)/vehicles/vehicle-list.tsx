@@ -141,7 +141,6 @@ export function VehicleList({
       }
       disabled={isPending}
       onOpen={() => setSheetVehicle(vehicle)}
-      onTogglePin={() => handleTogglePin(vehicle)}
       onCopy={() => handleCopy(vehicle)}
     />
   )
@@ -240,9 +239,26 @@ export function VehicleList({
                   items={recentDispatches[sheetVehicle.id]?.items ?? []}
                   total={recentDispatches[sheetVehicle.id]?.total ?? 0}
                 />
-                <Button variant="outline" className="h-11" asChild>
-                  <Link href={`/vehicles/${sheetVehicle.id}/edit`}>수정</Link>
-                </Button>
+                <div className="grid grid-cols-2 gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="h-11"
+                    disabled={isPending}
+                    onClick={() => {
+                      handleTogglePin(sheetVehicle)
+                      setSheetVehicle(null)
+                    }}
+                  >
+                    <Star
+                      className={cn(sheetVehicle.pin_order !== null && "fill-amber-400 text-amber-400")}
+                    />
+                    {sheetVehicle.pin_order !== null ? "고정 풀기" : "위에 고정"}
+                  </Button>
+                  <Button variant="outline" className="h-11" asChild>
+                    <Link href={`/vehicles/${sheetVehicle.id}/edit`}>수정</Link>
+                  </Button>
+                </div>
                 <Button
                   type="button"
                   variant="ghost"
@@ -290,7 +306,6 @@ function VehicleRowItem({
   reorder,
   disabled,
   onOpen,
-  onTogglePin,
   onCopy,
 }: {
   vehicle: VehicleRow
@@ -298,7 +313,6 @@ function VehicleRowItem({
   reorder: { canUp: boolean; canDown: boolean; onMove: (delta: -1 | 1) => void } | null
   disabled: boolean
   onOpen: () => void
-  onTogglePin: () => void
   onCopy: () => void
 }) {
   return (
@@ -313,7 +327,11 @@ function VehicleRowItem({
       <div className="pointer-events-none min-w-0 flex-1">
         {/* 첫 줄: 차주 이름(굵게) + 차량번호(보통 굵기) — 사람 이름으로 찾기 쉽게 */}
         <p className="flex min-w-0 items-center gap-2 text-[15px] leading-snug">
-          <span className="shrink-0 font-semibold">{vehicle.driver_name}</span>
+          {/* 이름 칸 폭을 3글자에 맞춰 두어 외자·두 글자 이름이어도 차량번호가 같은 자리에서 시작한다 */}
+          {isPinned ? (
+            <Star aria-label="고정" className="-mr-1 size-3 shrink-0 fill-amber-400 text-amber-400" />
+          ) : null}
+          <span className="min-w-[3.2em] shrink-0 font-semibold">{vehicle.driver_name}</span>
           <span className="truncate text-[14px]">{vehicle.plate_no}</span>
           {vehicleSpecLabel(vehicle) ? (
             <span className="shrink-0 rounded-md border px-1.5 text-[11px] text-muted-foreground">
@@ -354,28 +372,16 @@ function VehicleRowItem({
           </Button>
         </div>
       ) : (
-        <>
-          <button
-            type="button"
-            aria-label={isPinned ? "고정 풀기" : "위에 고정"}
-            aria-pressed={isPinned}
-            disabled={disabled}
-            onClick={onTogglePin}
-            className="relative flex size-10 items-center justify-center rounded-lg text-muted-foreground"
-          >
-            <Star className={cn("size-5", isPinned && "fill-amber-400 text-amber-400")} />
-          </button>
-          <Button
-            type="button"
-            variant="secondary"
-            size="icon"
-            className="relative size-10"
-            aria-label={`${vehicle.plate_no} 복사`}
-            onClick={onCopy}
-          >
-            <Copy />
-          </Button>
-        </>
+        <Button
+          type="button"
+          variant="secondary"
+          size="icon"
+          className="relative size-10"
+          aria-label={`${vehicle.plate_no} 복사`}
+          onClick={onCopy}
+        >
+          <Copy />
+        </Button>
       )}
     </li>
   )
