@@ -12,7 +12,15 @@ import { SEARCH_MAX_LENGTH } from "@/lib/search"
  * 돋보기를 누를 때 열어 둔 키보드(임시 입력칸)에서 커서를 넘겨받고 임시 입력칸은 지운다.
  * 결과를 보고 있을 때(검색어가 있을 때)는 키보드가 목록을 가리지 않게 커서를 두지 않는다.
  */
-export function SearchBox({ query }: { query: string }) {
+export function SearchBox({
+  query,
+  tab = "all",
+  period = null,
+}: {
+  query: string
+  tab?: string
+  period?: { from: string; to: string } | null
+}) {
   const inputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -23,6 +31,14 @@ export function SearchBox({ query }: { query: string }) {
 
   return (
     <form action="/search" role="search" className="relative mt-1 mb-1">
+      {/* 검색어를 바꿔도 고른 탭·기간은 그대로 */}
+      {tab !== "all" ? <input type="hidden" name="tab" value={tab} /> : null}
+      {period ? (
+        <>
+          <input type="hidden" name="from" value={period.from} />
+          <input type="hidden" name="to" value={period.to} />
+        </>
+      ) : null}
       <Search
         aria-hidden
         className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"

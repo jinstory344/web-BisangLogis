@@ -1,12 +1,15 @@
 import { describe, expect, it } from "vitest"
 
 import {
-  groupDispatchesByMonth,
+  groupByMonth,
   appendClientIdFilter,
   buildIlikeOrFilter,
   formatSearchDate,
   normalizeSearchQuery,
-  pickSearchTab,
+  parseSearchPeriod,
+  parseSearchTab,
+  periodLabel,
+  presetRange,
   SEARCH_MAX_LENGTH,
   sumDispatchTotals,
 } from "./search"
@@ -56,16 +59,34 @@ describe("appendClientIdFilter", () => {
   })
 })
 
-describe("pickSearchTab", () => {
-  it("주소에 고른 탭이 있으면 그것", () => {
-    expect(pickSearchTab("dispatch", 5, 0)).toBe("dispatch")
-    expect(pickSearchTab("ledger", 0, 5)).toBe("ledger")
+describe("parseSearchTab", () => {
+  it("모르는 값·예전 ledger는 전체, 배차는 그대로", () => {
+    expect(parseSearchTab("dispatch")).toBe("dispatch")
+    expect(parseSearchTab("ledger")).toBe("all")
+    expect(parseSearchTab(undefined)).toBe("all")
+    expect(parseSearchTab("sale")).toBe("sale")
   })
+})
 
-  it("모르는 값이면 결과에 따라 고른다", () => {
-    expect(pickSearchTab("x", 0, 3)).toBe("dispatch")
-    expect(pickSearchTab(undefined, 2, 3)).toBe("ledger")
-    expect(pickSearchTab(undefined, 0, 0)).toBe("ledger")
+describe("기간", () => {
+  const today = "2026-01-15"
+  it("빠른 기간 범위 (해 넘김 포함)", () => {
+    expect(presetRange("thisMonth", today)).toEqual({ from: "2026-01-01", to: "2026-01-31" })
+    expect(presetRange("lastMonth", today)).toEqual({ from: "2025-12-01", to: "2025-12-31" })
+    expect(presetRange("last3Months", today)).toEqual({ from: "2025-11-01", to: "2026-01-31" })
+    expect(presetRange("lastYear", today)).toEqual({ from: "2025-01-01", to: "2025-12-31" })
+    expect(presetRange("all", today)).toBeNull()
+  })
+  it("주소의 기간 읽기", () => {
+    expect(parseSearchPeriod("2026-11-15", "2026-10-20")).toEqual({ from: "2026-10-20", to: "2026-11-15" })
+    expect(parseSearchPeriod("2026-1-1", "2026-02-01")).toBeNull()
+    expect(parseSearchPeriod(undefined, "2026-02-01")).toBeNull()
+  })
+  it("칩 글자", () => {
+    expect(periodLabel(null, today)).toBe("기간")
+    expect(periodLabel({ from: "2026-01-01", to: "2026-12-31" }, today)).toBe("올해")
+    expect(periodLabel({ from: "2026-01-03", to: "2026-01-10" }, today)).toBe("1/3 ~ 1/10")
+    expect(periodLabel({ from: "2025-10-20", to: "2026-01-10" }, today)).toBe("25/10/20 ~ 1/10")
   })
 })
 
@@ -92,16 +113,12 @@ describe("formatSearchDate", () => {
   })
 })
 
-describe("groupDispatchesByMonth", () => {
-  it("달이 바뀔 때마다 묶고 운임을 더한다", () => {
-    const groups = groupDispatchesByMonth([
-      { dispatch_date: "2026-11-16", freight_amount: 320000 },
-      { dispatch_date: "2026-11-05", freight_amount: null },
-      { dispatch_date: "2026-10-31", freight_amount: 100000 },
-    ])
-    expect(groups.map((g) => [g.label, g.rows.length, g.freight])).toEqual([
-      ["2026년 11월", 2, 320000],
-      ["2026년 10월", 1, 100000],
+describe("groupByMonth", () => {
+  it("달이 바뀔 때마다 묶는다", () => {
+    const groups = groupByMonth(["2026-11-16", "2026-11-05", "2026-10-31"], (d) => d)
+    expect(groups.map((g) => [g.label, g.rows.length])).toEqual([
+      ["2026년 11월", 2],
+      ["2026년 10월", 1],
     ])
   })
 })

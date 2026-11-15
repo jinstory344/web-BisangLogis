@@ -16,7 +16,7 @@ interface PageResult<T> {
 }
 
 /** 한 번에 PAGE_SIZE행씩 끝까지 읽는다 (행 수 제한 때문에 합계가 잘리는 일을 막는다). */
-async function fetchAllRows<T>(
+export async function fetchAllRows<T>(
   fetchPage: (from: number, to: number) => PromiseLike<PageResult<T>>
 ): Promise<T[]> {
   const rows: T[] = []
@@ -177,68 +177,84 @@ export async function fetchLedgerEntries(
 }
 
 /** 검색 결과 최대 건수 (매출·지출 각각) */
-export const SEARCH_RESULT_LIMIT = 100
+/** 통합검색에서 종류마다 가져오는 최대 건수 (달별로 접어 보여 준다) */
+export const SEARCH_RESULT_LIMIT = 300
 
 /**
- * 기간과 상관없이 매출·지출을 글자로 찾는다 (최근 날짜부터, 종류마다 최대 SEARCH_RESULT_LIMIT건).
+ * 통합검색: 매출·지출을 글자와 기간으로 찾는다 (최근 날짜부터, 종류마다 최대 SEARCH_RESULT_LIMIT건).
  * 매출: 상차지·하차지·출처·계산서정보·비고 / 지출: 대분류·소분류·사용처·비고.
  * clientIds가 있으면 그 거래처에 연결된 매출도 함께 찾는다(거래처 이름 검색).
- * query는 normalizeSearchQuery로 다듬은 값이어야 한다.
+ * query가 비어 있으면 글자 조건 없이 기간만으로 찾는다. query는 normalizeSearchQuery로 다듬은 값이어야 한다.
  */
 export async function searchLedgerEntries(
   supabase: Supabase,
   query: string,
-  clientIds: readonly string[] = []
+  clientIds: readonly string[] = [],
+  period: { from: string; to: string } | null = null
 ): Promise<{ entries: DayLedgerEntry[]; isTruncated: boolean }> {
-  const [sales, expenses] = await Promise.all([
-    supabase
-      .from("sales")
-      .select(SALE_ENTRY_COLUMNS)
-      .is("deleted_at", null)
-      .or(
-        appendClientIdFilter(
-          buildIlikeOrFilter(
-            [
-              "origin",
-              "destination",
-              "source_major",
-              "source_sub",
-              "source_minor",
-              "billing_entity_name",
-              "memo",
-            ],
-            query
-          ),
-          clientIds
-        )
-      )
-      .order("sale_date", { ascending: false })
-      .order("id")
-      .limit(SEARCH_RESULT_LIMIT),
-    supabase
-      .from("expenses")
-      .select(EXPENSE_ENTRY_COLUMNS)
-      .is("deleted_at", null)
-      .or(
+  let sales = supabase.from("sales").select(SALE_ENTRY_COLUMNS).is("deleted_at", null)
+  let expenses = supabase.from("expenses").select(EXPENSE_ENTRY_COLUMNS).is("deleted_at", null)
+  if (query) {
+    sales = sales.or(
+      appendClientIdFilter(
         buildIlikeOrFilter(
-          ["category_major", "category_minor", "vendor", "memo"],
+          ["origin", "destination", "source_major", "source_sub", "source_minor", "billing_entity_name", "memo"],
           query
-        )
+        ),
+        clientIds
       )
-      .order("expense_date", { ascending: false })
-      .order("id")
-      .limit(SEARCH_RESULT_LIMIT),
+    )
+    expenses = expenses.or(buildIlikeOrFilter(["category_major", "category_minor", "vendor", "memo"], query))
+  }
+  if (period) {
+    sales = sales.gte("sale_date", period.from).lte("sale_date", period.to)
+    expenses = expenses.gte("expense_date", period.from).lte("expense_date", period.to)
+  }
+  const [saleRes, expenseRes] = await Promise.all([
+    sales.order("sale_date", { ascending: false }).order("id").limit(SEARCH_RESULT_LIMIT),
+    expenses.order("expense_date", { ascending: false }).order("id").limit(SEARCH_RESULT_LIMIT),
   ])
-  if (sales.error) throw new Error(sales.error.message)
-  if (expenses.error) throw new Error(expenses.error.message)
+  if (saleRes.error) throw new Error(saleRes.error.message)
+  if (expenseRes.error) throw new Error(expenseRes.error.message)
 
-  const saleRows = sales.data ?? []
-  const expenseRows = expenses.data ?? []
+  const saleRows = saleRes.data ?? []
+  const expenseRows = expenseRes.data ?? []
   return {
     entries: [...saleRows.map(toSaleEntry), ...expenseRows.map(toExpenseEntry)],
     isTruncated:
       saleRows.length >= SEARCH_RESULT_LIMIT ||
       expenseRows.length >= SEARCH_RESULT_LIMIT,
+  }
+}
+
+/** 통합검색 합계·건수: 목록은 SEARCH_RESULT_LIMIT건까지만 보여도 합계는 조건에 맞는 전부로 센다(금액 칸만 읽음). */
+export async function searchLedgerTotals(
+  supabase: Supabase,
+  query: string,
+  clientIds: readonly string[],
+  period: { from: string; to: string } | null
+): Promise<{ sale: { count: number; amount: number; unpaid: number }; expense: { count: number; amount: number } }> {
+  const [saleRows, expenseRows] = await Promise.all([
+    fetchAllRows((a, b) => {
+      let q = supabase.from("sales").select("supply_amount, payment_status").is("deleted_at", null)
+      if (query) q = q.or(appendClientIdFilter(buildIlikeOrFilter(["origin", "destination", "source_major", "source_sub", "source_minor", "billing_entity_name", "memo"], query), clientIds))
+      if (period) q = q.gte("sale_date", period.from).lte("sale_date", period.to)
+      return q.order("id").range(a, b)
+    }),
+    fetchAllRows((a, b) => {
+      let q = supabase.from("expenses").select("amount").is("deleted_at", null)
+      if (query) q = q.or(buildIlikeOrFilter(["category_major", "category_minor", "vendor", "memo"], query))
+      if (period) q = q.gte("expense_date", period.from).lte("expense_date", period.to)
+      return q.order("id").range(a, b)
+    }),
+  ])
+  return {
+    sale: {
+      count: saleRows.length,
+      amount: saleRows.reduce((sum, r) => sum + r.supply_amount, 0),
+      unpaid: saleRows.reduce((sum, r) => sum + (r.payment_status === "UNPAID" ? r.supply_amount : 0), 0),
+    },
+    expense: { count: expenseRows.length, amount: expenseRows.reduce((sum, r) => sum + r.amount, 0) },
   }
 }
 
