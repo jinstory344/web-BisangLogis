@@ -46,7 +46,7 @@ const STATUS_CHIPS = [
 
 /**
  * 모바일 매출 목록 상단: 요약(매출/입금/미입금) · "전체 N건 + 입금 상태 펼침 목록" · 접히는 자세한 필터.
- * 금액은 전부 공급가액 기준이고, 세액을 포함한 합계금액은 요약 아래 한 줄로만 알려 준다.
+ * 금액은 전부 공급가액 기준이다.
  * 데스크톱은 기존 SalesFilters를 그대로 쓴다.
  */
 export function SalesMobileControls({
@@ -109,10 +109,6 @@ export function SalesMobileControls({
           size="lg"
         />
       </div>
-
-      <p className="text-[13px] text-muted-foreground">
-        세액 포함 합계금액 {formatKRW(summary.all.totalAmount)}
-      </p>
 
       {/* 입금 상태 칩 줄 대신 "전체 28건 + [입금 상태 ▾]" (칩 줄을 밀면 화면 전체가 밀리던 문제) */}
       <ListPickerRow
