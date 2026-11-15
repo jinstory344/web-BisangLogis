@@ -314,7 +314,7 @@ function VehicleRowItem({
         {/* 첫 줄: 차주 이름(굵게) + 차량번호(보통 굵기) — 사람 이름으로 찾기 쉽게 */}
         <p className="flex min-w-0 items-center gap-2 text-[15px] leading-snug">
           <span className="shrink-0 font-semibold">{vehicle.driver_name}</span>
-          <span className="truncate">{vehicle.plate_no}</span>
+          <span className="truncate text-[14px]">{vehicle.plate_no}</span>
           {vehicleSpecLabel(vehicle) ? (
             <span className="shrink-0 rounded-md border px-1.5 text-[11px] text-muted-foreground">
               {vehicleSpecLabel(vehicle)}
