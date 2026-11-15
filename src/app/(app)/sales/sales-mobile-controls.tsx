@@ -1,14 +1,13 @@
 "use client"
 
 import { SlidersHorizontal } from "lucide-react"
-import Link from "next/link"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { useState } from "react"
 
 import { PAID_TEXT_CLASS } from "@/components/dispatches/payment-badge"
-import { chipVariants } from "@/components/form/choice-chips"
 import { DateRangeInputs } from "@/components/list/date-range-inputs"
-import { LIST_CHIP_CLASS, LIST_SUB_STICKY_CLASS } from "@/components/list/list-page-head"
+import { LIST_SUB_STICKY_CLASS } from "@/components/list/list-page-head"
+import { ListPickerRow } from "@/components/list/list-picker-row"
 import { TotalsRow } from "@/components/list/totals-row"
 import {
   Select,
@@ -41,7 +40,7 @@ const STATUS_CHIPS = [
 ] as const
 
 /**
- * 모바일 매출 목록 상단: 달 이동 · 요약(매출/입금/미입금) · 입금여부 칩 · 접히는 필터.
+ * 모바일 매출 목록 상단: 요약(매출/입금/미입금) · "전체 N건 + 입금 상태 펼침 목록" · 접히는 자세한 필터.
  * 금액은 전부 공급가액 기준이고, 세액을 포함한 합계금액은 요약 아래 한 줄로만 알려 준다.
  * 데스크톱은 기존 SalesFilters를 그대로 쓴다.
  */
@@ -107,35 +106,31 @@ export function SalesMobileControls({
         세액 포함 합계금액 {formatKRW(summary.all.totalAmount)}
       </p>
 
-      <div className="flex items-center gap-2">
-        <div className="no-scrollbar -ml-4 flex min-w-0 flex-1 gap-2 overflow-x-auto py-0.5 pl-4 [contain:inline-size]">
-          {STATUS_CHIPS.map((chip) => (
-            <Link
-              key={chip.key}
-              // 거르기 칩 화면을 미리 받아 두어 누르면 바로 뜨게 한다
-              prefetch
-              href={hrefWith({ payment_status: chip.value })}
-              aria-current={paymentStatus === chip.value ? "true" : undefined}
-              className={cn(chipVariants({ selected: paymentStatus === chip.value }), LIST_CHIP_CLASS)}
-            >
-              {chip.label} {summary[chip.key].count}
-            </Link>
-          ))}
-        </div>
-        <button
-          type="button"
-          aria-expanded={isFilterOpen}
-          onClick={() => setIsFilterOpen((open) => !open)}
-          className={cn(
-            chipVariants({ selected: activeFilterCount > 0 }),
-            LIST_CHIP_CLASS,
-            "shrink-0"
-          )}
-        >
-          <SlidersHorizontal />
-          필터{activeFilterCount > 0 ? ` ${activeFilterCount}` : ""}
-        </button>
-      </div>
+      {/* 입금 상태 칩 줄 대신 "전체 28건 + [입금 상태 ▾]" (칩 줄을 밀면 화면 전체가 밀리던 문제) */}
+      <ListPickerRow
+        placeholder="입금 상태"
+        value={paymentStatus}
+        options={STATUS_CHIPS.map((chip) => ({
+          value: chip.value,
+          label: chip.label,
+          count: summary[chip.key].count,
+          href: hrefWith({ payment_status: chip.value }),
+        }))}
+        trailing={
+          <button
+            type="button"
+            aria-expanded={isFilterOpen}
+            aria-label={`자세한 필터${activeFilterCount > 0 ? ` ${activeFilterCount}개 사용 중` : ""}`}
+            onClick={() => setIsFilterOpen((open) => !open)}
+            className={cn(
+              "relative flex size-9 items-center justify-center rounded-full",
+              activeFilterCount > 0 ? "bg-foreground text-background" : "bg-muted text-foreground"
+            )}
+          >
+            <SlidersHorizontal className="size-4" />
+          </button>
+        }
+      />
 
       {isFilterOpen ? (
         <div className="flex flex-col gap-3 rounded-xl border p-3">

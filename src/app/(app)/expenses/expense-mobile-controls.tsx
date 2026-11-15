@@ -1,14 +1,13 @@
 "use client"
 
 import { SlidersHorizontal } from "lucide-react"
-import Link from "next/link"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { useState } from "react"
 
-import { chipVariants } from "@/components/form/choice-chips"
 import { DateRangeInputs } from "@/components/list/date-range-inputs"
 import { EXPENSE_TEXT_CLASS } from "@/components/ledger/colors"
-import { LIST_CHIP_CLASS, LIST_SUB_STICKY_CLASS } from "@/components/list/list-page-head"
+import { LIST_SUB_STICKY_CLASS } from "@/components/list/list-page-head"
+import { ListPickerRow } from "@/components/list/list-picker-row"
 import { TotalsRow } from "@/components/list/totals-row"
 import {
   Select,
@@ -38,7 +37,7 @@ interface ExpenseMobileControlsProps {
 }
 
 /**
- * 모바일 지출 목록 상단: 달 이동 · 지출 합계(+대분류별 금액) · 대분류 칩 · 접히는 필터.
+ * 모바일 지출 목록 상단: 지출 합계 · "전체 N건 + 분류 펼침 목록" · 접히는 자세한 필터(소분류·기간).
  * 칩은 대분류로 목록을 거르고, 필터 안에는 소분류와 기간 직접 지정이 있다.
  * 데스크톱은 기존 ExpenseFilters를 그대로 쓴다.
  */
@@ -103,35 +102,29 @@ export function ExpenseMobileControls({
         />
       </div>
 
-      <div className="flex items-center gap-2">
-        <div className="no-scrollbar -ml-4 flex min-w-0 flex-1 gap-2 overflow-x-auto py-0.5 pl-4 [contain:inline-size]">
-          {chips.map((chip) => (
-            <Link
-              key={chip.value || "all"}
-              // 거르기 칩 화면을 미리 받아 두어 누르면 바로 뜨게 한다
-              prefetch
-              href={hrefWith({ category_major: chip.value, category_minor: "" })}
-              aria-current={categoryMajor === chip.value ? "true" : undefined}
-              className={cn(chipVariants({ selected: categoryMajor === chip.value }), LIST_CHIP_CLASS)}
-            >
-              {chip.label}
-            </Link>
-          ))}
-        </div>
-        <button
-          type="button"
-          aria-expanded={isFilterOpen}
-          onClick={() => setIsFilterOpen((open) => !open)}
-          className={cn(
-            chipVariants({ selected: activeFilterCount > 0 }),
-            LIST_CHIP_CLASS,
-            "shrink-0"
-          )}
-        >
-          <SlidersHorizontal />
-          필터{activeFilterCount > 0 ? ` ${activeFilterCount}` : ""}
-        </button>
-      </div>
+      {/* 대분류 칩 줄 대신 "전체 35건 + [분류 ▾]" (칩 줄을 밀면 화면 전체가 밀리던 문제) */}
+      <ListPickerRow
+        placeholder="분류"
+        value={categoryMajor}
+        options={chips.map((chip) => ({
+          ...chip,
+          href: hrefWith({ category_major: chip.value, category_minor: "" }),
+        }))}
+        trailing={
+          <button
+            type="button"
+            aria-expanded={isFilterOpen}
+            aria-label={`자세한 필터${activeFilterCount > 0 ? ` ${activeFilterCount}개 사용 중` : ""}`}
+            onClick={() => setIsFilterOpen((open) => !open)}
+            className={cn(
+              "relative flex size-9 items-center justify-center rounded-full",
+              activeFilterCount > 0 ? "bg-foreground text-background" : "bg-muted text-foreground"
+            )}
+          >
+            <SlidersHorizontal className="size-4" />
+          </button>
+        }
+      />
 
       {isFilterOpen ? (
         <div className="flex flex-col gap-3 rounded-xl border p-3">

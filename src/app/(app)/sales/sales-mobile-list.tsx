@@ -109,9 +109,8 @@ export function SalesMobileList({
           </>
         ) : (
           <>
-            <span className="text-xs text-muted-foreground">
-              {sales.length}건
-            </span>
+            {/* 건수는 위 "전체 N건" 줄에 있다 */}
+            <span aria-hidden />
             <button
               type="button"
               className="px-2 py-1.5 text-sm font-medium text-muted-foreground"
