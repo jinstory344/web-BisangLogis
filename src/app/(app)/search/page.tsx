@@ -1,7 +1,7 @@
 import { ChevronLeft } from "lucide-react"
 import Link from "next/link"
 import { redirect } from "next/navigation"
-import type { ReactNode } from "react"
+import { Suspense, type ReactNode } from "react"
 
 import {
   EXPENSE_TEXT_CLASS,
@@ -18,6 +18,7 @@ import {
   normalizeSearchQuery,
   parseSearchFilters,
   parseSmartQuery,
+  periodLabel,
   parseSearchPeriod,
   parseSearchTab,
   SEARCH_TABS,
@@ -30,6 +31,8 @@ import { cn } from "@/lib/utils"
 import { SEARCH_RESULT_LIMIT, searchLedgerAmounts, searchLedgerEntries } from "../ledger-data"
 
 import { PeriodFilter } from "./period-filter"
+import { QuickCards } from "./quick-cards"
+import { RememberSearch } from "./recent-searches"
 import { SearchBox } from "./search-box"
 import { EntityCards } from "./entity-cards"
 import { searchClientIds, searchDispatchAmounts, searchDispatches, searchEntities } from "./search-data"
@@ -109,12 +112,19 @@ export default async function SearchPage({
     </div>
   )
   let fixedPart: ReactNode = chips()
+  // 아무것도 안 쳤을 때: 이번 달 숫자가 보이는 빠른 조건 + 최근에 찾은 조건
   let list: ReactNode = (
-    <p className="py-12 text-center text-sm text-muted-foreground">
-      지명·거래처·차량번호·차주·분류·비고로 찾거나,
-      <br />
-      기간만 골라서 그 기간의 매출·지출·배차를 모아 볼 수 있어요.
-    </p>
+    <Suspense
+      fallback={
+        <div aria-hidden className="flex flex-col gap-2 pt-8">
+          {Array.from({ length: 3 }, (_, i) => (
+            <div key={i} className="h-16 animate-pulse rounded-xl bg-muted/40" />
+          ))}
+        </div>
+      }
+    >
+      <QuickCards />
+    </Suspense>
   )
 
   if (query || period || hasFilters(filters)) {
@@ -250,12 +260,27 @@ export default async function SearchPage({
       )
 
       const what = query ? `"${query}"(으)로 찾은 ` : "이 조건의 "
+      const recentLabel =
+        [
+          query,
+          filters.clientName,
+          filters.category,
+          period ? periodLabel(period, today) : null,
+          filters.unpaid ? "미입금만" : null,
+        ]
+          .filter(Boolean)
+          .join(" · ") || "전체"
       list = (
+        <>
+        <RememberSearch
+          search={{ href: searchHref(query, tab, period, filters), label: recentLabel, kind: tabLabel }}
+        />
         <SearchResultList
           items={items}
           clientNameMap={dispatch.clientNameMap}
           emptyMessage={`${what}${tab === "all" ? "결과가" : `${tabLabel}이(가)`} 없습니다.`}
         />
+        </>
       )
     } catch (error) {
       list = (
