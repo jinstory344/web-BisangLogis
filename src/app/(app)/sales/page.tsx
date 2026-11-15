@@ -1,6 +1,8 @@
 import Link from "next/link"
+import { Suspense } from "react"
 import { Plus } from "lucide-react"
 
+import { ListBodyFallback } from "@/components/list/list-body-fallback"
 import { ListPageHead } from "@/components/list/list-page-head"
 import { SummaryMonthNav } from "@/components/list/summary-month-nav"
 import { Button } from "@/components/ui/button"
@@ -32,6 +34,38 @@ export default async function SalesPage({
   searchParams: Promise<SalesSearchParams>
 }) {
   const params = await searchParams
+  const defaultRange = getCurrentMonthRangeInSeoul()
+  const from = params.from || defaultRange.from
+  const to = params.to || defaultRange.to
+
+  return (
+    <div className="px-4 pb-4 md:p-6">
+      <div className="flex flex-col md:gap-2">
+        <ListPageHead
+          title="매출"
+          desktopTitle="매출 관리"
+          desktopAction={
+            <Button asChild size="sm">
+              <Link href="/sales/new">
+                <Plus />
+                매출 등록
+              </Link>
+            </Button>
+          }
+          monthNav={<SummaryMonthNav from={from} to={to} />}
+          statsHref={`/stats?type=sales&from=${isAllPeriod({ from, to }) ? defaultRange.from : from}`}
+        />
+
+        {/* 제목·달 이동은 바로 보내고, 합계·목록은 데이터를 읽는 대로 채운다(스트리밍) */}
+        <Suspense fallback={<ListBodyFallback labels={["매출", "입금", "미입금"]} />}>
+          <SalesBody params={params} />
+        </Suspense>
+      </div>
+    </div>
+  )
+}
+
+async function SalesBody({ params }: { params: SalesSearchParams }) {
   const defaultRange = getCurrentMonthRangeInSeoul()
   const from = params.from || defaultRange.from
   const to = params.to || defaultRange.to
@@ -101,24 +135,7 @@ export default async function SalesPage({
   const totalPages = Math.max(1, Math.ceil((count ?? 0) / PAGE_SIZE))
 
   return (
-    <div className="px-4 pb-4 md:p-6">
-      <div className="flex flex-col md:gap-2">
-        <ListPageHead
-          title="매출"
-          desktopTitle="매출 관리"
-          desktopAction={
-            <Button asChild size="sm">
-              <Link href="/sales/new">
-                <Plus />
-                매출 등록
-              </Link>
-            </Button>
-          }
-          monthNav={<SummaryMonthNav from={from} to={to} />}
-          statsHref={`/stats?type=sales&from=${isAllPeriod({ from, to }) ? defaultRange.from : from}`}
-        />
-
-          <MonthSwipe className="flex flex-col gap-3 md:gap-4">
+    <MonthSwipe className="flex flex-col gap-3 md:gap-4">
           {reconciliationMismatch ? (
             <div className="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
               검산 경고: 개별 건 합계와 표시된 합계가 일치하지 않습니다. 새로고침
@@ -161,7 +178,5 @@ export default async function SalesPage({
             />
           )}
           </MonthSwipe>
-      </div>
-    </div>
   )
 }

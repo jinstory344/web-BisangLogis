@@ -1,6 +1,8 @@
 import Link from "next/link"
+import { Suspense } from "react"
 import { Plus } from "lucide-react"
 
+import { ListBodyFallback } from "@/components/list/list-body-fallback"
 import { ListPageHead } from "@/components/list/list-page-head"
 import { SummaryMonthNav } from "@/components/list/summary-month-nav"
 import { Button } from "@/components/ui/button"
@@ -33,6 +35,38 @@ export default async function ExpensesPage({
   searchParams: Promise<ExpenseSearchParams>
 }) {
   const params = await searchParams
+  const defaultRange = getCurrentMonthRangeInSeoul()
+  const from = params.from || defaultRange.from
+  const to = params.to || defaultRange.to
+
+  return (
+    <div className="px-4 pb-4 md:p-6">
+      <div className="flex flex-col md:gap-2">
+        <ListPageHead
+          title="지출"
+          desktopTitle="지출 관리"
+          desktopAction={
+            <Button asChild size="sm">
+              <Link href="/expenses/new">
+                <Plus />
+                지출 등록
+              </Link>
+            </Button>
+          }
+          monthNav={<SummaryMonthNav from={from} to={to} />}
+          statsHref={`/stats?type=expenses&from=${isAllPeriod({ from, to }) ? defaultRange.from : from}`}
+        />
+
+        {/* 제목·달 이동은 바로 보내고, 합계·목록은 데이터를 읽는 대로 채운다(스트리밍) */}
+        <Suspense fallback={<ListBodyFallback labels={["지출 합계"]} />}>
+          <ExpensesBody params={params} />
+        </Suspense>
+      </div>
+    </div>
+  )
+}
+
+async function ExpensesBody({ params }: { params: ExpenseSearchParams }) {
   const defaultRange = getCurrentMonthRangeInSeoul()
   const from = params.from || defaultRange.from
   const to = params.to || defaultRange.to
@@ -92,24 +126,7 @@ export default async function ExpensesPage({
   const totalPages = Math.max(1, Math.ceil((count ?? 0) / PAGE_SIZE))
 
   return (
-    <div className="px-4 pb-4 md:p-6">
-      <div className="flex flex-col md:gap-2">
-        <ListPageHead
-          title="지출"
-          desktopTitle="지출 관리"
-          desktopAction={
-            <Button asChild size="sm">
-              <Link href="/expenses/new">
-                <Plus />
-                지출 등록
-              </Link>
-            </Button>
-          }
-          monthNav={<SummaryMonthNav from={from} to={to} />}
-          statsHref={`/stats?type=expenses&from=${isAllPeriod({ from, to }) ? defaultRange.from : from}`}
-        />
-
-          <MonthSwipe className="flex flex-col gap-3 md:gap-4">
+    <MonthSwipe className="flex flex-col gap-3 md:gap-4">
           <div className="hidden md:block">
             <ExpenseFilters
               from={from}
@@ -145,7 +162,5 @@ export default async function ExpensesPage({
             />
           )}
           </MonthSwipe>
-      </div>
-    </div>
   )
 }

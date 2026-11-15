@@ -1,7 +1,9 @@
 import Link from "next/link"
+import { Suspense } from "react"
 
 import { SearchButton } from "@/components/layout/search-button"
 
+import { ListBodyFallback } from "@/components/list/list-body-fallback"
 import { MonthSwipe } from "@/components/list/month-swipe"
 import { SummaryMonthNav } from "@/components/list/summary-month-nav"
 
@@ -88,20 +90,29 @@ export default async function StatsPage({
           </nav>
         </div>
 
-        <MonthSwipe>
-        {type === "sales" ? (
-          <SalesSummary from={from} monthNav="hidden" />
-        ) : type === "expenses" ? (
-          <ExpenseSummary
-            from={from}
-            categories={(await getExpenseCategories()).tree}
-            monthNav="hidden"
-          />
-        ) : (
-          <DispatchSummary from={from} monthNav="hidden" />
-        )}
-        </MonthSwipe>
+        {/* 제목·달·종류 탭은 바로 보내고, 집계는 데이터를 읽는 대로 채운다(스트리밍) */}
+        <Suspense key={`${type}-${from}`} fallback={<ListBodyFallback />}>
+          <StatsBody type={type} from={from} />
+        </Suspense>
       </div>
     </div>
+  )
+}
+
+async function StatsBody({ type, from }: { type: StatType; from: string }) {
+  return (
+    <MonthSwipe>
+      {type === "sales" ? (
+        <SalesSummary from={from} monthNav="hidden" />
+      ) : type === "expenses" ? (
+        <ExpenseSummary
+          from={from}
+          categories={(await getExpenseCategories()).tree}
+          monthNav="hidden"
+        />
+      ) : (
+        <DispatchSummary from={from} monthNav="hidden" />
+      )}
+    </MonthSwipe>
   )
 }
