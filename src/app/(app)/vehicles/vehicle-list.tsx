@@ -1,7 +1,16 @@
 "use client"
 
 import Link from "next/link"
-import { ArrowDownWideNarrow, ArrowUpNarrowWide, ChevronDown, ChevronUp, Copy, Star } from "lucide-react"
+import {
+  ArrowDownWideNarrow,
+  ArrowUpNarrowWide,
+  ChevronDown,
+  ChevronUp,
+  Copy,
+  Ellipsis,
+  Star,
+  Trash2,
+} from "lucide-react"
 import { useState, useTransition } from "react"
 import { toast } from "sonner"
 
@@ -17,6 +26,12 @@ import {
 } from "@/components/ui/alert-dialog"
 import { CallButton } from "@/components/common/call-button"
 import { Button } from "@/components/ui/button"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import {
   Sheet,
   SheetContent,
@@ -202,7 +217,46 @@ export function VehicleList({
         <SheetContent side="bottom" className="max-h-[90svh] gap-0 overflow-y-auto pb-6">
           {sheetVehicle ? (
             <>
-              <SheetHeader className="pr-12">
+              {/* ✕ 옆 ⋯ 메뉴: 가끔 쓰는 고정·삭제는 한 번 더 눌러야 나오게(실수 방지) */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    type="button"
+                    aria-label="더보기"
+                    className="absolute top-3 right-12 flex size-8 items-center justify-center rounded-md bg-muted text-foreground/80"
+                  >
+                    <Ellipsis className="size-5" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-44">
+                  <DropdownMenuItem
+                    className="h-10"
+                    disabled={isPending}
+                    onSelect={() => {
+                      handleTogglePin(sheetVehicle)
+                      setSheetVehicle(null)
+                    }}
+                  >
+                    <Star
+                      className={cn(sheetVehicle.pin_order !== null && "fill-amber-400 text-amber-400")}
+                    />
+                    {sheetVehicle.pin_order !== null ? "고정 풀기" : "위에 고정"}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem className="h-10" onSelect={() => handleCopy(sheetVehicle)}>
+                    <Copy />
+                    복사
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    className="h-10"
+                    variant="destructive"
+                    onSelect={() => handleDeleteClick(sheetVehicle)}
+                  >
+                    <Trash2 />
+                    삭제
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+              <SheetHeader className="pr-24">
                 <SheetTitle>{sheetVehicle.plate_no}</SheetTitle>
                 <div className="flex items-center justify-between gap-2">
                   <SheetDescription>
@@ -239,33 +293,8 @@ export function VehicleList({
                   items={recentDispatches[sheetVehicle.id]?.items ?? []}
                   total={recentDispatches[sheetVehicle.id]?.total ?? 0}
                 />
-                <div className="grid grid-cols-2 gap-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="h-11"
-                    disabled={isPending}
-                    onClick={() => {
-                      handleTogglePin(sheetVehicle)
-                      setSheetVehicle(null)
-                    }}
-                  >
-                    <Star
-                      className={cn(sheetVehicle.pin_order !== null && "fill-amber-400 text-amber-400")}
-                    />
-                    {sheetVehicle.pin_order !== null ? "고정 풀기" : "위에 고정"}
-                  </Button>
-                  <Button variant="outline" className="h-11" asChild>
-                    <Link href={`/vehicles/${sheetVehicle.id}/edit`}>수정</Link>
-                  </Button>
-                </div>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  className="h-10 text-destructive hover:text-destructive"
-                  onClick={() => handleDeleteClick(sheetVehicle)}
-                >
-                  삭제
+                <Button variant="outline" className="h-11" asChild>
+                  <Link href={`/vehicles/${sheetVehicle.id}/edit`}>수정</Link>
                 </Button>
               </div>
             </>
