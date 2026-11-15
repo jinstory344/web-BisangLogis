@@ -16,6 +16,7 @@ import { pickStatusTotals, summarizeByPaymentStatus } from "@/lib/sales-list"
 import { SalesFilters } from "./sales-filters"
 import { SalesList } from "./sales-list"
 import { SalesMobileControls } from "./sales-mobile-controls"
+import { getSaleSources } from "./sources"
 
 const PAGE_SIZE = 50
 
@@ -23,6 +24,7 @@ interface SalesSearchParams {
   from?: string
   to?: string
   source_major?: string
+  source_sub?: string
   payment_status?: string
   payment_method?: string
   page?: string
@@ -70,6 +72,8 @@ async function SalesBody({ params }: { params: SalesSearchParams }) {
   const from = params.from || defaultRange.from
   const to = params.to || defaultRange.to
   const sourceMajor = params.source_major ?? ""
+  // 하위분류(카카오톡 › 스마일 등)는 대분류를 고른 때만
+  const sourceSub = sourceMajor ? (params.source_sub ?? "") : ""
   const paymentStatus = params.payment_status ?? ""
   const paymentMethod = params.payment_method ?? ""
   const page = Math.max(1, Number(params.page) || 1)
@@ -84,6 +88,7 @@ async function SalesBody({ params }: { params: SalesSearchParams }) {
     .lte("sale_date", to)
 
   if (sourceMajor) baseQuery = baseQuery.eq("source_major", sourceMajor)
+  if (sourceSub) baseQuery = baseQuery.eq("source_sub", sourceSub)
   if (paymentStatus) {
     baseQuery = baseQuery.eq("payment_status", paymentStatus as PaymentStatus)
   }
@@ -104,6 +109,7 @@ async function SalesBody({ params }: { params: SalesSearchParams }) {
     .lte("sale_date", to)
 
   if (sourceMajor) summaryQuery = summaryQuery.eq("source_major", sourceMajor)
+  if (sourceSub) summaryQuery = summaryQuery.eq("source_sub", sourceSub)
   if (paymentMethod) {
     summaryQuery = summaryQuery.eq(
       "payment_method",
@@ -115,12 +121,14 @@ async function SalesBody({ params }: { params: SalesSearchParams }) {
   const [
     { data, error, count },
     { data: summaryRows, error: summaryError },
+    { tree: sourceTree },
   ] = await Promise.all([
     baseQuery
       .order("sale_date", { ascending: false })
       .order("created_at", { ascending: false })
       .range(rangeStart, rangeEnd),
     summaryQuery,
+    getSaleSources(),
   ])
 
   const statusSummary = summarizeByPaymentStatus(summaryRows ?? [])
@@ -158,6 +166,8 @@ async function SalesBody({ params }: { params: SalesSearchParams }) {
               from={from}
               to={to}
               sourceMajor={sourceMajor}
+              sourceSub={sourceSub}
+              sourceTree={sourceTree}
               paymentStatus={paymentStatus}
               paymentMethod={paymentMethod}
               summary={statusSummary}
@@ -170,7 +180,7 @@ async function SalesBody({ params }: { params: SalesSearchParams }) {
             </p>
           ) : (
             <SalesList
-              key={`${from}-${to}-${sourceMajor}-${paymentStatus}-${paymentMethod}-${page}`}
+              key={`${from}-${to}-${sourceMajor}-${sourceSub}-${paymentStatus}-${paymentMethod}-${page}`}
               sales={(data ?? []) as SaleRow[]}
               summary={summary}
               page={page}

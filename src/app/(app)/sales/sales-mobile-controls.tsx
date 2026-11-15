@@ -17,6 +17,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { PAYMENT_METHOD_OPTIONS } from "@/lib/constants/payment-method"
+import type { SaleSourceTree } from "@/lib/constants/sale-sources"
 import { SOURCE_MAJOR_OPTIONS } from "@/lib/constants/source"
 import { isAllPeriod, isFullMonthRange } from "@/lib/date"
 import { formatKRW } from "@/lib/money"
@@ -27,6 +28,10 @@ interface SalesMobileControlsProps {
   from: string
   to: string
   sourceMajor: string
+  /** 출처 하위분류 (카카오톡 › 스마일 등) */
+  sourceSub: string
+  /** 출처 목록 (DB) — 대분류·하위분류 선택지 */
+  sourceTree: SaleSourceTree
   paymentStatus: string
   paymentMethod: string
   /** 기간·출처·지불방법 필터 안에서 입금여부와 상관없이 센 요약 */
@@ -48,6 +53,8 @@ export function SalesMobileControls({
   from,
   to,
   sourceMajor,
+  sourceSub,
+  sourceTree,
   paymentStatus,
   paymentMethod,
   summary,
@@ -60,7 +67,8 @@ export function SalesMobileControls({
   const isMonth = isFullMonthRange({ from, to }) || isAllPeriod({ from, to })
   // 기간 직접 지정, 출처, 지불방법 중 하나라도 걸려 있으면 필터 버튼에 표시한다.
   const activeFilterCount =
-    (isMonth ? 0 : 1) + (sourceMajor ? 1 : 0) + (paymentMethod ? 1 : 0)
+    (isMonth ? 0 : 1) + (sourceMajor ? 1 : 0) + (sourceSub ? 1 : 0) + (paymentMethod ? 1 : 0)
+  const subOptions = sourceTree.find((node) => node.major === sourceMajor)?.minors ?? []
   const [isFilterOpen, setIsFilterOpen] = useState(activeFilterCount > 0)
 
   function hrefWith(next: Record<string, string>) {
@@ -138,7 +146,8 @@ export function SalesMobileControls({
             <Select
               value={sourceMajor || "ALL"}
               onValueChange={(value) =>
-                pushParams({ source_major: value === "ALL" ? "" : value })
+                // 대분류를 바꾸면 하위분류는 새로 고른다
+                pushParams({ source_major: value === "ALL" ? "" : value, source_sub: "" })
               }
             >
               <SelectTrigger className="h-11 w-full" aria-label="출처">
@@ -146,7 +155,7 @@ export function SalesMobileControls({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="ALL">출처 전체</SelectItem>
-                {SOURCE_MAJOR_OPTIONS.map((major) => (
+                {(sourceTree.length > 0 ? sourceTree.map((node) => node.major) : SOURCE_MAJOR_OPTIONS).map((major) => (
                   <SelectItem key={major} value={major}>
                     {major}
                   </SelectItem>
@@ -173,6 +182,26 @@ export function SalesMobileControls({
               </SelectContent>
             </Select>
           </div>
+
+          {/* 대분류에 하위분류가 있으면(카카오톡 › 스마일 등) 그다음 칸으로 고른다 */}
+          {subOptions.length > 0 ? (
+            <Select
+              value={sourceSub || "ALL"}
+              onValueChange={(value) => pushParams({ source_sub: value === "ALL" ? "" : value })}
+            >
+              <SelectTrigger className="h-11 w-full" aria-label="출처 하위분류">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ALL">{sourceMajor} 전체</SelectItem>
+                {subOptions.map((sub) => (
+                  <SelectItem key={sub} value={sub}>
+                    {sub}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          ) : null}
 
           {/* 달을 넘기면 입력값도 새 기간으로 바뀌도록 기간이 바뀔 때 새로 만든다. */}
           <DateRangeInputs
