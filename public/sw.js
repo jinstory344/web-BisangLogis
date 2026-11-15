@@ -1,7 +1,7 @@
 /*
  * 비상로지스 서비스 워커 — 홈 화면 앱을 열 때 바로 뜨게 한다.
  *
- * - HOME("/", 주소 뒤 조건 없음): 서버가 0.3초 안에 답하면 새 화면을, 늦으면(서버가 잠에서 깨는 중 등)
+ * - HOME과 주요 목록 화면(SAVED_PAGES, 주소 뒤 조건 없음): 서버가 0.3초 안에 답하면 새 화면을, 늦으면(서버가 잠에서 깨는 중 등)
  *   폰에 저장해 둔 마지막 화면을 먼저 보여 준다. 새 화면은 받는 대로 저장해 두고,
  *   옛 화면으로 열렸으면 RefreshIfStale(앱 쪽)이 최신 숫자로 다시 그린다.
  *   (빠른 답을 먼저 쓰므로 배포 직후 새로고침이 옛 화면에 갇히지 않는다)
@@ -10,6 +10,8 @@
  * 로그아웃하면 앱 쪽에서 저장해 둔 화면을 지운다(clearPageCache).
  */
 const PAGE_CACHE = "bisang-pages-v1"
+/** 앱을 바로 이 화면으로 열 때(새로고침·앱 다시 켜기) 저장해 둔 화면을 쓸 수 있는 곳 */
+const SAVED_PAGES = ["/", "/sales", "/expenses", "/dispatches", "/stats", "/vehicles", "/clients"]
 const ASSET_CACHE = "bisang-assets-v1"
 /** 서버가 이 안에 답하면 저장해 둔 화면 대신 새 화면을 쓴다 */
 const FAST_ENOUGH_MS = 300
@@ -48,16 +50,17 @@ self.addEventListener("fetch", (event) => {
     return
   }
 
-  if (request.mode === "navigate" && url.pathname === "/" && url.search === "") {
+  if (request.mode === "navigate" && SAVED_PAGES.includes(url.pathname) && url.search === "") {
+    const key = url.pathname
     event.respondWith(
       (async () => {
         const cache = await caches.open(PAGE_CACHE)
-        const cached = await cache.match("/")
+        const cached = await cache.match(key)
         const fresh = fetch(request)
           .then((response) => {
             // 로그인 화면으로 넘어간 응답(로그아웃 상태)은 저장하지 않는다.
             if (response.ok && !response.redirected && response.type === "basic") {
-              event.waitUntil(cache.put("/", response.clone()))
+              event.waitUntil(cache.put(key, response.clone()))
             }
             return response
           })

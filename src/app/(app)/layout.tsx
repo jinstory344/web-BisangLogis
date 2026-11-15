@@ -1,6 +1,7 @@
 import type { ReactNode } from "react"
 
 import { AppShell } from "@/components/layout/app-shell"
+import { RefreshIfStale } from "@/components/layout/service-worker"
 import { createClient } from "@/lib/supabase/server"
 
 export default async function AppLayout({
@@ -16,6 +17,8 @@ export default async function AppLayout({
 
   return (
     <AppShell userEmail={typeof email === "string" ? email : null}>
+      {/* 폰에 저장해 둔 옛 화면(서비스 워커)으로 열렸으면 바로 최신으로 다시 그린다 — 어느 화면이든 */}
+      <RefreshIfStale renderedAt={Date.now()} />
       {children}
     </AppShell>
   )
