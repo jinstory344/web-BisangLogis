@@ -24,7 +24,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { CallButton } from "@/components/common/call-button"
+import { ContactRow } from "@/components/common/contact-row"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -258,35 +258,21 @@ export function VehicleList({
               </DropdownMenu>
               <SheetHeader className="pr-24">
                 <SheetTitle>{sheetVehicle.driver_name}</SheetTitle>
-                <div className="flex items-center justify-between gap-2">
-                  <SheetDescription>
-                    {[
-                      sheetVehicle.plate_no,
-                      sheetVehicle.driver_phone ? formatPhoneNumber(sheetVehicle.driver_phone) : null,
-                      vehicleSpecLabel(sheetVehicle) || null,
-                    ]
-                      .filter(Boolean)
-                      .join(" · ")}
-                  </SheetDescription>
-                  {sheetVehicle.driver_phone ? (
-                    <CallButton
-                      phone={sheetVehicle.driver_phone}
-                      label={`${sheetVehicle.driver_name}에게 전화`}
-                    />
-                  ) : null}
-                </div>
+                <SheetDescription>
+                  {["차량", sheetVehicle.plate_no, vehicleSpecLabel(sheetVehicle) || null].filter(Boolean).join(" · ")}
+                </SheetDescription>
               </SheetHeader>
               <div className="flex flex-col gap-3 px-4">
-                <dl className="flex flex-col gap-1.5 text-sm">
-                  {[{ label: "메모", value: sheetVehicle.memo }]
-                    .filter((d) => d.value)
-                    .map((d) => (
-                      <div key={d.label} className="flex gap-3">
-                        <dt className="w-16 shrink-0 text-muted-foreground">{d.label}</dt>
-                        <dd className="min-w-0 flex-1 break-words whitespace-pre-wrap">{d.value}</dd>
-                      </div>
-                    ))}
-                </dl>
+                {/* 거래처 판처럼: 연락처 줄(위아래 선) — 전화 버튼은 줄 끝, 위쪽 ✕와 떨어진 자리 */}
+                <div className="border-y">
+                  <ContactRow label="차주" name={sheetVehicle.driver_name} phone={sheetVehicle.driver_phone} />
+                  {sheetVehicle.memo ? (
+                    <div className="flex min-h-11 items-center gap-3 border-t py-1.5 text-sm">
+                      <span className="w-14 shrink-0 text-muted-foreground">메모</span>
+                      <span className="min-w-0 flex-1 break-words whitespace-pre-wrap">{sheetVehicle.memo}</span>
+                    </div>
+                  ) : null}
+                </div>
                 <VehicleDispatchHistory
                   key={sheetVehicle.id}
                   plateNo={sheetVehicle.plate_no}
