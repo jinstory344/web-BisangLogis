@@ -72,6 +72,8 @@ describe("expensesToSheet", () => {
       amount: 80000,
       payment_method: null,
       installment_months: null,
+      installment_group_id: null,
+      installment_no: null,
       vendor: null,
       has_tax_invoice: true,
       memo: "메모",

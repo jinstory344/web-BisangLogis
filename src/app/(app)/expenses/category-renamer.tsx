@@ -51,8 +51,8 @@ export function CategoryRenamer({
     <div className="flex flex-col gap-1.5">
       <p className="text-sm font-medium">{label}</p>
       <div className="flex items-center gap-2">
+        {/* 바로 포커스하지 않는다 — 순서만 옮길 때 폰 키보드가 순서 버튼을 가리지 않게 */}
         <Input
-          autoFocus
           value={name}
           maxLength={MAX_CATEGORY_NAME_LENGTH + 10}
           aria-label={label}

@@ -46,7 +46,9 @@ import {
   type DeleteCategoryInput,
   type ExpenseCategoryTree,
 } from "@/lib/constants/expense-categories"
-import { getTodayInSeoul } from "@/lib/date"
+import { formatMonthDay, getTodayInSeoul } from "@/lib/date"
+import { isInstallment, splitInstallments } from "@/lib/installment"
+import { formatKRW } from "@/lib/money"
 import {
   buildExpenseFormData,
   expenseFormSchema,
@@ -58,6 +60,7 @@ import { CategoryPickerSheet } from "./category-picker-sheet"
 import {
   addExpenseCategoryAction,
   deleteExpenseCategoryAction,
+  moveExpenseCategoryAction,
   renameExpenseCategoryAction,
 } from "./category-actions"
 
@@ -72,6 +75,8 @@ interface ExpenseFormProps {
   categories: ExpenseCategoryTree
   /** 분류를 직접 추가·삭제할 수 있는지 (분류 테이블을 읽었을 때만 true) */
   categoriesEditable: boolean
+  /** 할부 묶음을 고치는 중이면 그 회차 수 (아니면 0) */
+  installmentGroupSize?: number
 }
 
 export function ExpenseForm({
@@ -80,6 +85,7 @@ export function ExpenseForm({
   submitLabel,
   categories,
   categoriesEditable,
+  installmentGroupSize = 0,
 }: ExpenseFormProps) {
   const [state, formAction, isPending] = useActionState(action, {
     error: null,
@@ -96,6 +102,17 @@ export function ExpenseForm({
   const [autoOpenKeypad] = useState(() => defaultValues.amount === 0)
   const categoryMajor = form.watch("category_major")
   const paymentMethod = form.watch("payment_method")
+  const installmentMonths = form.watch("installment_months")
+  const watchedAmount = form.watch("amount")
+  const watchedDate = form.watch("expense_date")
+  // 할부면 달마다 어떻게 나뉘는지 미리 보여 준다 (저장도 같은 함수로 나눈다)
+  const installmentParts =
+    paymentMethod === "CARD" && isInstallment(installmentMonths) && watchedAmount > 0 && watchedDate
+      ? splitInstallments(
+          { expense_date: watchedDate, amount: watchedAmount, installment_months: installmentMonths },
+          ""
+        )
+      : null
 
   // 분류 목록은 서버에서 받은 것으로 시작하고, 추가·삭제하면 서버가 돌려준 새 목록으로 바꾼다.
   const [tree, setTree] = useState<ExpenseCategoryTree>(categories)
@@ -153,6 +170,16 @@ export function ExpenseForm({
       }
     }
     toast.success("분류 이름을 바꿨습니다")
+    return null
+  }
+
+  async function moveCategory(
+    target: { major: string; minor?: string },
+    direction: -1 | 1
+  ): Promise<string | null> {
+    const result = await moveExpenseCategoryAction({ ...target, direction })
+    if (!result.ok) return result.error
+    setTree(result.tree)
     return null
   }
 
@@ -264,6 +291,7 @@ export function ExpenseForm({
                 onAddMinor={addMinor}
                 onRemove={setPendingDelete}
                 onRename={renameCategory}
+                onMove={moveCategory}
                 invalid={Boolean(
                   form.formState.errors.category_major ||
                     form.formState.errors.category_minor
@@ -319,9 +347,9 @@ export function ExpenseForm({
               <FormItem>
                 <FormLabel>할부</FormLabel>
                 <Select
-                  value={field.value ? String(field.value) : ""}
+                  value={isInstallment(field.value) ? String(field.value) : "0"}
                   onValueChange={(v) =>
-                    field.onChange(v ? Number(v) : undefined)
+                    field.onChange(Number(v) >= 2 ? Number(v) : undefined)
                   }
                 >
                   <FormControl>
@@ -330,7 +358,8 @@ export function ExpenseForm({
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    {Array.from({ length: 12 }, (_, i) => i + 1).map(
+                    <SelectItem value="0">일시불</SelectItem>
+                    {Array.from({ length: 11 }, (_, i) => i + 2).map(
                       (month) => (
                         <SelectItem key={month} value={String(month)}>
                           {month}개월
@@ -339,6 +368,24 @@ export function ExpenseForm({
                     )}
                   </SelectContent>
                 </Select>
+                {installmentParts ? (
+                  <p className="text-sm text-muted-foreground">
+                    매달 {formatKRW(installmentParts[installmentParts.length - 1].amount)}씩{" "}
+                    {installmentParts.length}번,{" "}
+                    {formatMonthDay(installmentParts[0].expense_date)}~
+                    {formatMonthDay(installmentParts[installmentParts.length - 1].expense_date)} 지출로
+                    나눠 잡혀요
+                    {installmentParts[0].amount !== installmentParts[1].amount
+                      ? ` (첫 회 ${formatKRW(installmentParts[0].amount)})`
+                      : ""}
+                    .
+                  </p>
+                ) : null}
+                {installmentGroupSize > 0 ? (
+                  <p className="text-sm text-muted-foreground">
+                    {installmentGroupSize}회 할부 전체를 고치는 중이에요. 금액은 총액, 날짜는 첫 회차예요.
+                  </p>
+                ) : null}
                 <FormMessage />
               </FormItem>
             )}

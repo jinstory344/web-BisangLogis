@@ -142,6 +142,10 @@ export type ExpenseRow = BaseColumns & {
   amount: number
   payment_method: ExpensePaymentMethod | null
   installment_months: number | null
+  /** 같은 할부의 회차 줄끼리 같은 값 (일시불은 null) */
+  installment_group_id: string | null
+  /** 할부 회차 1..installment_months (일시불은 null) */
+  installment_no: number | null
   vendor: string | null
   has_tax_invoice: boolean
   memo: string | null

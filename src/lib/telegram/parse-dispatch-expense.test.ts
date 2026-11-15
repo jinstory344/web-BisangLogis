@@ -133,9 +133,21 @@ describe("parseExpenseLines", () => {
         category_minor: "주유비",
         amount: 80_000,
         payment_method: "CARD",
+        installment_months: null,
         memo: null,
       },
     })
+  })
+
+  it("할부: 6개월 / 할부6 / 할부 6개월, 카드만, 2~12개월", () => {
+    for (const line of ["60만 6개월", "60만 할부6", "60만 할부 6개월", "60만 카드 6개월할부"]) {
+      const r = parseExpenseLines([line, "주유"], { today, categories })
+      expect(r.ok && r.value).toMatchObject({ amount: 600_000, payment_method: "CARD", installment_months: 6 })
+    }
+    expect(parseExpenseLines(["60만 현금 6개월", "주유"], { today, categories }).ok).toBe(false)
+    // 1개월·13개월은 할부로 보지 않아 금액 줄이 아니게 되고 → 비고로 간다
+    const one = parseExpenseLines(["60만", "주유", "1개월"], { today, categories })
+    expect(one.ok && one.value).toMatchObject({ installment_months: null, memo: "1개월" })
   })
 
   it("결제방법·날짜·비고", () => {

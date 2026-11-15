@@ -250,3 +250,40 @@ export function nextSortOrder(existing: readonly number[]): number {
   const regular = existing.filter((value) => value < CUSTOM_MINOR_SORT_ORDER)
   return (regular.length > 0 ? Math.max(...regular) : 0) + 10
 }
+
+/** 순서 바꾸기: 대분류(minor 없음) 또는 그 대분류 안의 소분류를 한 칸 앞(-1)·뒤(+1)로 */
+export type MoveCategoryInput = { major: string; minor?: string; direction: -1 | 1 }
+
+/**
+ * 순서를 바꾼 뒤 같은 단계 이름들의 새 순서. 옮길 수 없으면(맨 앞·맨 뒤, 없는 이름, "기타") 오류.
+ * "기타"는 항상 소분류 맨 뒤라서 순서에 넣지 않는다(돌려주는 목록에도 없다).
+ */
+export function moveCategory(
+  tree: ExpenseCategoryTree,
+  input: MoveCategoryInput
+): { ok: true; names: string[] } | { ok: false; error: string } {
+  const siblings =
+    input.minor === undefined
+      ? getMajors(tree)
+      : getMinorsOf(tree, input.major).filter((name) => name !== CUSTOM_MINOR)
+  const name = input.minor ?? input.major
+  const from = siblings.indexOf(name)
+  if (from < 0) return { ok: false, error: "분류를 찾을 수 없어요" }
+  const to = from + input.direction
+  if (to < 0 || to >= siblings.length) {
+    return { ok: false, error: input.direction < 0 ? "이미 맨 앞이에요" : "이미 맨 뒤예요" }
+  }
+  const names = [...siblings]
+  ;[names[from], names[to]] = [names[to], names[from]]
+  return { ok: true, names }
+}
+
+/** 클라이언트에서 온 순서 바꾸기 값의 모양 확인 */
+export function parseMoveCategoryInput(input: unknown): MoveCategoryInput | null {
+  if (typeof input !== "object" || input === null) return null
+  const value = input as Record<string, unknown>
+  if (typeof value.major !== "string") return null
+  if (value.direction !== -1 && value.direction !== 1) return null
+  if (value.minor !== undefined && typeof value.minor !== "string") return null
+  return { major: value.major, minor: value.minor as string | undefined, direction: value.direction }
+}

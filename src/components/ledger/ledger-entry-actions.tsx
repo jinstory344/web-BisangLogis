@@ -187,6 +187,9 @@ export function LedgerEntryActions({
               {deleteTarget?.kind === "expense" ? "지출 내역을" : "매출 건을"} 삭제할까요?
             </AlertDialogTitle>
             <AlertDialogDescription>
+              {deleteTarget?.kind === "expense" && deleteTarget.row.installment_group_id
+                ? `할부 ${deleteTarget.row.installment_months}회차가 모두 함께 지워져요. `
+                : ""}
               휴지통으로 이동하며, 30일 내 복구할 수 있습니다.
             </AlertDialogDescription>
           </AlertDialogHeader>

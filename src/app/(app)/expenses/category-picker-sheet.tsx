@@ -21,6 +21,7 @@ import { cn } from "@/lib/utils"
 
 import { CategoryAdder } from "./category-adder"
 import { CategoryRenamer } from "./category-renamer"
+import { moveBounds, OrderMover } from "./order-mover"
 
 /** 이름을 바꾸는 중인 분류 (minor가 없으면 대분류) */
 type RenameTarget = { major: string; minor?: string }
@@ -42,6 +43,8 @@ interface CategoryPickerSheetProps {
   onRemove: (target: DeleteCategoryInput) => void
   /** 이름 바꾸기. 성공하면 null, 실패하면 오류 문장 */
   onRename: (target: RenameTarget, name: string) => Promise<string | null>
+  /** 순서 바꾸기 (한 칸 앞 -1 / 뒤 +1). 성공하면 null, 실패하면 오류 문장 */
+  onMove: (target: RenameTarget, direction: -1 | 1) => Promise<string | null>
   invalid?: boolean
 }
 
@@ -62,6 +65,7 @@ export function CategoryPickerSheet({
   onAddMinor,
   onRemove,
   onRename,
+  onMove,
   invalid = false,
 }: CategoryPickerSheetProps) {
   const [open, setOpen] = useState(false)
@@ -239,7 +243,18 @@ export function CategoryPickerSheet({
           </div>
 
           {isEditing && renaming ? (
-            <div className="p-4">
+            <div className="flex flex-col gap-4 p-4">
+              <OrderMover
+                key={`move/${renaming.major}/${renaming.minor ?? ""}`}
+                name={renaming.minor ?? renaming.major}
+                {...moveBounds(
+                  renaming.minor === undefined
+                    ? majors
+                    : getMinorsOf(tree, renaming.major).filter((n) => n !== CUSTOM_MINOR),
+                  renaming.minor ?? renaming.major
+                )}
+                onMove={(direction) => onMove(renaming, direction)}
+              />
               <CategoryRenamer
                 key={`${renaming.major}/${renaming.minor ?? ""}`}
                 current={renaming.minor ?? renaming.major}
@@ -258,7 +273,7 @@ export function CategoryPickerSheet({
           ) : isEditing ? (
             <div className="flex flex-col gap-3 p-4">
               <p className="text-xs text-muted-foreground">
-                이름을 누르면 바꿀 수 있어요. 대분류는 고른 칩을 한 번 더 누르세요.
+                이름을 누르면 이름을 바꾸거나 순서를 옮길 수 있어요. 대분류는 고른 칩을 한 번 더 누르세요.
               </p>
               {activeTab ? (
                 <CategoryAdder
@@ -283,7 +298,7 @@ export function CategoryPickerSheet({
           ) : (
             <p className="px-4 py-3 text-xs text-muted-foreground">
               {editable
-                ? "연필을 누르면 분류를 추가하거나 지우고, 이름을 바꿀 수 있어요."
+                ? "연필을 누르면 분류를 추가·삭제하고, 이름·순서를 바꿀 수 있어요."
                 : "소분류를 누르면 정해져요."}
             </p>
           )}

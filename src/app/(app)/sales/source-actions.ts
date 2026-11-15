@@ -4,8 +4,11 @@ import { revalidatePath } from "next/cache"
 
 import { recordAuditLog } from "@/lib/audit/log"
 import {
+  moveCategory,
   nextSortOrder,
+  parseMoveCategoryInput,
   type DeleteCategoryInput,
+  type MoveCategoryInput,
   type NewCategoryInput,
   type RenameCategoryInput,
 } from "@/lib/constants/expense-categories"
@@ -276,6 +279,36 @@ export async function renameSaleSourceAction(
   ])
 
   // 홈(장부)·검색·매출 목록에 출처가 보이므로 전체를 새로 그린다.
+  revalidatePath("/", "layout")
+  const next = await getSaleSources()
+  return { ok: true, tree: next.tree }
+}
+
+/** 매출 출처 순서 바꾸기: 대분류 또는 하위분류를 한 칸 앞·뒤로 (같은 단계 전체에 10, 20, 30… 다시 매김). */
+export async function moveSaleSourceAction(rawInput: MoveCategoryInput): Promise<SourceActionResult> {
+  const input = parseMoveCategoryInput(rawInput)
+  if (!input) return fail("입력값이 올바르지 않아요")
+
+  const { tree, editable } = await getSaleSources()
+  if (!editable) return fail("출처를 저장할 수 없는 상태예요. 관리자에게 문의하세요")
+
+  const moved = moveCategory(tree, input)
+  if (!moved.ok) return fail(moved.error.replace("분류를", "출처를"))
+
+  const supabase = await createClient()
+  for (const [index, name] of moved.names.entries()) {
+    let query = supabase
+      .from("sale_sources")
+      .update({ sort_order: (index + 1) * 10 })
+      .is("deleted_at", null)
+    query =
+      input.minor === undefined
+        ? query.eq("major", name).is("sub", null)
+        : query.eq("major", input.major).eq("sub", name)
+    const { error } = await query
+    if (error) return fail(`순서 저장 실패: ${error.message}`)
+  }
+
   revalidatePath("/", "layout")
   const next = await getSaleSources()
   return { ok: true, tree: next.tree }

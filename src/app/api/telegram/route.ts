@@ -1,3 +1,4 @@
+import { insertExpenseWithInstallments, softDeleteExpense } from "@/lib/expense-installment-db"
 import { revalidatePath } from "next/cache"
 import { NextResponse } from "next/server"
 
@@ -182,39 +183,38 @@ async function handleExpense(chatId: number, lines: string[]) {
   if (!parsed.ok) return askAgain(chatId, parsed.error)
   const expense = parsed.value
 
-  const insertValues = {
+  // 할부면 달마다 한 줄씩 나눠 저장한다(앱과 같은 함수). [취소]는 1회차 id로 — 할부 전체가 함께 취소된다.
+  const result = await insertExpenseWithInstallments(supabase, {
     expense_date: expense.expense_date,
     category_major: expense.category_major,
     category_minor: expense.category_minor,
     amount: expense.amount,
     payment_method: expense.payment_method,
-    installment_months: null,
+    installment_months: expense.installment_months,
     vendor: null,
     has_tax_invoice: false,
     memo: expense.memo,
-  }
-  const { data, error } = await supabase.from("expenses").insert(insertValues).select("id").single()
-  if (error || !data) {
-    await sendText(chatId, `⚠️ 저장하지 못했어요: ${error?.message ?? "알 수 없는 오류"}`)
+  })
+  if ("error" in result) {
+    await sendText(chatId, `⚠️ 저장하지 못했어요: ${result.error}`)
     return
   }
-  await recordAuditLog(supabase, {
-    tableName: "expenses",
-    recordId: data.id,
-    action: "CREATE",
-    afterData: insertValues,
-  })
   refreshApp("expenses")
 
+  const parts = result.rows
+  const last = parts[parts.length - 1]
   const text = [
     `✅ 지출 등록 (${shortDate(expense.expense_date)})`,
     `${expense.category_major} › ${expense.category_minor}`,
     `${formatKRW(expense.amount)} · ${EXPENSE_PAYMENT_METHOD_LABELS[expense.payment_method]}`,
+    parts.length > 1
+      ? `할부 ${parts.length}개월: 매달 ${formatKRW(last.amount)} (${shortDate(parts[0].expense_date)}~${shortDate(last.expense_date)})`
+      : null,
     expense.memo ? `비고: ${expense.memo}` : null,
   ]
     .filter((line) => line !== null)
     .join("\n")
-  await sendText(chatId, text, cancelButton("expenses", data.id))
+  await sendText(chatId, text, cancelButton("expenses", result.ids[0]))
 }
 
 async function handleDispatch(chatId: number, lines: string[]) {
@@ -350,7 +350,9 @@ async function handleCancel(query: NonNullable<TelegramUpdate["callback_query"]>
   try {
     const table = match[1] as CancelTable
     const supabase = createAdminClient()
-    await softDelete(supabase, table, match[2])
+    // 지출이 할부면 회차 전체를 함께 취소한다
+    if (table === "expenses") await softDeleteExpense(supabase, match[2])
+    else await softDelete(supabase, table, match[2])
     const removedVehicle = table === "dispatches" ? await removeVehicleAddedWith(match[2]) : false
     refreshApp(table)
     await callTelegram("editMessageText", {

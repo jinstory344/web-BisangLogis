@@ -23,6 +23,8 @@ const baseRow: ExpenseRow = {
   amount: 50000,
   payment_method: "CARD",
   installment_months: 3,
+  installment_group_id: null,
+  installment_no: null,
   vendor: "OO주유소",
   has_tax_invoice: true,
   memo: "만땅",

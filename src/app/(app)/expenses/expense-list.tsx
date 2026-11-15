@@ -1,5 +1,6 @@
 "use client"
 
+import { installmentLabel } from "@/lib/installment"
 import Link from "next/link"
 import { usePathname, useSearchParams } from "next/navigation"
 import { ChevronDown, ChevronRight } from "lucide-react"
@@ -196,6 +197,9 @@ export function ExpenseList({
                             {expense.payment_method
                               ? EXPENSE_PAYMENT_METHOD_LABELS[expense.payment_method]
                               : "-"}
+                            {installmentLabel(expense.installment_no, expense.installment_months)
+                              ? ` · ${installmentLabel(expense.installment_no, expense.installment_months)}`
+                              : ""}
                           </TableCell>
                           <TableCell className="max-w-40 truncate">
                             {expense.memo ?? "-"}
@@ -295,6 +299,9 @@ export function ExpenseList({
           <AlertDialogHeader>
             <AlertDialogTitle>지출 내역을 삭제할까요?</AlertDialogTitle>
             <AlertDialogDescription>
+              {deleteTarget?.installment_group_id
+                ? `할부 ${deleteTarget.installment_months}회차가 모두 함께 지워져요. `
+                : ""}
               휴지통으로 이동하며, 30일 내 복구할 수 있습니다.
             </AlertDialogDescription>
           </AlertDialogHeader>

@@ -5,6 +5,12 @@ import { redirect } from "next/navigation"
 
 import { recordAuditLog } from "@/lib/audit/log"
 import { isValidCategoryPairIn } from "@/lib/constants/expense-categories"
+import {
+  getExpenseGroupRows,
+  insertExpenseWithInstallments,
+  softDeleteExpense,
+} from "@/lib/expense-installment-db"
+import { checkInstallment, isInstallment } from "@/lib/installment"
 import { softDelete } from "@/lib/soft-delete/soft-delete"
 import { safeReturnPath } from "@/lib/return-to"
 import { createClient } from "@/lib/supabase/server"
@@ -42,30 +48,21 @@ export async function createExpenseAction(
   if (!(await hasValidCategory(values.category_major, values.category_minor))) {
     return { error: INVALID_CATEGORY_MESSAGE }
   }
+  const installmentError = checkInstallment(values.amount, values.installment_months)
+  if (installmentError) return { error: installmentError }
+
   const supabase = await createClient()
-  const { vendor, memo, ...rest } = values
-  const insertValues = {
+  const { vendor, memo, installment_months, ...rest } = values
+  // 할부(2개월 이상)면 달마다 한 줄씩 나눠 저장한다
+  const result = await insertExpenseWithInstallments(supabase, {
     ...rest,
+    installment_months: installment_months ?? null,
     vendor: vendor || null,
     memo: memo || null,
-  }
-
-  const { data, error } = await supabase
-    .from("expenses")
-    .insert(insertValues)
-    .select("id")
-    .single()
-
-  if (error) {
-    return { error: `저장 실패: ${error.message}` }
-  }
-
-  await recordAuditLog(supabase, {
-    tableName: "expenses",
-    recordId: data.id,
-    action: "CREATE",
-    afterData: insertValues,
   })
+  if ("error" in result) {
+    return { error: `저장 실패: ${result.error}` }
+  }
 
   revalidatePath("/expenses")
   revalidatePath("/")
@@ -87,21 +84,22 @@ export async function updateExpenseAction(
   }
 
   const values = parsed.data
+  const installmentError = checkInstallment(values.amount, values.installment_months)
+  if (installmentError) return { error: installmentError }
+
   const supabase = await createClient()
-  const { vendor, memo, ...rest } = values
+  const { vendor, memo, installment_months, ...rest } = values
   const updateValues = {
     ...rest,
+    installment_months: installment_months ?? null,
     vendor: vendor || null,
     memo: memo || null,
   }
 
-  const { data: before, error: fetchError } = await supabase
-    .from("expenses")
-    .select("*")
-    .eq("id", id)
-    .single()
-
-  if (fetchError || !before) {
+  // 할부 회차면 묶음 전체(수정 화면은 첫 회차 날짜·총액을 보여 준다)
+  const groupRows = await getExpenseGroupRows(supabase, id)
+  const before = groupRows.find((row) => row.id === id)
+  if (!before) {
     return { error: "대상 지출을 찾을 수 없습니다" }
   }
 
@@ -116,22 +114,39 @@ export async function updateExpenseAction(
     return { error: INVALID_CATEGORY_MESSAGE }
   }
 
-  const { error } = await supabase
-    .from("expenses")
-    .update(updateValues)
-    .eq("id", id)
+  if (before.installment_group_id || isInstallment(installment_months)) {
+    // 할부가 끼면 회차 줄들을 새로 만든다: 새 줄을 먼저 넣고(실패하면 예전 그대로) 예전 줄을 지운다.
+    const result = await insertExpenseWithInstallments(supabase, updateValues)
+    if ("error" in result) {
+      return { error: `저장 실패: ${result.error}` }
+    }
+    try {
+      for (const row of groupRows) await softDelete(supabase, "expenses", row.id)
+    } catch (error) {
+      return {
+        error: `새 내용은 저장했지만 예전 줄을 지우지 못했어요. 지출 목록에서 예전 건을 지워 주세요 (${
+          error instanceof Error ? error.message : "알 수 없는 오류"
+        })`,
+      }
+    }
+  } else {
+    const { error } = await supabase
+      .from("expenses")
+      .update(updateValues)
+      .eq("id", id)
 
-  if (error) {
-    return { error: `저장 실패: ${error.message}` }
+    if (error) {
+      return { error: `저장 실패: ${error.message}` }
+    }
+
+    await recordAuditLog(supabase, {
+      tableName: "expenses",
+      recordId: id,
+      action: "UPDATE",
+      beforeData: before,
+      afterData: { ...before, ...updateValues },
+    })
   }
-
-  await recordAuditLog(supabase, {
-    tableName: "expenses",
-    recordId: id,
-    action: "UPDATE",
-    beforeData: before,
-    afterData: { ...before, ...updateValues },
-  })
 
   revalidatePath("/expenses")
   // 비상(홈) 화면의 합계·목록·미입금도 바로 바뀌게
@@ -142,7 +157,8 @@ export async function updateExpenseAction(
 
 export async function deleteExpenseAction(id: string): Promise<void> {
   const supabase = await createClient()
-  await softDelete(supabase, "expenses", id)
+  // 할부 회차를 지우면 그 할부 전체가 함께 지워진다
+  await softDeleteExpense(supabase, id)
   revalidatePath("/expenses")
   // 비상(홈) 화면의 합계·목록·미입금도 바로 바뀌게
   revalidatePath("/")

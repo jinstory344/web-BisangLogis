@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation"
 
+import { loadExpenseForForm } from "@/lib/expense-installment-db"
 import { safeReturnPath } from "@/lib/return-to"
 import { createClient } from "@/lib/supabase/server"
 import { expenseRowToFormValues } from "@/lib/validations/expense"
@@ -20,16 +21,17 @@ export default async function EditExpensePage({
   const returnTo = safeReturnPath((await searchParams).returnTo)
   const supabase = await createClient()
   // 지출 한 건과 분류 목록은 서로 기다릴 필요가 없어 함께 읽는다.
-  const [{ data: expense }, categories] = await Promise.all([
-    supabase.from("expenses").select("*").eq("id", id).is("deleted_at", null).single(),
+  // 할부 회차면 묶음 전체를 한 건처럼(첫 회차 날짜·총액) 띄운다
+  const [loaded, categories] = await Promise.all([
+    loadExpenseForForm(supabase, id),
     getExpenseCategories(),
   ])
 
-  if (!expense) {
+  if (!loaded) {
     notFound()
   }
 
-  const defaultValues = expenseRowToFormValues(expense)
+  const defaultValues = expenseRowToFormValues(loaded.row)
 
   return (
     <div className="p-4 md:p-6">
@@ -41,6 +43,7 @@ export default async function EditExpensePage({
           submitLabel="저장"
           categories={categories.tree}
           categoriesEditable={categories.editable}
+          installmentGroupSize={loaded.row.installment_group_id ? loaded.groupSize : 0}
         />
       </div>
     </div>

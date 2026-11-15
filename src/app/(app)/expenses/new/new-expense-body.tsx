@@ -1,5 +1,6 @@
 import { CopyNotice } from "@/components/form/copy-notice"
 import { getTodayInSeoul } from "@/lib/date"
+import { loadExpenseForForm } from "@/lib/expense-installment-db"
 import { createClient } from "@/lib/supabase/server"
 import {
   buildExpenseCopyDefaults,
@@ -19,14 +20,10 @@ async function loadExpenseCopyDefaults(
   id: string
 ): Promise<ExpenseFormValues | null> {
   const supabase = await createClient()
-  const { data: expense } = await supabase
-    .from("expenses")
-    .select("*")
-    .eq("id", id)
-    .is("deleted_at", null)
-    .maybeSingle()
+  // 할부 회차를 복사하면 그 할부의 총액으로 (회차 금액을 다시 나누지 않게)
+  const loaded = await loadExpenseForForm(supabase, id)
 
-  return expense ? buildExpenseCopyDefaults(expense, getTodayInSeoul()) : null
+  return loaded ? buildExpenseCopyDefaults(loaded.row, getTodayInSeoul()) : null
 }
 
 /**

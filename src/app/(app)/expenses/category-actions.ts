@@ -9,9 +9,12 @@ import {
   checkRenameCategory,
   CUSTOM_MINOR,
   CUSTOM_MINOR_SORT_ORDER,
+  moveCategory,
   nextSortOrder,
+  parseMoveCategoryInput,
   type DeleteCategoryInput,
   type ExpenseCategoryTree,
+  type MoveCategoryInput,
   type NewCategoryInput,
   type RenameCategoryInput,
 } from "@/lib/constants/expense-categories"
@@ -287,6 +290,41 @@ export async function deleteExpenseCategoryAction(
   }
 
   revalidatePath("/expenses")
+  const next = await getExpenseCategories()
+  return { ok: true, tree: next.tree }
+}
+
+/**
+ * 지출 분류 순서 바꾸기: 대분류 또는 소분류를 한 칸 앞·뒤로. 같은 단계 전체에 10, 20, 30… 정렬값을 다시 매긴다
+ * ("기타"는 9999로 항상 맨 뒤라 건드리지 않는다). 이미 등록한 지출에는 영향이 없다.
+ */
+export async function moveExpenseCategoryAction(
+  rawInput: MoveCategoryInput
+): Promise<CategoryActionResult> {
+  const input = parseMoveCategoryInput(rawInput)
+  if (!input) return fail("입력값이 올바르지 않아요")
+
+  const { tree, editable } = await getExpenseCategories()
+  if (!editable) return fail("분류를 저장할 수 없는 상태예요. 관리자에게 문의하세요")
+
+  const moved = moveCategory(tree, input)
+  if (!moved.ok) return fail(moved.error)
+
+  const supabase = await createClient()
+  for (const [index, name] of moved.names.entries()) {
+    let query = supabase
+      .from("expense_categories")
+      .update({ sort_order: (index + 1) * 10 })
+      .is("deleted_at", null)
+    query =
+      input.minor === undefined
+        ? query.eq("major", name).is("minor", null)
+        : query.eq("major", input.major).eq("minor", name)
+    const { error } = await query
+    if (error) return fail(`순서 저장 실패: ${error.message}`)
+  }
+
+  revalidatePath("/", "layout")
   const next = await getExpenseCategories()
   return { ok: true, tree: next.tree }
 }

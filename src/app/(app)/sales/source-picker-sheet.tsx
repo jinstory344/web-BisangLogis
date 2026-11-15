@@ -32,10 +32,12 @@ import { cn } from "@/lib/utils"
 
 import { CategoryAdder } from "../expenses/category-adder"
 import { CategoryRenamer } from "../expenses/category-renamer"
+import { moveBounds, OrderMover } from "../expenses/order-mover"
 
 import {
   addSaleSourceAction,
   deleteSaleSourceAction,
+  moveSaleSourceAction,
   renameSaleSourceAction,
 } from "./source-actions"
 
@@ -94,8 +96,8 @@ export function SourcePickerSheet({
 
   function onMajorChip(name: string) {
     if (isEditing) {
-      // 편집 중에 이미 고른 대분류를 한 번 더 누르면 이름 바꾸기 ("거래처"는 못 바꾼다)
-      if (name === activeTab && name !== SOURCE_MAJOR_CLIENT) setRenaming({ major: name })
+      // 편집 중에 이미 고른 대분류를 한 번 더 누르면 이름·순서 바꾸기 ("거래처"는 순서만)
+      if (name === activeTab) setRenaming({ major: name })
       else {
         setTab(name)
         setRenaming(null)
@@ -137,6 +139,13 @@ export function SourcePickerSheet({
       else if (sub === target.minor) onPick(major, newName)
     }
     toast.success("출처 이름을 바꿨습니다")
+    return null
+  }
+
+  async function move(target: RenameTarget, direction: -1 | 1): Promise<string | null> {
+    const result = await moveSaleSourceAction({ ...target, direction })
+    if (!result.ok) return result.error
+    setTree(result.tree)
     return null
   }
 
@@ -330,20 +339,39 @@ export function SourcePickerSheet({
           ) : null}
 
           {isEditing && renaming ? (
-            <div className="p-4">
-              <CategoryRenamer
-                key={`${renaming.major}/${renaming.minor ?? ""}`}
-                current={renaming.minor ?? renaming.major}
-                label={`'${renaming.minor ?? renaming.major}' ${renaming.minor ? "하위분류" : "출처"} 이름 바꾸기`}
-                note="이미 등록한 매출의 출처 이름도 함께 바뀌어요."
-                onCancel={() => setRenaming(null)}
-                onSave={(name) => rename(renaming, name)}
+            <div className="flex flex-col gap-4 p-4">
+              <OrderMover
+                key={`move/${renaming.major}/${renaming.minor ?? ""}`}
+                name={renaming.minor ?? renaming.major}
+                {...moveBounds(
+                  renaming.minor === undefined ? majors : getMinorsOf(tree, renaming.major),
+                  renaming.minor ?? renaming.major
+                )}
+                onMove={(direction) => move(renaming, direction)}
               />
+              {renaming.minor === undefined && renaming.major === SOURCE_MAJOR_CLIENT ? (
+                <button
+                  type="button"
+                  onClick={() => setRenaming(null)}
+                  className="self-end rounded-md px-2 py-1.5 text-sm text-muted-foreground hover:bg-muted"
+                >
+                  닫기
+                </button>
+              ) : (
+                <CategoryRenamer
+                  key={`${renaming.major}/${renaming.minor ?? ""}`}
+                  current={renaming.minor ?? renaming.major}
+                  label={`'${renaming.minor ?? renaming.major}' ${renaming.minor ? "하위분류" : "출처"} 이름 바꾸기`}
+                  note="이미 등록한 매출의 출처 이름도 함께 바뀌어요."
+                  onCancel={() => setRenaming(null)}
+                  onSave={(name) => rename(renaming, name)}
+                />
+              )}
             </div>
           ) : isEditing ? (
             <div className="flex flex-col gap-3 p-4">
               <p className="text-xs text-muted-foreground">
-                이름을 누르면 바꿀 수 있어요. 대분류는 고른 칩을 한 번 더 누르세요.
+                이름을 누르면 이름을 바꾸거나 순서를 옮길 수 있어요. 대분류는 고른 칩을 한 번 더 누르세요.
               </p>
               {activeTab && !isClientTab ? (
                 <CategoryAdder
@@ -358,7 +386,7 @@ export function SourcePickerSheet({
             <div className="flex items-center justify-between gap-3 px-4 py-3">
               <p className="text-xs text-muted-foreground">
                 {editable
-                  ? "연필을 누르면 출처를 추가하거나 지우고, 이름을 바꿀 수 있어요."
+                  ? "연필을 누르면 출처를 추가·삭제하고, 이름·순서를 바꿀 수 있어요."
                   : "출처를 누르면 정해져요."}
               </p>
               {major ? (

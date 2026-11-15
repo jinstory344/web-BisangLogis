@@ -8,8 +8,10 @@ import {
   DEFAULT_EXPENSE_CATEGORY_TREE,
   getMinorsOf,
   isValidCategoryPairIn,
+  moveCategory,
   nextSortOrder,
   normalizeCategoryName,
+  parseMoveCategoryInput,
   type ExpenseCategoryDbRow,
 } from "./expense-categories"
 
@@ -229,5 +231,29 @@ describe("checkRenameCategory", () => {
   it("없는 분류는 막는다", () => {
     expect(checkRenameCategory(tree, { major: "없음", name: "새이름" }).ok).toBe(false)
     expect(checkRenameCategory(tree, { major: "차량", minor: "없음", name: "새이름" }).ok).toBe(false)
+  })
+})
+
+describe("moveCategory", () => {
+  const tree = [
+    { major: "차량", minors: ["유류", "주차", "정비", "기타"] },
+    { major: "생활", minors: ["식비", "기타"] },
+  ]
+  it("대분류를 앞뒤로", () => {
+    expect(moveCategory(tree, { major: "생활", direction: -1 })).toEqual({ ok: true, names: ["생활", "차량"] })
+    expect(moveCategory(tree, { major: "차량", direction: -1 }).ok).toBe(false)
+  })
+  it("소분류를 앞뒤로, 기타는 순서에 없음", () => {
+    expect(moveCategory(tree, { major: "차량", minor: "주차", direction: 1 })).toEqual({
+      ok: true,
+      names: ["유류", "정비", "주차"],
+    })
+    expect(moveCategory(tree, { major: "차량", minor: "정비", direction: 1 }).ok).toBe(false)
+    expect(moveCategory(tree, { major: "차량", minor: "기타", direction: -1 }).ok).toBe(false)
+  })
+  it("입력 모양 확인", () => {
+    expect(parseMoveCategoryInput({ major: "차량", direction: 1 })).toEqual({ major: "차량", minor: undefined, direction: 1 })
+    expect(parseMoveCategoryInput({ major: "차량", direction: 2 })).toBeNull()
+    expect(parseMoveCategoryInput({ major: "차량", minor: 3, direction: 1 })).toBeNull()
   })
 })
