@@ -15,7 +15,7 @@ const TAB_CLASS_NAME =
   "flex flex-1 flex-col items-center justify-center gap-0.5 text-[11px] leading-4 data-[active=true]:bg-transparent data-[active=true]:text-red-400"
 
 /**
- * 모바일 하단 탭: [오늘 날짜(비상)] [배차] [통계] [더보기] (가계부 앱 방식).
+ * 모바일 하단 탭: [오늘 날짜(비상)] [배차] [차량] [거래처] [메뉴] (가계부 앱 방식). 통계는 메뉴 안.
  * 매출·지출 목록과 나머지 메뉴는 "더보기" 시트에 있고, 등록은 오른쪽 아래 떠 있는 ＋ 버튼으로 한다.
  * 데스크톱(md 이상)은 사이드바를 쓴다.
  * 탭 높이 56px + 아이폰 아래 홈 막대 자리(safe-area-inset-bottom)만큼 아래 여백.

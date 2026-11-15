@@ -1,7 +1,7 @@
 "use client"
 
 import { zodResolver } from "@hookform/resolvers/zod"
-import { ChevronDown, Plus, X } from "lucide-react"
+import { ChevronDown, ChevronUp, Plus, X } from "lucide-react"
 import {
   startTransition,
   useActionState,
@@ -184,9 +184,30 @@ export function ClientForm({
 
         {/* 담당자 여러 명: 한 줄에 한 명(이름 · 전화), + 담당자 추가 / ✕ 지우기 */}
         <div className="flex flex-col">
-          <p className="pt-3 pb-1 text-sm text-muted-foreground">담당자</p>
+          <p className="pt-3 pb-1 text-sm text-muted-foreground">담당자 <span className="text-xs">(맨 위가 대표 담당자)</span></p>
           {contactFields.fields.map((field, index) => (
-            <div key={field.id} className="grid grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)_2.5rem] items-center gap-2 border-b">
+            <div key={field.id} className="grid grid-cols-[1.75rem_minmax(0,1fr)_minmax(0,1.4fr)_2.5rem] items-center gap-2 border-b">
+              {/* 순서 바꾸기: 위·아래 화살표 (첫 담당자가 대표 담당자로 거래처 목록에 보인다) */}
+              <div className="flex flex-col">
+                <button
+                  type="button"
+                  aria-label={`담당자 ${index + 1} 위로`}
+                  disabled={index === 0}
+                  onClick={() => contactFields.move(index, index - 1)}
+                  className="flex h-5 items-center justify-center text-muted-foreground disabled:opacity-25"
+                >
+                  <ChevronUp className="size-4" />
+                </button>
+                <button
+                  type="button"
+                  aria-label={`담당자 ${index + 1} 아래로`}
+                  disabled={index === contactFields.fields.length - 1}
+                  onClick={() => contactFields.move(index, index + 1)}
+                  className="flex h-5 items-center justify-center text-muted-foreground disabled:opacity-25"
+                >
+                  <ChevronDown className="size-4" />
+                </button>
+              </div>
               <Input
                 {...form.register(`contacts.${index}.name`)}
                 placeholder="이름"
