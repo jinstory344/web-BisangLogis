@@ -1,8 +1,8 @@
-import { appendClientIdFilter, buildIlikeOrFilter } from "@/lib/search"
+import { appendClientIdFilter, buildIlikeOrFilter, type SearchFilters } from "@/lib/search"
 import type { DispatchRow } from "@/lib/supabase/database.types"
 import { createClient } from "@/lib/supabase/server"
 
-import { fetchAllRows } from "../ledger-data"
+import { fetchAllRows, skippedKinds } from "../ledger-data"
 
 type Supabase = Awaited<ReturnType<typeof createClient>>
 
@@ -36,13 +36,16 @@ export async function searchDispatches(
   supabase: Supabase,
   query: string,
   clientIds: readonly string[],
-  period: { from: string; to: string } | null = null
+  period: { from: string; to: string } | null = null,
+  filters: SearchFilters = {}
 ): Promise<{
   dispatches: SearchDispatch[]
   clientNameMap: Record<string, string>
   isTruncated: boolean
 }> {
+  if (skippedKinds(filters).dispatch) return { dispatches: [], clientNameMap: {}, isTruncated: false }
   let request = supabase.from("dispatches").select("*").is("deleted_at", null)
+  if (filters.clientId) request = request.eq("client_id", filters.clientId)
   if (query) {
     request = request.or(
       appendClientIdFilter(
@@ -83,13 +86,16 @@ export async function searchDispatches(
 export async function searchDispatchAmounts(
   supabase: Supabase,
   query: string,
-  clientIds: readonly string[]
+  clientIds: readonly string[],
+  filters: SearchFilters = {}
 ): Promise<{ date: string; amount: number; fee: number }[]> {
+  if (skippedKinds(filters).dispatch) return []
   const rows = await fetchAllRows((a, b) => {
     let request = supabase
       .from("dispatches")
       .select("dispatch_date, freight_amount, fee_amount")
       .is("deleted_at", null)
+    if (filters.clientId) request = request.eq("client_id", filters.clientId)
     if (query) {
       request = request.or(
         appendClientIdFilter(

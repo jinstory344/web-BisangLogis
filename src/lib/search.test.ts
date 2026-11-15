@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest"
 
 import {
+  parseSearchFilters,
+  parseSmartQuery,
+  searchHref,
   countByMonth,
   inPeriod,
   groupByMonth,
@@ -131,5 +134,50 @@ describe("inPeriod / countByMonth", () => {
     expect(inPeriod("2026-10-31", { from: "2026-11-01", to: "2026-11-30" })).toBe(false)
     expect(inPeriod("2026-10-31", null)).toBe(true)
     expect(countByMonth(["2026-11-03", "2026-11-20", "2026-10-01"])).toEqual({ "2026-11": 2, "2026-10": 1 })
+  })
+})
+
+describe("조건 칩 주소", () => {
+  const id = "12956745-839d-4d78-b02e-1ea9363d3c35"
+  it("읽고 다시 만든다", () => {
+    const f = parseSearchFilters({ client_id: id, client_name: "우영로지스", unpaid: "1", category: "" })
+    expect(f).toEqual({ clientId: id, clientName: "우영로지스", category: undefined, unpaid: true })
+    expect(searchHref("", "sale", null, f)).toBe(`/search?tab=sale&client_id=${id}&client_name=%EC%9A%B0%EC%98%81%EB%A1%9C%EC%A7%80%EC%8A%A4&unpaid=1`)
+    expect(parseSearchFilters({ client_id: "x" }).clientId).toBeUndefined()
+  })
+})
+
+describe("parseSmartQuery", () => {
+  const ctx = {
+    today: "2026-11-15",
+    clients: [
+      { id: "c1", name: "우영로지스" },
+      { id: "c2", name: "아토무역" },
+      { id: "c3", name: "아토상사" },
+    ],
+    categories: ["주유비", "식비"],
+  }
+  it("우영 2026 매출 → 거래처·연도·탭", () => {
+    expect(parseSmartQuery("우영 2026 매출", ctx)).toEqual({
+      query: "",
+      tab: "sale",
+      period: { from: "2026-01-01", to: "2026-12-31" },
+      filters: { clientId: "c1", clientName: "우영로지스" },
+    })
+  })
+  it("작년 주유비 → 지출 탭·항목", () => {
+    expect(parseSmartQuery("작년 주유비", ctx)).toEqual({
+      query: "",
+      tab: "expense",
+      period: { from: "2025-01-01", to: "2025-12-31" },
+      filters: { category: "주유비" },
+    })
+  })
+  it("알아들은 말이 없으면 그대로(한 단어 거래처도)", () => {
+    expect(parseSmartQuery("우영", ctx)).toBeNull()
+    expect(parseSmartQuery("피셔 부산", ctx)).toBeNull()
+  })
+  it("앞글자가 여러 거래처에 맞으면 글자로 남긴다", () => {
+    expect(parseSmartQuery("아토 배차", ctx)).toEqual({ query: "아토", tab: "dispatch", period: undefined, filters: {} })
   })
 })

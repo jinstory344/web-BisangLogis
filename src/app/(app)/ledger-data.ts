@@ -1,7 +1,7 @@
 import { EXPENSE_PAYMENT_METHOD_LABELS } from "@/lib/constants/payment-method"
 import { formatSaleSource } from "@/lib/constants/sale-sources"
 import type { AmountRow, LedgerEntry } from "@/lib/ledger"
-import { appendClientIdFilter, buildIlikeOrFilter } from "@/lib/search"
+import { appendClientIdFilter, buildIlikeOrFilter, type SearchFilters } from "@/lib/search"
 import type { ExpenseRow, SaleRow } from "@/lib/supabase/database.types"
 import { createClient } from "@/lib/supabase/server"
 
@@ -177,6 +177,21 @@ export async function fetchLedgerEntries(
 }
 
 /** 검색 결과 최대 건수 (매출·지출 각각) */
+/** 거래처 칩: 거래처에 연결된 매출, 또는 연결 없이 출처 "거래처 › 이름"으로 적힌 매출 */
+function saleClientFilter(filters: SearchFilters): string {
+  const name = filters.clientName ? `,and(source_major.eq.거래처,source_minor.eq."${filters.clientName}")` : ""
+  return `client_id.eq.${filters.clientId}${name}`
+}
+
+/** 조건 칩에 안 맞는 종류는 아예 읽지 않는다 (항목=지출만, 거래처=매출·배차, 미입금=매출만) */
+export function skippedKinds(filters: SearchFilters): { sale: boolean; expense: boolean; dispatch: boolean } {
+  return {
+    sale: Boolean(filters.category),
+    expense: Boolean(filters.clientId || filters.unpaid),
+    dispatch: Boolean(filters.category || filters.unpaid),
+  }
+}
+
 /** 통합검색에서 종류마다 가져오는 최대 건수 (달별로 접어 보여 준다) */
 export const SEARCH_RESULT_LIMIT = 300
 
@@ -190,10 +205,14 @@ export async function searchLedgerEntries(
   supabase: Supabase,
   query: string,
   clientIds: readonly string[] = [],
-  period: { from: string; to: string } | null = null
+  period: { from: string; to: string } | null = null,
+  filters: SearchFilters = {}
 ): Promise<{ entries: DayLedgerEntry[]; isTruncated: boolean }> {
   let sales = supabase.from("sales").select(SALE_ENTRY_COLUMNS).is("deleted_at", null)
   let expenses = supabase.from("expenses").select(EXPENSE_ENTRY_COLUMNS).is("deleted_at", null)
+  if (filters.clientId) sales = sales.or(saleClientFilter(filters))
+  if (filters.unpaid) sales = sales.eq("payment_status", "UNPAID")
+  if (filters.category) expenses = expenses.eq("category_minor", filters.category)
   if (query) {
     sales = sales.or(
       appendClientIdFilter(
@@ -210,9 +229,14 @@ export async function searchLedgerEntries(
     sales = sales.gte("sale_date", period.from).lte("sale_date", period.to)
     expenses = expenses.gte("expense_date", period.from).lte("expense_date", period.to)
   }
+  const skip = skippedKinds(filters)
   const [saleRes, expenseRes] = await Promise.all([
-    sales.order("sale_date", { ascending: false }).order("id").limit(SEARCH_RESULT_LIMIT),
-    expenses.order("expense_date", { ascending: false }).order("id").limit(SEARCH_RESULT_LIMIT),
+    skip.sale
+      ? Promise.resolve({ data: [] as SaleRow[], error: null })
+      : sales.order("sale_date", { ascending: false }).order("id").limit(SEARCH_RESULT_LIMIT),
+    skip.expense
+      ? Promise.resolve({ data: [] as ExpenseRow[], error: null })
+      : expenses.order("expense_date", { ascending: false }).order("id").limit(SEARCH_RESULT_LIMIT),
   ])
   if (saleRes.error) throw new Error(saleRes.error.message)
   if (expenseRes.error) throw new Error(expenseRes.error.message)
@@ -241,16 +265,21 @@ export interface SearchAmountRow {
 export async function searchLedgerAmounts(
   supabase: Supabase,
   query: string,
-  clientIds: readonly string[]
+  clientIds: readonly string[],
+  filters: SearchFilters = {}
 ): Promise<{ sale: SearchAmountRow[]; expense: SearchAmountRow[] }> {
+  const skip = skippedKinds(filters)
   const [saleRows, expenseRows] = await Promise.all([
-    fetchAllRows((a, b) => {
+    skip.sale ? Promise.resolve([]) : fetchAllRows((a, b) => {
       let q = supabase.from("sales").select("sale_date, supply_amount, payment_status").is("deleted_at", null)
+      if (filters.clientId) q = q.or(saleClientFilter(filters))
+      if (filters.unpaid) q = q.eq("payment_status", "UNPAID")
       if (query) q = q.or(appendClientIdFilter(buildIlikeOrFilter(["origin", "destination", "source_major", "source_sub", "source_minor", "billing_entity_name", "memo"], query), clientIds))
       return q.order("id").range(a, b)
     }),
-    fetchAllRows((a, b) => {
+    skip.expense ? Promise.resolve([]) : fetchAllRows((a, b) => {
       let q = supabase.from("expenses").select("expense_date, amount").is("deleted_at", null)
+      if (filters.category) q = q.eq("category_minor", filters.category)
       if (query) q = q.or(buildIlikeOrFilter(["category_major", "category_minor", "vendor", "memo"], query))
       return q.order("id").range(a, b)
     }),

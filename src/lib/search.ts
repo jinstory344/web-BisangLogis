@@ -153,11 +153,52 @@ export function groupByMonth<T>(rows: readonly T[], dateOf: (row: T) => string):
   return groups
 }
 
+/** 통합검색 조건 칩: 거래처(매출·배차), 항목(지출 소분류), 미입금만(매출) */
+export interface SearchFilters {
+  clientId?: string
+  clientName?: string
+  category?: string
+  unpaid?: boolean
+}
+
+const UUID_RE = /^[0-9a-f-]{36}$/
+
+/** 주소 → 조건 칩 값 (모양이 이상한 값은 버린다) */
+export function parseSearchFilters(params: {
+  client_id?: string | string[]
+  client_name?: string | string[]
+  category?: string | string[]
+  unpaid?: string | string[]
+}): SearchFilters {
+  const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v) ?? ""
+  const clientId = one(params.client_id)
+  const category = normalizeSearchQuery(one(params.category))
+  return {
+    clientId: UUID_RE.test(clientId) ? clientId : undefined,
+    clientName: UUID_RE.test(clientId) ? normalizeSearchQuery(one(params.client_name)) || undefined : undefined,
+    category: category || undefined,
+    unpaid: one(params.unpaid) === "1" || undefined,
+  }
+}
+
+/** 탭을 바꿀 때 그 탭에 안 맞는 조건은 뺀다 (지출엔 거래처·미입금 없음, 배차엔 항목·미입금 없음, 매출엔 항목 없음) */
+export function filtersForTab(tab: SearchTab, f: SearchFilters): SearchFilters {
+  if (tab === "expense") return { category: f.category }
+  if (tab === "dispatch") return { clientId: f.clientId, clientName: f.clientName }
+  if (tab === "sale") return { clientId: f.clientId, clientName: f.clientName, unpaid: f.unpaid }
+  return { clientId: f.clientId, clientName: f.clientName, category: f.category }
+}
+
+export function hasFilters(f: SearchFilters): boolean {
+  return Boolean(f.clientId || f.category || f.unpaid)
+}
+
 /** 통합검색 주소 (빈 값은 뺀다) */
 export function searchHref(
   query: string,
   tab: string,
-  period: { from: string; to: string } | null
+  period: { from: string; to: string } | null,
+  filters: SearchFilters = {}
 ): string {
   const params = new URLSearchParams()
   if (query) params.set("q", query)
@@ -166,8 +207,72 @@ export function searchHref(
     params.set("from", period.from)
     params.set("to", period.to)
   }
+  if (filters.clientId) {
+    params.set("client_id", filters.clientId)
+    if (filters.clientName) params.set("client_name", filters.clientName)
+  }
+  if (filters.category) params.set("category", filters.category)
+  if (filters.unpaid) params.set("unpaid", "1")
   const text = params.toString()
   return text ? `/search?${text}` : "/search"
+}
+
+const KIND_WORDS: Record<string, SearchTab> = { 매출: "sale", 지출: "expense", 배차: "dispatch" }
+const PERIOD_WORDS: Record<string, PeriodPreset> = {
+  올해: "thisYear",
+  작년: "lastYear",
+  이번달: "thisMonth",
+  지난달: "lastMonth",
+}
+
+/**
+ * 말로 검색: "우영 2026 매출"처럼 친 글자에서 연도·기간말(올해·작년·이번달·지난달)·종류말(매출·지출·배차)을 알아듣고,
+ * 그런 말이 하나라도 있으면 남은 말 중 거래처 이름 앞글자(하나만 맞을 때)·지출 항목 이름도 칩으로 바꾼다.
+ * 알아들은 게 없으면 null(그대로 글자 검색).
+ */
+export function parseSmartQuery(
+  query: string,
+  ctx: { today: string; clients: { id: string; name: string }[]; categories: string[] }
+): {
+  query: string
+  tab?: SearchTab
+  period?: { from: string; to: string }
+  filters: SearchFilters
+} | null {
+  const tokens = query.split(" ").filter(Boolean)
+  let tab: SearchTab | undefined
+  let period: { from: string; to: string } | undefined
+  const rest: string[] = []
+  for (const token of tokens) {
+    const year = token.match(/^(20\d{2})(년)?$/)
+    if (year) {
+      period = { from: `${year[1]}-01-01`, to: `${year[1]}-12-31` }
+    } else if (PERIOD_WORDS[token]) {
+      period = presetRange(PERIOD_WORDS[token], ctx.today) ?? undefined
+    } else if (KIND_WORDS[token]) {
+      tab = KIND_WORDS[token]
+    } else {
+      rest.push(token)
+    }
+  }
+  if (!tab && !period) return null
+
+  const filters: SearchFilters = {}
+  const left: string[] = []
+  for (const token of rest) {
+    const lower = token.toLowerCase()
+    const clients = ctx.clients.filter((c) => c.name.toLowerCase().startsWith(lower))
+    if (!filters.clientId && token.length >= 2 && clients.length === 1) {
+      filters.clientId = clients[0].id
+      filters.clientName = clients[0].name
+    } else if (!filters.category && ctx.categories.includes(token)) {
+      filters.category = token
+      tab = tab ?? "expense"
+    } else {
+      left.push(token)
+    }
+  }
+  return { query: left.join(" "), tab, period, filters }
 }
 
 /** 기간 안에 드는지 (기간이 없으면 전부) */

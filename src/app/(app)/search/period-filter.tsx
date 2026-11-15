@@ -14,7 +14,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet"
-import { PERIOD_PRESETS, periodLabel, presetRange, searchHref } from "@/lib/search"
+import { PERIOD_PRESETS, periodLabel, presetRange, searchHref, type SearchFilters } from "@/lib/search"
 import { cn } from "@/lib/utils"
 
 /**
@@ -27,6 +27,7 @@ export function PeriodFilter({
   query,
   tab,
   monthCounts = {},
+  filters = {},
 }: {
   period: { from: string; to: string } | null
   today: string
@@ -34,9 +35,11 @@ export function PeriodFilter({
   tab: string
   /** 달별 건수 {"2026-11": 13} — 월별 막대 (기간과 상관없이 지금 검색어·탭 기준) */
   monthCounts?: Record<string, number>
+  /** 거래처·항목 등 다른 조건 칩 (기간을 바꿔도 그대로) */
+  filters?: SearchFilters
 }) {
   const router = useRouter()
-  const hrefFor = (next: { from: string; to: string } | null) => searchHref(query, tab, next)
+  const hrefFor = (next: { from: string; to: string } | null) => searchHref(query, tab, next, filters)
   const [open, setOpen] = useState(false)
   const [from, setFrom] = useState(period?.from ?? "")
   const [to, setTo] = useState(period?.to ?? "")

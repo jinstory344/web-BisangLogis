@@ -1,5 +1,6 @@
 import { ChevronLeft } from "lucide-react"
 import Link from "next/link"
+import { redirect } from "next/navigation"
 import type { ReactNode } from "react"
 
 import {
@@ -11,8 +12,12 @@ import { getTodayInSeoul } from "@/lib/date"
 import { formatKRW } from "@/lib/money"
 import {
   countByMonth,
+  filtersForTab,
+  hasFilters,
   inPeriod,
   normalizeSearchQuery,
+  parseSearchFilters,
+  parseSmartQuery,
   parseSearchPeriod,
   parseSearchTab,
   SEARCH_TABS,
@@ -29,6 +34,7 @@ import { SearchBox } from "./search-box"
 import { EntityCards } from "./entity-cards"
 import { searchClientIds, searchDispatchAmounts, searchDispatches, searchEntities } from "./search-data"
 import { SearchResultList, type SearchItem } from "./search-result-list"
+import { TargetFilter } from "./target-filter"
 
 /**
  * 통합검색: 매출·지출·배차를 글자와 기간으로 찾는다 (비상 화면 왼쪽 위 돋보기).
@@ -44,6 +50,10 @@ export default async function SearchPage({
     tab?: string | string[]
     from?: string | string[]
     to?: string | string[]
+    client_id?: string | string[]
+    client_name?: string | string[]
+    category?: string | string[]
+    unpaid?: string | string[]
   }>
 }) {
   const params = await searchParams
@@ -51,13 +61,54 @@ export default async function SearchPage({
   const tab = parseSearchTab(params.tab)
   const period = parseSearchPeriod(params.from, params.to)
   const today = getTodayInSeoul()
+  const filters = parseSearchFilters(params)
+
+  // 조건 칩 목록(거래처·지출 항목)과 말로 검색에 쓰는 이름들
+  const supabaseForLists = await createClient()
+  const [clientsRes, categoriesRes] = await Promise.all([
+    supabaseForLists.from("clients").select("id, name").is("deleted_at", null).order("name"),
+    supabaseForLists.from("expense_categories").select("major, minor, sort_order").is("deleted_at", null).not("minor", "is", null).order("sort_order"),
+  ])
+  const clientOptions = clientsRes.data ?? []
+  const categoryOptions = (categoriesRes.data ?? []).map((c) => ({ major: c.major, minor: c.minor as string }))
+
+  // 말로 검색: "우영 2026 매출" → 거래처·연도·탭 칩으로 바꾼 주소로 다시 연다
+  if (query) {
+    const smart = parseSmartQuery(query, {
+      today,
+      clients: clientOptions,
+      categories: categoryOptions.map((c) => c.minor),
+    })
+    if (smart) {
+      const nextTab = smart.tab ?? tab
+      redirect(
+        searchHref(smart.query, nextTab, smart.period ?? period, filtersForTab(nextTab, { ...filters, ...smart.filters }))
+      )
+    }
+  }
 
   let monthCounts: Record<string, number> = {}
-  let fixedPart: ReactNode = (
-    <div className="flex items-center gap-2 pb-2">
-      <PeriodFilter period={period} today={today} query={query} tab={tab} />
+  const chips = (counts?: Record<string, number>) => (
+    <div className="flex flex-wrap items-center gap-2 py-2">
+      <PeriodFilter
+        period={period}
+        today={today}
+        query={query}
+        tab={tab}
+        monthCounts={counts}
+        filters={filters}
+      />
+      <TargetFilter
+        query={query}
+        tab={tab}
+        period={period}
+        filters={filters}
+        clients={clientOptions}
+        categories={categoryOptions}
+      />
     </div>
   )
+  let fixedPart: ReactNode = chips()
   let list: ReactNode = (
     <p className="py-12 text-center text-sm text-muted-foreground">
       지명·거래처·차량번호·차주·분류·비고로 찾거나,
@@ -66,15 +117,15 @@ export default async function SearchPage({
     </p>
   )
 
-  if (query || period) {
+  if (query || period || hasFilters(filters)) {
     try {
       const supabase = await createClient()
       const clientIds = query ? await searchClientIds(supabase, query) : []
       const [ledger, dispatch, amounts, dispatchAmounts, entities] = await Promise.all([
-        searchLedgerEntries(supabase, query, clientIds, period),
-        searchDispatches(supabase, query, clientIds, period),
-        searchLedgerAmounts(supabase, query, clientIds),
-        searchDispatchAmounts(supabase, query, clientIds),
+        searchLedgerEntries(supabase, query, clientIds, period, filters),
+        searchDispatches(supabase, query, clientIds, period, filters),
+        searchLedgerAmounts(supabase, query, clientIds, filters),
+        searchDispatchAmounts(supabase, query, clientIds, filters),
         query ? searchEntities(supabase, query) : Promise.resolve({ clients: [], vehicles: [] }),
       ])
       // 합계·건수는 목록(최근 몇백 건)이 아니라 조건에 맞는 전부로, 기간은 여기서 거른다
@@ -164,7 +215,7 @@ export default async function SearchPage({
               return (
                 <Link
                   key={item.value}
-                  href={searchHref(query, item.value, period)}
+                  href={searchHref(query, item.value, period, filtersForTab(item.value, filters))}
                   replace
                   scroll={false}
                   aria-current={isActive ? "page" : undefined}
@@ -185,9 +236,7 @@ export default async function SearchPage({
             })}
           </nav>
 
-          <div className="flex items-center gap-2 py-2">
-            <PeriodFilter period={period} today={today} query={query} tab={tab} monthCounts={monthCounts} />
-          </div>
+          {chips(monthCounts)}
 
           <TotalsRow items={totals} />
 
@@ -200,7 +249,7 @@ export default async function SearchPage({
         </>
       )
 
-      const what = query ? `"${query}"(으)로 찾은 ` : "이 기간의 "
+      const what = query ? `"${query}"(으)로 찾은 ` : "이 조건의 "
       list = (
         <SearchResultList
           items={items}
@@ -235,7 +284,7 @@ export default async function SearchPage({
             <span aria-hidden />
           </header>
 
-          <SearchBox query={query} tab={tab} period={period} />
+          <SearchBox query={query} tab={tab} period={period} filters={filters} />
 
           {fixedPart}
         </div>
