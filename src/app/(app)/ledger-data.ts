@@ -227,34 +227,37 @@ export async function searchLedgerEntries(
   }
 }
 
-/** 통합검색 합계·건수: 목록은 SEARCH_RESULT_LIMIT건까지만 보여도 합계는 조건에 맞는 전부로 센다(금액 칸만 읽음). */
-export async function searchLedgerTotals(
+/** 통합검색 합계·월별 막대용 한 건: 날짜·금액만 */
+export interface SearchAmountRow {
+  date: string
+  amount: number
+  unpaid?: boolean
+}
+
+/**
+ * 통합검색 합계·건수·월별 막대: 기간과 상관없이 검색어에 맞는 매출·지출 전부의 날짜·금액만 읽는다.
+ * (목록은 최근 몇백 건만 보여도 합계는 이걸로 정확히 센다. 기간은 쓰는 쪽에서 거른다.)
+ */
+export async function searchLedgerAmounts(
   supabase: Supabase,
   query: string,
-  clientIds: readonly string[],
-  period: { from: string; to: string } | null
-): Promise<{ sale: { count: number; amount: number; unpaid: number }; expense: { count: number; amount: number } }> {
+  clientIds: readonly string[]
+): Promise<{ sale: SearchAmountRow[]; expense: SearchAmountRow[] }> {
   const [saleRows, expenseRows] = await Promise.all([
     fetchAllRows((a, b) => {
-      let q = supabase.from("sales").select("supply_amount, payment_status").is("deleted_at", null)
+      let q = supabase.from("sales").select("sale_date, supply_amount, payment_status").is("deleted_at", null)
       if (query) q = q.or(appendClientIdFilter(buildIlikeOrFilter(["origin", "destination", "source_major", "source_sub", "source_minor", "billing_entity_name", "memo"], query), clientIds))
-      if (period) q = q.gte("sale_date", period.from).lte("sale_date", period.to)
       return q.order("id").range(a, b)
     }),
     fetchAllRows((a, b) => {
-      let q = supabase.from("expenses").select("amount").is("deleted_at", null)
+      let q = supabase.from("expenses").select("expense_date, amount").is("deleted_at", null)
       if (query) q = q.or(buildIlikeOrFilter(["category_major", "category_minor", "vendor", "memo"], query))
-      if (period) q = q.gte("expense_date", period.from).lte("expense_date", period.to)
       return q.order("id").range(a, b)
     }),
   ])
   return {
-    sale: {
-      count: saleRows.length,
-      amount: saleRows.reduce((sum, r) => sum + r.supply_amount, 0),
-      unpaid: saleRows.reduce((sum, r) => sum + (r.payment_status === "UNPAID" ? r.supply_amount : 0), 0),
-    },
-    expense: { count: expenseRows.length, amount: expenseRows.reduce((sum, r) => sum + r.amount, 0) },
+    sale: saleRows.map((r) => ({ date: r.sale_date, amount: r.supply_amount, unpaid: r.payment_status === "UNPAID" })),
+    expense: expenseRows.map((r) => ({ date: r.expense_date, amount: r.amount })),
   }
 }
 

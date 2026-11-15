@@ -79,15 +79,17 @@ export async function searchDispatches(
   }
 }
 
-/** 통합검색 배차 합계·건수 (목록이 잘려도 조건에 맞는 전부로 센다) */
-export async function searchDispatchTotals(
+/** 통합검색 배차 합계·월별 막대: 기간과 상관없이 검색어에 맞는 배차 전부의 날짜·운임·수수료 */
+export async function searchDispatchAmounts(
   supabase: Supabase,
   query: string,
-  clientIds: readonly string[],
-  period: { from: string; to: string } | null
-): Promise<{ count: number; freight: number; fee: number }> {
+  clientIds: readonly string[]
+): Promise<{ date: string; amount: number; fee: number }[]> {
   const rows = await fetchAllRows((a, b) => {
-    let request = supabase.from("dispatches").select("freight_amount, fee_amount").is("deleted_at", null)
+    let request = supabase
+      .from("dispatches")
+      .select("dispatch_date, freight_amount, fee_amount")
+      .is("deleted_at", null)
     if (query) {
       request = request.or(
         appendClientIdFilter(
@@ -99,12 +101,36 @@ export async function searchDispatchTotals(
         )
       )
     }
-    if (period) request = request.gte("dispatch_date", period.from).lte("dispatch_date", period.to)
     return request.order("id").range(a, b)
   })
-  return {
-    count: rows.length,
-    freight: rows.reduce((sum, r) => sum + (r.freight_amount ?? 0), 0),
-    fee: rows.reduce((sum, r) => sum + r.fee_amount, 0),
-  }
+  return rows.map((r) => ({ date: r.dispatch_date, amount: r.freight_amount ?? 0, fee: r.fee_amount }))
+}
+
+/** 검색어와 이름·번호가 맞는 거래처·차량 (결과 맨 위 카드용, 각각 최대 2개) */
+export async function searchEntities(
+  supabase: Supabase,
+  query: string
+): Promise<{
+  clients: { id: string; name: string; contact_name: string | null; contact_phone: string | null }[]
+  vehicles: { id: string; plate_no: string; driver_name: string; driver_phone: string | null }[]
+}> {
+  const [clients, vehicles] = await Promise.all([
+    supabase
+      .from("clients")
+      .select("id, name, contact_name, contact_phone")
+      .is("deleted_at", null)
+      .ilike("name", `%${query}%`)
+      .order("name")
+      .limit(2),
+    supabase
+      .from("vehicles")
+      .select("id, plate_no, driver_name, driver_phone")
+      .is("deleted_at", null)
+      .or(`plate_no.ilike.%${query}%,driver_name.ilike.%${query}%`)
+      .order("plate_no")
+      .limit(2),
+  ])
+  if (clients.error) throw new Error(clients.error.message)
+  if (vehicles.error) throw new Error(vehicles.error.message)
+  return { clients: clients.data ?? [], vehicles: vehicles.data ?? [] }
 }

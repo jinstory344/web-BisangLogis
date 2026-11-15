@@ -169,3 +169,18 @@ export function searchHref(
   const text = params.toString()
   return text ? `/search?${text}` : "/search"
 }
+
+/** 기간 안에 드는지 (기간이 없으면 전부) */
+export function inPeriod(date: string, period: { from: string; to: string } | null): boolean {
+  return !period || (date >= period.from && date <= period.to)
+}
+
+/** 날짜 목록 → 달별 건수 {"2026-11": 13} (기간 판의 월별 막대용) */
+export function countByMonth(dates: readonly string[]): Record<string, number> {
+  const counts: Record<string, number> = {}
+  for (const date of dates) {
+    const month = date.slice(0, 7)
+    counts[month] = (counts[month] ?? 0) + 1
+  }
+  return counts
+}

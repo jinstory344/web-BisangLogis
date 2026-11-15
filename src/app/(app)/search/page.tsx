@@ -10,6 +10,8 @@ import { TotalsRow } from "@/components/list/totals-row"
 import { getTodayInSeoul } from "@/lib/date"
 import { formatKRW } from "@/lib/money"
 import {
+  countByMonth,
+  inPeriod,
   normalizeSearchQuery,
   parseSearchPeriod,
   parseSearchTab,
@@ -20,11 +22,12 @@ import {
 import { createClient } from "@/lib/supabase/server"
 import { cn } from "@/lib/utils"
 
-import { SEARCH_RESULT_LIMIT, searchLedgerEntries, searchLedgerTotals } from "../ledger-data"
+import { SEARCH_RESULT_LIMIT, searchLedgerAmounts, searchLedgerEntries } from "../ledger-data"
 
 import { PeriodFilter } from "./period-filter"
 import { SearchBox } from "./search-box"
-import { searchClientIds, searchDispatches, searchDispatchTotals } from "./search-data"
+import { EntityCards } from "./entity-cards"
+import { searchClientIds, searchDispatchAmounts, searchDispatches, searchEntities } from "./search-data"
 import { SearchResultList, type SearchItem } from "./search-result-list"
 
 /**
@@ -49,6 +52,7 @@ export default async function SearchPage({
   const period = parseSearchPeriod(params.from, params.to)
   const today = getTodayInSeoul()
 
+  let monthCounts: Record<string, number> = {}
   let fixedPart: ReactNode = (
     <div className="flex items-center gap-2 pb-2">
       <PeriodFilter period={period} today={today} query={query} tab={tab} />
@@ -66,22 +70,34 @@ export default async function SearchPage({
     try {
       const supabase = await createClient()
       const clientIds = query ? await searchClientIds(supabase, query) : []
-      const [ledger, dispatch, ledgerTotals, dispatchTotals] = await Promise.all([
+      const [ledger, dispatch, amounts, dispatchAmounts, entities] = await Promise.all([
         searchLedgerEntries(supabase, query, clientIds, period),
         searchDispatches(supabase, query, clientIds, period),
-        searchLedgerTotals(supabase, query, clientIds, period),
-        searchDispatchTotals(supabase, query, clientIds, period),
+        searchLedgerAmounts(supabase, query, clientIds),
+        searchDispatchAmounts(supabase, query, clientIds),
+        query ? searchEntities(supabase, query) : Promise.resolve({ clients: [], vehicles: [] }),
       ])
+      // 합계·건수는 목록(최근 몇백 건)이 아니라 조건에 맞는 전부로, 기간은 여기서 거른다
+      const saleIn = amounts.sale.filter((r) => inPeriod(r.date, period))
+      const expenseIn = amounts.expense.filter((r) => inPeriod(r.date, period))
+      const dispatchIn = dispatchAmounts.filter((r) => inPeriod(r.date, period))
 
       const sales = ledger.entries.filter((e) => e.kind === "sale")
       const expenses = ledger.entries.filter((e) => e.kind === "expense")
-      // 건수·합계는 목록(최근 몇백 건)이 아니라 조건에 맞는 전부로 센다
       const counts: Record<SearchTab, number> = {
-        all: ledgerTotals.sale.count + ledgerTotals.expense.count + dispatchTotals.count,
-        sale: ledgerTotals.sale.count,
-        expense: ledgerTotals.expense.count,
-        dispatch: dispatchTotals.count,
+        all: saleIn.length + expenseIn.length + dispatchIn.length,
+        sale: saleIn.length,
+        expense: expenseIn.length,
+        dispatch: dispatchIn.length,
       }
+      // 기간 판의 월별 막대: 기간과 상관없이 지금 탭 종류의 달별 건수
+      monthCounts = countByMonth(
+        [
+          ...(tab === "all" || tab === "sale" ? amounts.sale : []),
+          ...(tab === "all" || tab === "expense" ? amounts.expense : []),
+          ...(tab === "all" || tab === "dispatch" ? dispatchAmounts : []),
+        ].map((r) => r.date)
+      )
 
       const items: SearchItem[] = [
         ...(tab === "all" || tab === "sale" ? sales : []).map((entry) => ({
@@ -104,9 +120,11 @@ export default async function SearchPage({
         })),
       ]
 
-      const saleTotal = ledgerTotals.sale.amount
-      const unpaidTotal = ledgerTotals.sale.unpaid
-      const expenseTotal = ledgerTotals.expense.amount
+      const sum = (rows: { amount: number }[]) => rows.reduce((total, r) => total + r.amount, 0)
+      const saleTotal = sum(saleIn)
+      const unpaidTotal = sum(saleIn.filter((r) => r.unpaid))
+      const expenseTotal = sum(expenseIn)
+      const dispatchTotals = { freight: sum(dispatchIn), fee: dispatchIn.reduce((t, r) => t + r.fee, 0) }
       const totals =
         tab === "sale"
           ? [
@@ -136,6 +154,7 @@ export default async function SearchPage({
 
       fixedPart = (
         <>
+          <EntityCards clients={entities.clients} vehicles={entities.vehicles} />
           <nav
             aria-label="검색 결과 종류"
             className="-mx-4 grid grid-cols-4 border-b px-2 md:mx-0 md:px-0"
@@ -167,7 +186,7 @@ export default async function SearchPage({
           </nav>
 
           <div className="flex items-center gap-2 py-2">
-            <PeriodFilter period={period} today={today} query={query} tab={tab} />
+            <PeriodFilter period={period} today={today} query={query} tab={tab} monthCounts={monthCounts} />
           </div>
 
           <TotalsRow items={totals} />

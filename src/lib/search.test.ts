@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest"
 
 import {
+  countByMonth,
+  inPeriod,
   groupByMonth,
   appendClientIdFilter,
   buildIlikeOrFilter,
@@ -120,5 +122,14 @@ describe("groupByMonth", () => {
       ["2026년 11월", 2],
       ["2026년 10월", 1],
     ])
+  })
+})
+
+describe("inPeriod / countByMonth", () => {
+  it("기간 안 여부와 달별 건수", () => {
+    expect(inPeriod("2026-11-03", { from: "2026-11-01", to: "2026-11-30" })).toBe(true)
+    expect(inPeriod("2026-10-31", { from: "2026-11-01", to: "2026-11-30" })).toBe(false)
+    expect(inPeriod("2026-10-31", null)).toBe(true)
+    expect(countByMonth(["2026-11-03", "2026-11-20", "2026-10-01"])).toEqual({ "2026-11": 2, "2026-10": 1 })
   })
 })
