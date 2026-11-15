@@ -137,6 +137,8 @@ async function DispatchesBody({ params }: { params: DispatchSearchParams }) {
           {/* 모바일 조작부는 contents라서 안의 달 이동·합계가 목록 전체 높이에서 고정될 수 있다 */}
           <div className="contents md:hidden">
             <DispatchMobileControls
+              from={from}
+              to={to}
               clientId={clientId}
               clientName={clientName}
               summary={rangeSummary}
