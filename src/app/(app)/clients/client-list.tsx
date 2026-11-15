@@ -1,5 +1,6 @@
 "use client"
 
+import { ChevronDown, ChevronUp, Ellipsis, Star, Trash2 } from "lucide-react"
 import Link from "next/link"
 import { useState, useTransition } from "react"
 import { toast } from "sonner"
@@ -17,6 +18,12 @@ import {
 import { ContactRow } from "@/components/common/contact-row"
 import { Button } from "@/components/ui/button"
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import {
   Sheet,
   SheetContent,
   SheetDescription,
@@ -26,11 +33,15 @@ import {
 import { formatBizNo } from "@/lib/biz-no"
 import { formatPhoneNumber } from "@/lib/phone"
 import type { ClientRow } from "@/lib/supabase/database.types"
+import { cn } from "@/lib/utils"
+import { MAX_PINNED_VEHICLES } from "@/lib/vehicle-list"
 
 import {
   deleteClientAction,
   getClientDispatchCount,
   getClientSaleCount,
+  moveClientPinAction,
+  toggleClientPinAction,
 } from "./actions"
 
 /** 거래처 목록: 차량 정보와 같은 줄 목록. 줄을 누르면 아래에서 상세·전화·수정·삭제 */
@@ -55,6 +66,35 @@ export function ClientList({
     saleCount: number
   } | null>(null)
   const [isPending, startTransition] = useTransition()
+  const [isReordering, setIsReordering] = useState(false)
+
+  // 고정한 거래처는 위에 고정 순서대로, 나머지는 이름순 그대로
+  const pinned = clients
+    .filter((c) => c.pin_order != null)
+    .sort((a, b) => (a.pin_order ?? 0) - (b.pin_order ?? 0))
+  const others = clients.filter((c) => c.pin_order == null)
+
+  function handleTogglePin(client: ClientRow) {
+    setSheetClient(null)
+    startTransition(async () => {
+      try {
+        const { error } = await toggleClientPinAction(client.id)
+        if (error) toast.error(error)
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : "고정 실패")
+      }
+    })
+  }
+
+  function handleMove(client: ClientRow, delta: -1 | 1) {
+    startTransition(async () => {
+      try {
+        await moveClientPinAction(client.id, delta)
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : "순서 변경 실패")
+      }
+    })
+  }
 
   async function handleDeleteClick(client: ClientRow) {
     setSheetClient(null)
@@ -80,6 +120,62 @@ export function ClientList({
     })
   }
 
+  const row = (client: ClientRow, index: number | null) => {
+    const isPinned = index !== null
+    const people = contactsOf(client)
+    const contact = [
+      people.length > 1 ? `${people[0].name} 외 ${people.length - 1}명` : people[0]?.name,
+      people[0]?.phone ? formatPhoneNumber(people[0].phone) : null,
+    ].filter(Boolean)
+    return (
+      <li
+        key={client.id}
+        className={cn("relative flex items-center border-b pr-3", isPinned && "bg-violet-400/[0.07]")}
+      >
+        <button
+          type="button"
+          onClick={() => setSheetClient(client)}
+          className="flex min-h-15 min-w-0 flex-1 flex-col justify-center px-4 py-2.5 text-left outline-none focus-visible:ring-3 focus-visible:ring-ring/50 active:bg-muted/60"
+        >
+          <span className="flex items-center gap-1 text-[15px] leading-snug font-semibold">
+            {/* 거래처 고정 표시는 보라색 ★ (차량 정보의 노란 ★과 구별) */}
+            {isPinned ? <Star aria-label="고정" className="size-3 shrink-0 fill-violet-400 text-violet-400" /> : null}
+            <span className="truncate">{client.name}</span>
+          </span>
+          {contact.length > 0 ? (
+            <span className="mt-0.5 truncate text-[13px] text-muted-foreground">{contact.join(" · ")}</span>
+          ) : null}
+        </button>
+        {isReordering && index !== null ? (
+          <div className="flex gap-1">
+            <Button
+              type="button"
+              variant="secondary"
+              size="icon"
+              className="size-9"
+              aria-label="위로"
+              disabled={index === 0 || isPending}
+              onClick={() => handleMove(client, -1)}
+            >
+              <ChevronUp />
+            </Button>
+            <Button
+              type="button"
+              variant="secondary"
+              size="icon"
+              className="size-9"
+              aria-label="아래로"
+              disabled={index === pinned.length - 1 || isPending}
+              onClick={() => handleMove(client, 1)}
+            >
+              <ChevronDown />
+            </Button>
+          </div>
+        ) : null}
+      </li>
+    )
+  }
+
   if (clients.length === 0) {
     return (
       <p className="py-12 text-center text-sm text-muted-foreground">
@@ -90,44 +186,62 @@ export function ClientList({
 
   return (
     <>
+      {pinned.length > 0 ? (
+        <section className="-mx-4 md:mx-0">
+          <div className="flex h-9 items-center justify-between px-4 text-sm text-muted-foreground">
+            <span>
+              <span className="font-semibold text-foreground">고정</span> {pinned.length}/{MAX_PINNED_VEHICLES}
+            </span>
+            {pinned.length > 1 ? (
+              <button
+                type="button"
+                className="text-sm underline underline-offset-4"
+                onClick={() => setIsReordering((v) => !v)}
+              >
+                {isReordering ? "완료" : "순서 바꾸기"}
+              </button>
+            ) : null}
+          </div>
+          <ul className="border-t">{pinned.map((c, i) => row(c, i))}</ul>
+        </section>
+      ) : null}
+
       <section className="-mx-4 md:mx-0">
         <div className="flex h-11 items-center px-4 text-sm text-muted-foreground">
           <span>
-            <span className="font-semibold text-foreground">전체</span> {clients.length}곳
+            <span className="font-semibold text-foreground">전체</span> {others.length}곳
           </span>
         </div>
-        <ul className="border-t">
-          {clients.map((client) => {
-            const people = contactsOf(client)
-            const contact = [
-              people.length > 1 ? `${people[0].name} 외 ${people.length - 1}명` : people[0]?.name,
-              people[0]?.phone ? formatPhoneNumber(people[0].phone) : null,
-            ].filter(Boolean)
-            return (
-              <li key={client.id} className="relative border-b">
-                <button
-                  type="button"
-                  onClick={() => setSheetClient(client)}
-                  className="flex min-h-15 w-full flex-col justify-center px-4 py-2.5 text-left outline-none focus-visible:ring-3 focus-visible:ring-ring/50 active:bg-muted/60"
-                >
-                  <span className="text-[15px] leading-snug font-semibold">{client.name}</span>
-                  {contact.length > 0 ? (
-                    <span className="mt-0.5 truncate text-[13px] text-muted-foreground">
-                      {contact.join(" · ")}
-                    </span>
-                  ) : null}
-                </button>
-              </li>
-            )
-          })}
-        </ul>
+        <ul className="border-t">{others.map((c) => row(c, null))}</ul>
       </section>
 
       <Sheet open={sheetClient !== null} onOpenChange={(open) => !open && setSheetClient(null)}>
         <SheetContent side="bottom" className="gap-0 pb-6">
           {sheetClient ? (
             <>
-              <SheetHeader className="pr-12">
+              {/* ✕ 옆 ⋯ 메뉴: 가끔 쓰는 고정·삭제는 한 번 더 눌러야 나오게(차량 정보와 같은 방식) */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    type="button"
+                    aria-label="더보기"
+                    className="absolute top-3 right-12 flex size-8 items-center justify-center rounded-md bg-muted text-foreground/80"
+                  >
+                    <Ellipsis className="size-5" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-44">
+                  <DropdownMenuItem className="h-10" disabled={isPending} onSelect={() => handleTogglePin(sheetClient)}>
+                    <Star className={cn(sheetClient.pin_order != null && "fill-violet-400 text-violet-400")} />
+                    {sheetClient.pin_order != null ? "고정 풀기" : "위에 고정"}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem className="h-10" variant="destructive" onSelect={() => handleDeleteClick(sheetClient)}>
+                    <Trash2 />
+                    삭제
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+              <SheetHeader className="pr-24">
                 <SheetTitle>{sheetClient.name}</SheetTitle>
                 <SheetDescription>
                   거래처{sheetClient.biz_no ? ` · 사업자 ${formatBizNo(sheetClient.biz_no)}` : ""}
@@ -166,14 +280,6 @@ export function ClientList({
                 </dl>
                 <Button variant="outline" className="h-11" asChild>
                   <Link href={`/clients/${sheetClient.id}/edit`}>수정</Link>
-                </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  className="h-10 text-destructive hover:text-destructive"
-                  onClick={() => handleDeleteClick(sheetClient)}
-                >
-                  삭제
                 </Button>
               </div>
             </>

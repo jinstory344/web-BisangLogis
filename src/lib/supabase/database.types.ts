@@ -50,6 +50,8 @@ export type ClientRow = BaseColumns & {
   contact_phone: string | null
   contact_email: string | null
   memo: string | null
+  /** 거래처 목록 상단 고정 순서(1~10). null이면 고정 안 함. */
+  pin_order: number | null
 }
 
 /** 거래처 담당자 (거래처마다 여러 명). clients.contact_name/phone은 첫 번째 담당자로 맞춰 둔다. */
