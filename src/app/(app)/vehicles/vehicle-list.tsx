@@ -257,11 +257,11 @@ export function VehicleList({
                 </DropdownMenuContent>
               </DropdownMenu>
               <SheetHeader className="pr-24">
-                <SheetTitle>{sheetVehicle.plate_no}</SheetTitle>
+                <SheetTitle>{sheetVehicle.driver_name}</SheetTitle>
                 <div className="flex items-center justify-between gap-2">
                   <SheetDescription>
                     {[
-                      sheetVehicle.driver_name,
+                      sheetVehicle.plate_no,
                       sheetVehicle.driver_phone ? formatPhoneNumber(sheetVehicle.driver_phone) : null,
                       vehicleSpecLabel(sheetVehicle) || null,
                     ]

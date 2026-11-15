@@ -130,8 +130,8 @@ export function DispatchList({
                   {d.weight_ton != null ? `${d.weight_ton}톤` : "-"}
                 </TableCell>
                 <TableCell>
+                  {d.driver_name_snapshot ? `${d.driver_name_snapshot} ` : ""}
                   {d.plate_no_snapshot ?? "-"}
-                  {d.driver_name_snapshot ? ` (${d.driver_name_snapshot})` : ""}
                 </TableCell>
                 <TableCell>{formatPhoneNumber(d.driver_phone_snapshot)}</TableCell>
                 <TableCell className="text-right">

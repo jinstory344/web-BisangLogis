@@ -88,9 +88,9 @@ function EmptyMessage({ children }: { children: ReactNode }) {
   )
 }
 
-/** "12가3456 · 김기사" (차량을 아직 정하지 않았으면 "차량 미정") */
+/** "김기사 · 12가3456" (차량을 아직 정하지 않았으면 "차량 미정") */
 function vehicleLine(dispatch: SearchDispatch): string {
-  const text = [dispatch.plate_no_snapshot, dispatch.driver_name_snapshot]
+  const text = [dispatch.driver_name_snapshot, dispatch.plate_no_snapshot]
     .map((part) => part?.trim())
     .filter(Boolean)
     .join(" · ")

@@ -39,7 +39,7 @@ function clientNameOf(
 
 /** 행 둘째 줄: "12가3456 · 김기사" (차량을 아직 정하지 않았으면 "차량 미정") */
 function vehicleLine(dispatch: DispatchRow): string {
-  const text = [dispatch.plate_no_snapshot, dispatch.driver_name_snapshot]
+  const text = [dispatch.driver_name_snapshot, dispatch.plate_no_snapshot]
     .map((part) => part?.trim())
     .filter(Boolean)
     .join(" · ")
@@ -214,7 +214,7 @@ export function DispatchActionSheetBody({
         plate || driverName || driverPhone ? (
           <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
             {plate || driverName ? (
-              <span>{[plate, driverName].filter(Boolean).join(" · ")}</span>
+              <span>{[driverName, plate].filter(Boolean).join(" · ")}</span>
             ) : null}
             {driverPhone ? <PhoneLink phone={driverPhone} /> : null}
           </span>
