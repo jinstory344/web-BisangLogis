@@ -52,6 +52,14 @@ export type ClientRow = BaseColumns & {
   memo: string | null
 }
 
+/** 거래처 담당자 (거래처마다 여러 명). clients.contact_name/phone은 첫 번째 담당자로 맞춰 둔다. */
+export type ClientContactRow = BaseColumns & {
+  client_id: string
+  name: string
+  phone: string | null
+  sort_order: number
+}
+
 export type VehicleRow = BaseColumns & {
   plate_no: string
   driver_name: string
@@ -220,6 +228,7 @@ export type Database = {
   public: {
     Tables: {
       clients: TableDef<ClientRow>
+      client_contacts: TableDef<ClientContactRow>
       vehicles: TableDef<VehicleRow>
       dispatches: TableDef<DispatchRow>
       sales: TableDef<SaleRow>

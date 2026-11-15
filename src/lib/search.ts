@@ -159,6 +159,8 @@ export interface SearchFilters {
   clientName?: string
   category?: string
   unpaid?: boolean
+  /** 거래처 담당자 이름 (배차만 거른다) */
+  contact?: string
 }
 
 const UUID_RE = /^[0-9a-f-]{36}$/
@@ -169,6 +171,7 @@ export function parseSearchFilters(params: {
   client_name?: string | string[]
   category?: string | string[]
   unpaid?: string | string[]
+  contact?: string | string[]
 }): SearchFilters {
   const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v) ?? ""
   const clientId = one(params.client_id)
@@ -178,19 +181,20 @@ export function parseSearchFilters(params: {
     clientName: UUID_RE.test(clientId) ? normalizeSearchQuery(one(params.client_name)) || undefined : undefined,
     category: category || undefined,
     unpaid: one(params.unpaid) === "1" || undefined,
+    contact: (UUID_RE.test(clientId) && normalizeSearchQuery(one(params.contact))) || undefined,
   }
 }
 
 /** 탭을 바꿀 때 그 탭에 안 맞는 조건은 뺀다 (지출엔 거래처·미입금 없음, 배차엔 항목·미입금 없음, 매출엔 항목 없음) */
 export function filtersForTab(tab: SearchTab, f: SearchFilters): SearchFilters {
   if (tab === "expense") return { category: f.category }
-  if (tab === "dispatch") return { clientId: f.clientId, clientName: f.clientName }
+  if (tab === "dispatch") return { clientId: f.clientId, clientName: f.clientName, contact: f.contact }
   if (tab === "sale") return { clientId: f.clientId, clientName: f.clientName, unpaid: f.unpaid }
-  return { clientId: f.clientId, clientName: f.clientName, category: f.category }
+  return { clientId: f.clientId, clientName: f.clientName, category: f.category, contact: f.contact }
 }
 
 export function hasFilters(f: SearchFilters): boolean {
-  return Boolean(f.clientId || f.category || f.unpaid)
+  return Boolean(f.clientId || f.category || f.unpaid || f.contact)
 }
 
 /** 통합검색 주소 (빈 값은 뺀다) */
@@ -213,6 +217,7 @@ export function searchHref(
   }
   if (filters.category) params.set("category", filters.category)
   if (filters.unpaid) params.set("unpaid", "1")
+  if (filters.contact) params.set("contact", filters.contact)
   const text = params.toString()
   return text ? `/search?${text}` : "/search"
 }

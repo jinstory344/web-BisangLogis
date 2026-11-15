@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest"
 
-import { clientFormDefaults, clientFormSchema } from "./client"
+import { cleanContacts, clientFormDefaults, clientFormSchema } from "./client"
 
 /** 폼이 실제로 보내는 형태(모두 문자열)를 서버 액션처럼 파싱한다. */
-function parse(overrides: Record<string, string> = {}) {
+function parse(overrides: Record<string, unknown> = {}) {
   return clientFormSchema.safeParse({
     ...clientFormDefaults,
     name: "우영로지스",
@@ -52,14 +52,25 @@ describe("clientFormSchema", () => {
   it("앞뒤 공백은 지운다", () => {
     const parsed = parse({
       name: "  조은푸드  ",
-      contact_name: " 김과장 ",
-      contact_phone: " 010-1111-2222 ",
+      contacts: [{ name: " 김과장 ", phone: " 010-1111-2222 " }],
     })
     expect(parsed.success).toBe(true)
     if (parsed.success) {
       expect(parsed.data.name).toBe("조은푸드")
-      expect(parsed.data.contact_name).toBe("김과장")
-      expect(parsed.data.contact_phone).toBe("010-1111-2222")
+      expect(parsed.data.contacts[0]).toEqual({ name: "김과장", phone: "010-1111-2222" })
     }
+  })
+
+  it("담당자 여러 명: 이름이 빈 줄은 빼고 전화가 비면 null", () => {
+    expect(
+      cleanContacts([
+        { name: "이준호", phone: "010-3581-0024" },
+        { name: "", phone: "010-0000-0000" },
+        { name: " 이재근 ", phone: "" },
+      ])
+    ).toEqual([
+      { name: "이준호", phone: "010-3581-0024" },
+      { name: "이재근", phone: null },
+    ])
   })
 })

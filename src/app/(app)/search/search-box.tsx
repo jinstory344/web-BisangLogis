@@ -21,7 +21,7 @@ export function SearchBox({
   query: string
   tab?: string
   period?: { from: string; to: string } | null
-  filters?: { clientId?: string; clientName?: string; category?: string; unpaid?: boolean }
+  filters?: { clientId?: string; clientName?: string; category?: string; unpaid?: boolean; contact?: string }
 }) {
   const inputRef = useRef<HTMLInputElement>(null)
 
@@ -45,6 +45,7 @@ export function SearchBox({
       {filters.clientName ? <input type="hidden" name="client_name" value={filters.clientName} /> : null}
       {filters.category ? <input type="hidden" name="category" value={filters.category} /> : null}
       {filters.unpaid ? <input type="hidden" name="unpaid" value="1" /> : null}
+      {filters.contact ? <input type="hidden" name="contact" value={filters.contact} /> : null}
       <Search
         aria-hidden
         className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"

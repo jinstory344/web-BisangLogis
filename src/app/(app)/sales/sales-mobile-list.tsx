@@ -6,7 +6,7 @@ import Link from "next/link"
 import { useMemo, useState } from "react"
 
 import { ReturnToLink } from "@/components/common/return-to-link"
-import { CallButton } from "@/components/common/call-button"
+import { ContactRow } from "@/components/common/contact-row"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import {
@@ -23,7 +23,6 @@ import { formatSaleSource } from "@/lib/constants/sale-sources"
 import { spansMultipleMonths } from "@/lib/day-groups"
 import { formatDateWithWeekday, formatMonthDay } from "@/lib/date"
 import { formatKRW } from "@/lib/money"
-import { formatPhoneNumber } from "@/lib/phone"
 import { groupSalesByDay } from "@/lib/sales-list"
 import type { SaleRow } from "@/lib/supabase/database.types"
 import { cn } from "@/lib/utils"
@@ -292,11 +291,7 @@ export function SaleActionSheetBody({
         </p>
 
         {phone ? (
-          <p className="flex items-center gap-2 text-sm">
-            <span className="text-muted-foreground">오더자 연락처</span>
-            <span className="tabular-nums">{formatPhoneNumber(phone)}</span>
-            <CallButton phone={phone} label="오더자에게 전화" />
-          </p>
+          <ContactRow label="오더자" name={sale.source_minor || "연락처"} phone={phone} />
         ) : null}
 
         {sale.payment_status === "UNPAID" ? (

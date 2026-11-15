@@ -5,7 +5,7 @@ import { useMemo, useState, type ReactNode } from "react"
 
 import { ReturnToLink } from "@/components/common/return-to-link"
 import { DayHeader } from "@/components/list/day-header"
-import { CallButton } from "@/components/common/call-button"
+import { ContactRow } from "@/components/common/contact-row"
 import { Button } from "@/components/ui/button"
 import {
   Sheet,
@@ -19,7 +19,6 @@ import { DROPOFF_TYPE_LABELS } from "@/lib/constants/dropoff-type"
 import { formatDateWithWeekday } from "@/lib/date"
 import { groupByDay, spansMultipleMonths } from "@/lib/day-groups"
 import { formatKRW } from "@/lib/money"
-import { formatPhoneNumber } from "@/lib/phone"
 import type { DispatchRow } from "@/lib/supabase/database.types"
 
 interface DispatchMobileListProps {
@@ -165,14 +164,6 @@ export function DispatchMobileList({
   )
 }
 
-function PhoneLink({ phone }: { phone: string }) {
-  return (
-    <span className="inline-flex items-center gap-2">
-      <span className="tabular-nums">{formatPhoneNumber(phone)}</span>
-      <CallButton phone={phone} />
-    </span>
-  )
-}
 
 export function DispatchActionSheetBody({
   dispatch,
@@ -198,28 +189,6 @@ export function DispatchActionSheetBody({
     .join(" · ")
 
   const details: { label: string; value: ReactNode }[] = [
-    {
-      label: "담당자",
-      value:
-        contactName || contactPhone ? (
-          <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
-            {contactName ? <span>{contactName}</span> : null}
-            {contactPhone ? <PhoneLink phone={contactPhone} /> : null}
-          </span>
-        ) : null,
-    },
-    {
-      label: "차량",
-      value:
-        plate || driverName || driverPhone ? (
-          <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
-            {plate || driverName ? (
-              <span>{[driverName, plate].filter(Boolean).join(" · ")}</span>
-            ) : null}
-            {driverPhone ? <PhoneLink phone={driverPhone} /> : null}
-          </span>
-        ) : null,
-    },
     { label: "하차일", value: DROPOFF_TYPE_LABELS[dispatch.dropoff_type] },
     { label: "화물", value: cargo },
     {
@@ -246,18 +215,21 @@ export function DispatchActionSheetBody({
       </SheetHeader>
 
       <div className="flex flex-col gap-3 px-4">
-        <dl className="flex flex-col gap-1.5 text-sm">
+        <div className="flex flex-col">
+          {/* 연락처 줄: 전화 버튼은 줄 끝에 세로로 가지런히, 제목·글자는 가운데 높이로 */}
+          {contactName || contactPhone ? (
+            <ContactRow label="담당자" name={contactName || "-"} phone={contactPhone} />
+          ) : null}
+          {plate || driverName || driverPhone ? (
+            <ContactRow label="차량" name={driverName || "-"} extra={plate || undefined} phone={driverPhone} />
+          ) : null}
           {details.map((detail) => (
-            <div key={detail.label} className="flex gap-3">
-              <dt className="w-14 shrink-0 text-muted-foreground">
-                {detail.label}
-              </dt>
-              <dd className="min-w-0 flex-1 break-words whitespace-pre-wrap">
-                {detail.value}
-              </dd>
+            <div key={detail.label} className="flex min-h-11 items-center gap-3 border-b py-1.5 text-sm last:border-b-0">
+              <span className="w-14 shrink-0 text-muted-foreground">{detail.label}</span>
+              <span className="min-w-0 flex-1 break-words whitespace-pre-wrap">{detail.value}</span>
             </div>
           ))}
-        </dl>
+        </div>
 
         <div className="grid grid-cols-3 gap-2">
           <Button variant="outline" className="h-11" asChild>

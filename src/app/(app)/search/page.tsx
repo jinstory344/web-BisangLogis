@@ -34,6 +34,8 @@ import { PeriodFilter } from "./period-filter"
 import { QuickCards } from "./quick-cards"
 import { RememberSearch } from "./recent-searches"
 import { SearchBox } from "./search-box"
+import { getClientContacts } from "../clients/actions"
+
 import { EntityCards } from "./entity-cards"
 import { searchClientIds, searchDispatchAmounts, searchDispatches, searchEntities } from "./search-data"
 import { SearchResultList, type SearchItem } from "./search-result-list"
@@ -57,6 +59,7 @@ export default async function SearchPage({
     client_name?: string | string[]
     category?: string | string[]
     unpaid?: string | string[]
+    contact?: string | string[]
   }>
 }) {
   const params = await searchParams
@@ -136,8 +139,11 @@ export default async function SearchPage({
         searchDispatches(supabase, query, clientIds, period, filters),
         searchLedgerAmounts(supabase, query, clientIds, filters),
         searchDispatchAmounts(supabase, query, clientIds, filters),
-        query ? searchEntities(supabase, query) : Promise.resolve({ clients: [], vehicles: [] }),
+        query || filters.clientId
+          ? searchEntities(supabase, query || filters.clientName || "")
+          : Promise.resolve({ clients: [], vehicles: [] }),
       ])
+      const contactsByClient = await getClientContacts(entities.clients.map((c) => c.id))
       // 합계·건수는 목록(최근 몇백 건)이 아니라 조건에 맞는 전부로, 기간은 여기서 거른다
       const saleIn = amounts.sale.filter((r) => inPeriod(r.date, period))
       const expenseIn = amounts.expense.filter((r) => inPeriod(r.date, period))
@@ -215,7 +221,15 @@ export default async function SearchPage({
 
       fixedPart = (
         <>
-          <EntityCards clients={entities.clients} vehicles={entities.vehicles} />
+          <EntityCards
+            clients={entities.clients}
+            vehicles={entities.vehicles}
+            contactsByClient={contactsByClient}
+            query={query}
+            tab={tab}
+            period={period}
+            filters={filters}
+          />
           <nav
             aria-label="검색 결과 종류"
             className="-mx-4 grid grid-cols-4 border-b px-2 md:mx-0 md:px-0"
@@ -267,6 +281,7 @@ export default async function SearchPage({
           filters.category,
           period ? periodLabel(period, today) : null,
           filters.unpaid ? "미입금만" : null,
+          filters.contact ? `담당 ${filters.contact}` : null,
         ]
           .filter(Boolean)
           .join(" · ") || "전체"

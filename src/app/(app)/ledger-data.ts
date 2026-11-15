@@ -183,11 +183,11 @@ function saleClientFilter(filters: SearchFilters): string {
   return `client_id.eq.${filters.clientId}${name}`
 }
 
-/** 조건 칩에 안 맞는 종류는 아예 읽지 않는다 (항목=지출만, 거래처=매출·배차, 미입금=매출만) */
+/** 조건 칩에 안 맞는 종류는 아예 읽지 않는다 (항목=지출만, 거래처=매출·배차, 미입금=매출만, 담당자=배차만) */
 export function skippedKinds(filters: SearchFilters): { sale: boolean; expense: boolean; dispatch: boolean } {
   return {
-    sale: Boolean(filters.category),
-    expense: Boolean(filters.clientId || filters.unpaid),
+    sale: Boolean(filters.category || filters.contact),
+    expense: Boolean(filters.clientId || filters.unpaid || filters.contact),
     dispatch: Boolean(filters.category || filters.unpaid),
   }
 }

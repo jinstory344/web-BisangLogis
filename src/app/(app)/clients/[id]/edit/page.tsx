@@ -5,7 +5,7 @@ import { normalizeClientCategory } from "@/lib/constants/client"
 import { createClient } from "@/lib/supabase/server"
 import type { ClientFormValues } from "@/lib/validations/client"
 
-import { updateClientAction } from "../../actions"
+import { getClientContacts, updateClientAction } from "../../actions"
 import { ClientForm } from "../../client-form"
 
 export default async function EditClientPage({
@@ -25,6 +25,7 @@ export default async function EditClientPage({
   if (!client) {
     notFound()
   }
+  const contacts = (await getClientContacts([id]))[id] ?? []
 
   const defaultValues: ClientFormValues = {
     name: client.name,
@@ -34,8 +35,10 @@ export default async function EditClientPage({
     address: client.address ?? "",
     biz_type: client.biz_type ?? "",
     biz_item: client.biz_item ?? "",
-    contact_name: client.contact_name ?? "",
-    contact_phone: client.contact_phone ?? "",
+    contacts:
+      contacts.length > 0
+        ? contacts.map((c) => ({ name: c.name, phone: c.phone ?? "" }))
+        : [{ name: client.contact_name ?? "", phone: client.contact_phone ?? "" }],
     contact_email: client.contact_email ?? "",
     memo: client.memo ?? "",
   }

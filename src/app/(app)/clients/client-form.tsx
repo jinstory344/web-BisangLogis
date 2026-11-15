@@ -1,7 +1,7 @@
 "use client"
 
 import { zodResolver } from "@hookform/resolvers/zod"
-import { ChevronDown } from "lucide-react"
+import { ChevronDown, Plus, X } from "lucide-react"
 import {
   startTransition,
   useActionState,
@@ -9,7 +9,7 @@ import {
   useState,
   type ComponentProps,
 } from "react"
-import { useForm } from "react-hook-form"
+import { useFieldArray, useForm } from "react-hook-form"
 
 import { FormSubmitBar, touchFormProps } from "@/components/form/form-submit-bar"
 import {
@@ -72,7 +72,7 @@ function TextField({
   inputProps,
 }: {
   form: ReturnType<typeof useForm<ClientFormValues>>
-  name: Exclude<keyof ClientFormValues, "category" | "memo">
+  name: Exclude<keyof ClientFormValues, "category" | "memo" | "contacts">
   label: string
   inputProps?: ComponentProps<typeof Input>
 }) {
@@ -122,10 +122,13 @@ export function ClientForm({
     resolver: zodResolver(clientFormSchema),
     defaultValues,
   })
+  const contactFields = useFieldArray({ control: form.control, name: "contacts" })
 
   async function onSubmit(values: ClientFormValues) {
     const fd = new FormData()
-    Object.entries(values).forEach(([key, value]) => fd.set(key, value))
+    Object.entries(values).forEach(([key, value]) =>
+      fd.set(key, typeof value === "string" ? value : JSON.stringify(value))
+    )
 
     // 같은 이름·사업자번호의 거래처가 이미 있으면 한 번 확인받는다. 확인 자체가 실패해도
     // 저장을 막지는 않는다 (안내용 장치라서).
@@ -179,14 +182,47 @@ export function ClientForm({
       >
         <TextField form={form} name="name" label="거래처명 *" />
 
-        <div className="grid md:grid-cols-2 md:gap-4">
-          <TextField form={form} name="contact_name" label="담당자" />
-          <TextField
-            form={form}
-            name="contact_phone"
-            label="연락처"
-            inputProps={{ type: "tel", placeholder: "010-0000-0000" }}
-          />
+        {/* 담당자 여러 명: 한 줄에 한 명(이름 · 전화), + 담당자 추가 / ✕ 지우기 */}
+        <div className="flex flex-col">
+          <p className="pt-3 pb-1 text-sm text-muted-foreground">담당자</p>
+          {contactFields.fields.map((field, index) => (
+            <div key={field.id} className="grid grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)_2.5rem] items-center gap-2 border-b">
+              <Input
+                {...form.register(`contacts.${index}.name`)}
+                placeholder="이름"
+                aria-label={`담당자 ${index + 1} 이름`}
+                className="h-11 border-0 bg-transparent px-0 text-base shadow-none focus-visible:ring-0 dark:bg-transparent"
+              />
+              <Input
+                {...form.register(`contacts.${index}.phone`)}
+                type="tel"
+                inputMode="tel"
+                placeholder="010-0000-0000"
+                aria-label={`담당자 ${index + 1} 전화`}
+                className="h-11 border-0 bg-transparent px-0 text-base shadow-none focus-visible:ring-0 dark:bg-transparent"
+              />
+              <button
+                type="button"
+                aria-label={`담당자 ${index + 1} 지우기`}
+                onClick={() =>
+                  contactFields.fields.length > 1
+                    ? contactFields.remove(index)
+                    : form.setValue(`contacts.${index}`, { name: "", phone: "" })
+                }
+                className="flex size-10 items-center justify-center text-muted-foreground"
+              >
+                <X className="size-4" />
+              </button>
+            </div>
+          ))}
+          <button
+            type="button"
+            onClick={() => contactFields.append({ name: "", phone: "" })}
+            className="mt-3 flex h-10 items-center justify-center gap-1 rounded-lg border border-dashed text-sm text-foreground/80"
+          >
+            <Plus className="size-4" />
+            담당자 추가
+          </button>
         </div>
 
         {/* 세금계산서 정보: 모바일은 접고, 데스크톱은 항상 펼친 제목으로 보여 준다. */}

@@ -5,6 +5,7 @@ import { SearchBox } from "@/components/common/search-box"
 import { createClient } from "@/lib/supabase/server"
 import type { ClientRow } from "@/lib/supabase/database.types"
 
+import { getClientContacts } from "./actions"
 import { ClientList } from "./client-list"
 
 export default async function ClientsPage({
@@ -27,6 +28,7 @@ export default async function ClientsPage({
   }
 
   const { data, error } = await request
+  const contactsByClient = await getClientContacts((data ?? []).map((c) => c.id))
 
   return (
     <div className="mx-auto max-w-2xl p-4 md:p-6">
@@ -52,7 +54,7 @@ export default async function ClientsPage({
         </p>
       ) : (
         <div className="mt-2">
-          <ClientList clients={(data ?? []) as ClientRow[]} />
+          <ClientList clients={(data ?? []) as ClientRow[]} contactsByClient={contactsByClient} />
         </div>
       )}
     </div>

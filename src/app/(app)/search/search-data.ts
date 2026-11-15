@@ -46,6 +46,7 @@ export async function searchDispatches(
   if (skippedKinds(filters).dispatch) return { dispatches: [], clientNameMap: {}, isTruncated: false }
   let request = supabase.from("dispatches").select("*").is("deleted_at", null)
   if (filters.clientId) request = request.eq("client_id", filters.clientId)
+    if (filters.contact) request = request.eq("contact_name", filters.contact)
   if (query) {
     request = request.or(
       appendClientIdFilter(
@@ -96,6 +97,7 @@ export async function searchDispatchAmounts(
       .select("dispatch_date, freight_amount, fee_amount")
       .is("deleted_at", null)
     if (filters.clientId) request = request.eq("client_id", filters.clientId)
+    if (filters.contact) request = request.eq("contact_name", filters.contact)
     if (query) {
       request = request.or(
         appendClientIdFilter(

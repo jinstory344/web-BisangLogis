@@ -17,7 +17,7 @@ import { nullifyEmptyStrings } from "@/lib/nullify-empty"
 import { softDelete } from "@/lib/soft-delete/soft-delete"
 import { createClient } from "@/lib/supabase/server"
 import type { ClientCategory } from "@/lib/supabase/database.types"
-import { clientFormSchema } from "@/lib/validations/client"
+import { cleanContacts, clientFormSchema } from "@/lib/validations/client"
 
 export interface ClientSearchResult {
   id: string
@@ -148,6 +148,54 @@ export async function findDuplicateClientsAction(input: {
   return mergeClientDuplicates(sameName, sameBizNo)
 }
 
+/** 폼은 담당자 목록을 JSON 글자로 보낸다 (FormData는 배열을 그대로 못 담아서) */
+function parseClientForm(formData: FormData) {
+  const raw = Object.fromEntries(formData)
+  let contacts: unknown = []
+  try {
+    contacts = JSON.parse(String(raw.contacts ?? "[]"))
+  } catch {
+    contacts = []
+  }
+  return clientFormSchema.safeParse({ ...raw, contacts })
+}
+
+/** 거래처 담당자 목록을 통째로 바꾼다: 예전 줄은 지운 표시(deleted_at), 새 목록을 순서대로 넣는다. */
+async function saveClientContacts(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  clientId: string,
+  contacts: { name: string; phone: string | null }[]
+): Promise<string | null> {
+  const removed = await supabase
+    .from("client_contacts")
+    .update({ deleted_at: new Date().toISOString() })
+    .eq("client_id", clientId)
+    .is("deleted_at", null)
+  if (removed.error) return `담당자 저장 실패: ${removed.error.message}`
+  if (contacts.length === 0) return null
+  const inserted = await supabase
+    .from("client_contacts")
+    .insert(contacts.map((c, i) => ({ client_id: clientId, name: c.name, phone: c.phone, sort_order: i })))
+  return inserted.error ? `담당자 저장 실패: ${inserted.error.message}` : null
+}
+
+/** 거래처 판·검색 카드용 담당자 목록 (거래처별, 순서대로) */
+export async function getClientContacts(
+  clientIds: string[]
+): Promise<Record<string, { name: string; phone: string | null }[]>> {
+  if (clientIds.length === 0) return {}
+  const supabase = await createClient()
+  const { data } = await supabase
+    .from("client_contacts")
+    .select("client_id, name, phone, sort_order")
+    .in("client_id", clientIds)
+    .is("deleted_at", null)
+    .order("sort_order")
+  const map: Record<string, { name: string; phone: string | null }[]> = {}
+  for (const row of data ?? []) (map[row.client_id] ??= []).push({ name: row.name, phone: row.phone })
+  return map
+}
+
 export interface ClientActionState {
   error: string | null
 }
@@ -156,15 +204,23 @@ export async function createClientAction(
   _prevState: ClientActionState,
   formData: FormData
 ): Promise<ClientActionState> {
-  const parsed = clientFormSchema.safeParse(Object.fromEntries(formData))
+  const parsed = parseClientForm(formData)
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "입력값을 확인하세요" }
   }
 
   const supabase = await createClient()
   // name·category는 빈 문자열이 올 수 없는 필수 값이라 null 변환에서 뺀다 (category의 타입이 string으로 넓어지지 않게).
-  const { name, category, ...optional } = parsed.data
-  const values = { name, category, ...nullifyEmptyStrings(optional) }
+  const { name, category, contacts: rawContacts, ...optional } = parsed.data
+  const contacts = cleanContacts(rawContacts)
+  // 첫 번째 담당자는 거래처 칸에도 적어 둔다(예전 화면·매출 거래처 고르기 등이 그대로 쓰도록)
+  const values = {
+    name,
+    category,
+    ...nullifyEmptyStrings(optional),
+    contact_name: contacts[0]?.name ?? null,
+    contact_phone: contacts[0]?.phone ?? null,
+  }
 
   const { data, error } = await supabase
     .from("clients")
@@ -183,6 +239,9 @@ export async function createClientAction(
     afterData: values,
   })
 
+  const contactError = await saveClientContacts(supabase, data.id, contacts)
+  if (contactError) return { error: contactError }
+
   revalidatePath("/clients")
   redirect("/clients")
 }
@@ -192,15 +251,23 @@ export async function updateClientAction(
   _prevState: ClientActionState,
   formData: FormData
 ): Promise<ClientActionState> {
-  const parsed = clientFormSchema.safeParse(Object.fromEntries(formData))
+  const parsed = parseClientForm(formData)
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "입력값을 확인하세요" }
   }
 
   const supabase = await createClient()
   // name·category는 빈 문자열이 올 수 없는 필수 값이라 null 변환에서 뺀다 (category의 타입이 string으로 넓어지지 않게).
-  const { name, category, ...optional } = parsed.data
-  const values = { name, category, ...nullifyEmptyStrings(optional) }
+  const { name, category, contacts: rawContacts, ...optional } = parsed.data
+  const contacts = cleanContacts(rawContacts)
+  // 첫 번째 담당자는 거래처 칸에도 적어 둔다(예전 화면·매출 거래처 고르기 등이 그대로 쓰도록)
+  const values = {
+    name,
+    category,
+    ...nullifyEmptyStrings(optional),
+    contact_name: contacts[0]?.name ?? null,
+    contact_phone: contacts[0]?.phone ?? null,
+  }
 
   const { data: before, error: fetchError } = await supabase
     .from("clients")
@@ -225,6 +292,9 @@ export async function updateClientAction(
     beforeData: before,
     afterData: { ...before, ...values },
   })
+
+  const contactError = await saveClientContacts(supabase, id, contacts)
+  if (contactError) return { error: contactError }
 
   revalidatePath("/clients")
   redirect("/clients")

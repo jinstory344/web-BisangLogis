@@ -14,7 +14,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { CallButton } from "@/components/common/call-button"
+import { ContactRow } from "@/components/common/contact-row"
 import { Button } from "@/components/ui/button"
 import {
   Sheet,
@@ -34,7 +34,20 @@ import {
 } from "./actions"
 
 /** 거래처 목록: 차량 정보와 같은 줄 목록. 줄을 누르면 아래에서 상세·전화·수정·삭제 */
-export function ClientList({ clients }: { clients: ClientRow[] }) {
+export function ClientList({
+  clients,
+  contactsByClient,
+}: {
+  clients: ClientRow[]
+  /** 거래처 id → 담당자 목록 (여러 명) */
+  contactsByClient: Record<string, { name: string; phone: string | null }[]>
+}) {
+  /** 담당자 목록이 아직 없으면(예전 자료) 거래처 칸의 담당자 한 명으로 */
+  function contactsOf(client: ClientRow): { name: string; phone: string | null }[] {
+    const list = contactsByClient[client.id]
+    if (list && list.length > 0) return list
+    return client.contact_name ? [{ name: client.contact_name, phone: client.contact_phone }] : []
+  }
   const [sheetClient, setSheetClient] = useState<ClientRow | null>(null)
   const [target, setTarget] = useState<{
     client: ClientRow
@@ -85,9 +98,10 @@ export function ClientList({ clients }: { clients: ClientRow[] }) {
         </div>
         <ul className="border-t">
           {clients.map((client) => {
+            const people = contactsOf(client)
             const contact = [
-              client.contact_name,
-              client.contact_phone ? formatPhoneNumber(client.contact_phone) : null,
+              people.length > 1 ? `${people[0].name} 외 ${people.length - 1}명` : people[0]?.name,
+              people[0]?.phone ? formatPhoneNumber(people[0].phone) : null,
             ].filter(Boolean)
             return (
               <li key={client.id} className="relative border-b">
@@ -115,24 +129,28 @@ export function ClientList({ clients }: { clients: ClientRow[] }) {
             <>
               <SheetHeader className="pr-12">
                 <SheetTitle>{sheetClient.name}</SheetTitle>
-                <div className="flex items-center justify-between gap-2">
-                  <SheetDescription>
-                    {[sheetClient.contact_name, sheetClient.contact_phone ? formatPhoneNumber(sheetClient.contact_phone) : null]
-                      .filter(Boolean)
-                      .join(" · ") || "담당자 정보 없음"}
-                  </SheetDescription>
-                  {sheetClient.contact_phone ? (
-                    <CallButton
-                      phone={sheetClient.contact_phone}
-                      label={`${sheetClient.contact_name ?? sheetClient.name}에게 전화`}
-                    />
-                  ) : null}
-                </div>
+                <SheetDescription>
+                  거래처{sheetClient.biz_no ? ` · 사업자 ${formatBizNo(sheetClient.biz_no)}` : ""}
+                </SheetDescription>
               </SheetHeader>
               <div className="flex flex-col gap-3 px-4">
+                {/* 담당자 여러 명: 한 줄에 한 명, 전화 버튼은 줄 끝 */}
+                <section>
+                  <p className="pb-1 text-sm text-muted-foreground">
+                    <span className="font-semibold text-foreground">담당자</span> {contactsOf(sheetClient).length}명
+                  </p>
+                  {contactsOf(sheetClient).length === 0 ? (
+                    <p className="py-2 text-sm text-muted-foreground">담당자 정보가 없어요. [수정]에서 추가하세요.</p>
+                  ) : (
+                    <div className="border-t">
+                      {contactsOf(sheetClient).map((c, i) => (
+                        <ContactRow key={`${c.name}-${i}`} name={c.name} phone={c.phone} />
+                      ))}
+                    </div>
+                  )}
+                </section>
                 <dl className="flex flex-col gap-1.5 text-sm">
                   {[
-                    { label: "사업자번호", value: sheetClient.biz_no ? formatBizNo(sheetClient.biz_no) : null },
                     { label: "대표자", value: sheetClient.ceo_name },
                     { label: "주소", value: sheetClient.address },
                     { label: "이메일", value: sheetClient.contact_email },
