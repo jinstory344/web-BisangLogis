@@ -103,8 +103,8 @@ export async function getRecentDispatchRoutesAction(): Promise<RecentRoute[]> {
 }
 
 /**
- * 배차 폼 "최근 담당자" 칩: 같은 거래처로 최근 등록한(created_at 최신순) 배차에서 서로 다른
- * 담당자(이름+연락처)를 최대 5개 돌려준다. 삭제된 건은 제외한다.
+ * 배차 폼 "담당자" 칩: 거래처에 등록한 담당자(거래처 정보, 순서대로)를 먼저, 이어서 같은 거래처로
+ * 최근 등록한 배차의 다른 담당자를 최대 5개(등록 담당자가 더 많으면 그만큼)까지. 삭제된 건은 제외한다.
  * 담당자는 거래처마다, 건마다 달라서 폼에 자동으로 채우지 않고 칩으로만 제안한다.
  */
 export async function getRecentDispatchContactsAction(
@@ -113,19 +113,32 @@ export async function getRecentDispatchContactsAction(
   if (!clientId) return []
 
   const supabase = await createClient()
-  const { data, error } = await supabase
-    .from("dispatches")
-    .select("contact_name, contact_phone")
-    .eq("client_id", clientId)
-    .is("deleted_at", null)
-    .order("created_at", { ascending: false })
-    .limit(RECENT_DISPATCH_CONTACT_SCAN_SIZE)
+  // 거래처에 등록한 담당자(거래처 정보)를 먼저, 그 뒤에 최근 배차에 적은 담당자
+  const [registered, recent] = await Promise.all([
+    supabase
+      .from("client_contacts")
+      .select("name, phone")
+      .eq("client_id", clientId)
+      .is("deleted_at", null)
+      .order("sort_order"),
+    supabase
+      .from("dispatches")
+      .select("contact_name, contact_phone")
+      .eq("client_id", clientId)
+      .is("deleted_at", null)
+      .order("created_at", { ascending: false })
+      .limit(RECENT_DISPATCH_CONTACT_SCAN_SIZE),
+  ])
 
-  if (error) {
-    throw new Error(`최근 담당자 조회 실패: ${error.message}`)
+  if (recent.error) {
+    throw new Error(`최근 담당자 조회 실패: ${recent.error.message}`)
   }
 
-  return pickRecentDispatchContacts(data, RECENT_CONTACT_LIMIT)
+  const registeredRows = (registered.data ?? []).map((c) => ({ contact_name: c.name, contact_phone: c.phone }))
+  return pickRecentDispatchContacts(
+    [...registeredRows, ...recent.data],
+    Math.max(RECENT_CONTACT_LIMIT, registeredRows.length)
+  )
 }
 
 /** 4.3.6 중복 입력 감지: 운송일자+거래처+상차지+하차지+차량번호 동일 건 존재 여부 */

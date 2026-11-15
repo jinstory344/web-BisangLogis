@@ -407,7 +407,7 @@ export function DispatchForm({
         />
 
         <RecentContactChips
-          label="최근 담당자"
+          label="담당자"
           contacts={recentContacts}
           value={{ name: contactName, phone: contactPhone }}
           onSelect={applyRecentContact}
