@@ -223,7 +223,7 @@ export async function searchLedgerEntries(
         clientIds
       )
     )
-    expenses = expenses.or(buildIlikeOrFilter(["category_major", "category_minor", "vendor", "memo"], query))
+    expenses = expenses.or(buildIlikeOrFilter(["category_major", "category_minor", "card_name", "vendor", "memo"], query))
   }
   if (period) {
     sales = sales.gte("sale_date", period.from).lte("sale_date", period.to)
@@ -281,7 +281,7 @@ export async function searchLedgerAmounts(
     skip.expense ? Promise.resolve([]) : fetchAllRows((a, b) => {
       let q = supabase.from("expenses").select("expense_date, amount").is("deleted_at", null)
       if (filters.category) q = q.eq("category_minor", filters.category)
-      if (query) q = q.or(buildIlikeOrFilter(["category_major", "category_minor", "vendor", "memo"], query))
+      if (query) q = q.or(buildIlikeOrFilter(["category_major", "category_minor", "card_name", "vendor", "memo"], query))
       return q.order("id").range(a, b)
     }),
   ])
