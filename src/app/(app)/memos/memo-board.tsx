@@ -13,6 +13,13 @@ import type { MemoItem } from "./actions"
 
 const normalize = (text: string) => text.replace(/\s/g, "").toLowerCase()
 
+type Tab = "ALL" | MemoKind
+const TABS: [Tab, string][] = [
+  ["ALL", "전체"],
+  ["DISPATCH", "배차메모"],
+  ["WORK", "업무메모"],
+]
+
 /**
  * 메모 페이지 본문.
  * 위: [배차메모 | 업무메모] 탭 → "거래처 메모 N개 [거래처 ▾]"(거래처 선택판, 메모 수) → 찾기 칸.
@@ -27,20 +34,20 @@ export function MemoBoard({
 }: {
   initialMemos: MemoItem[]
   clientNames: Record<string, string>
-  initialKind: MemoKind
+  initialKind: Tab
   initialClientId: string
 }) {
   const [memos, setMemos] = useState(initialMemos)
-  const [kind, setKind] = useState<MemoKind>(initialKind)
+  const [kind, setKind] = useState<Tab>(initialKind)
   const [clientId, setClientId] = useState(initialClientId)
   const [query, setQuery] = useState("")
   const [isClientOpen, setIsClientOpen] = useState(false)
   const [editor, setEditor] = useState<{ open: boolean; draft: MemoDraft }>({
     open: false,
-    draft: { kind: initialKind, client_id: null, title: "", body: "", pinned: false },
+    draft: { kind: initialKind === "ALL" ? "DISPATCH" : initialKind, client_id: null, title: "", body: "", pinned: false },
   })
 
-  const ofKind = memos.filter((m) => m.kind === kind)
+  const ofKind = kind === "ALL" ? memos : memos.filter((m) => m.kind === kind)
   const counts: Record<string, number> = {}
   for (const m of ofKind) if (m.client_id) counts[m.client_id] = (counts[m.client_id] ?? 0) + 1
 
@@ -58,13 +65,19 @@ export function MemoBoard({
       open: true,
       draft: memo
         ? { ...memo }
-        : { kind, client_id: clientId || null, title: "", body: "", pinned: false },
+        : {
+            kind: kind === "ALL" ? "DISPATCH" : kind,
+            client_id: clientId || null,
+            title: "",
+            body: "",
+            pinned: false,
+          },
     })
   }
 
   function saved(memo: MemoItem) {
     setMemos((prev) => [memo, ...prev.filter((m) => m.id !== memo.id)])
-    setKind(memo.kind)
+    if (kind !== "ALL") setKind(memo.kind)
   }
 
   return (
@@ -81,13 +94,8 @@ export function MemoBoard({
         </button>
       </div>
 
-      <nav className="mt-3 grid grid-cols-2 gap-1.5">
-        {(
-          [
-            ["DISPATCH", "배차메모"],
-            ["WORK", "업무메모"],
-          ] as const
-        ).map(([value, label]) => (
+      <nav className="mt-3 grid grid-cols-3 gap-1.5">
+        {TABS.map(([value, label]) => (
           <button
             key={value}
             type="button"
@@ -100,7 +108,7 @@ export function MemoBoard({
           >
             {label}
             <span className={kind === value ? "text-background/70" : "text-muted-foreground"}>
-              {memos.filter((m) => m.kind === value).length}
+              {value === "ALL" ? memos.length : memos.filter((m) => m.kind === value).length}
             </span>
           </button>
         ))}
@@ -147,6 +155,11 @@ export function MemoBoard({
             <span className="flex items-center gap-1.5">
               {memo.pinned ? <Star className="size-3.5 shrink-0 fill-amber-400 text-amber-400" /> : null}
               <span className="min-w-0 text-[15px] font-semibold break-keep wrap-anywhere">{memo.title}</span>
+              {kind === "ALL" ? (
+                <span className="shrink-0 rounded-full bg-background/60 px-2 py-0.5 text-[11px] text-muted-foreground">
+                  {memo.kind === "DISPATCH" ? "배차" : "업무"}
+                </span>
+              ) : null}
               <span
                 className={cn(
                   "shrink-0 rounded-full px-2 py-0.5 text-[11px]",

@@ -5,7 +5,7 @@ import { MemoBoard } from "./memo-board"
 
 export const metadata = { title: "메모" }
 
-/** 메모 페이지: [배차메모 | 업무메모] 탭, 거래처로 보기, 찾기, ★고정, 쓰기·고치기 */
+/** 메모 페이지: [전체 | 배차메모 | 업무메모] 탭, 거래처로 보기, 찾기, ★고정, 쓰기·고치기 */
 export default async function MemosPage({
   searchParams,
 }: {
@@ -22,7 +22,7 @@ export default async function MemosPage({
     <MemoBoard
       initialMemos={memos}
       clientNames={Object.fromEntries((clientsRes.data ?? []).map((c) => [c.id, c.name]))}
-      initialKind={params.tab === "work" ? "WORK" : "DISPATCH"}
+      initialKind={params.tab === "work" ? "WORK" : params.tab === "dispatch" ? "DISPATCH" : "ALL"}
       initialClientId={params.client ?? ""}
     />
   )

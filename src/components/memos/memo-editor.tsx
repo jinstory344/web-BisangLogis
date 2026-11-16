@@ -1,6 +1,6 @@
 "use client"
 
-import { ChevronRight, Star, X } from "lucide-react"
+import { ChevronDown, ChevronRight, Maximize2, Minimize2, Star, X } from "lucide-react"
 import { useEffect, useState } from "react"
 import { toast } from "sonner"
 
@@ -44,12 +44,18 @@ export function MemoEditor({
   const [isClientOpen, setIsClientOpen] = useState(false)
   const [isBusy, setIsBusy] = useState(false)
   const [pickedName, setPickedName] = useState<string | null>(null)
+  // 종류·둘 곳 고르기는 접어 두고 [바꾸기]를 누를 때만 펼친다 (내용 칸을 넓게 쓰려고)
+  const [showSettings, setShowSettings] = useState(false)
+  // 크게 보기: 제목 칸까지 접고 내용 칸을 화면 가득
+  const [isExpanded, setIsExpanded] = useState(false)
 
   // 판을 열 때마다 넘겨받은 값으로 새로 채운다
   useEffect(() => {
     if (open) {
       setValue(draft)
       setPickedName(null)
+      setShowSettings(false)
+      setIsExpanded(false)
     }
   }, [open, draft])
 
@@ -91,79 +97,101 @@ export function MemoEditor({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="bottom" showCloseButton={false} className="h-[92svh] gap-0 p-0">
+      <SheetContent side="bottom" showCloseButton={false} className="gap-0 p-0 data-[side=bottom]:h-[92svh]">
         <div className="flex items-center justify-between bg-muted px-4 py-1.5">
           <SheetTitle className="text-base font-medium">{value.id ? "메모 고치기" : "새 메모"}</SheetTitle>
           <SheetDescription className="sr-only">메모를 쓰고 저장해요.</SheetDescription>
-          <button
-            type="button"
-            aria-label="닫기"
-            onClick={() => onOpenChange(false)}
-            className="-mr-2 flex size-10 items-center justify-center rounded-full text-muted-foreground"
-          >
-            <X className="size-5" />
-          </button>
+          <div className="-mr-2 flex items-center">
+            <button
+              type="button"
+              aria-pressed={value.pinned}
+              aria-label={value.pinned ? "고정 풀기" : "맨 위에 고정"}
+              onClick={() => set("pinned", !value.pinned)}
+              className="flex h-10 items-center gap-1 rounded-full px-2 text-xs text-muted-foreground"
+            >
+              <Star className={cn("size-5", value.pinned ? "fill-amber-400 text-amber-400" : "")} />
+              {value.pinned ? "고정됨" : "고정"}
+            </button>
+            <button
+              type="button"
+              aria-label="닫기"
+              onClick={() => onOpenChange(false)}
+              className="flex size-10 items-center justify-center rounded-full text-muted-foreground"
+            >
+              <X className="size-5" />
+            </button>
+          </div>
         </div>
 
-        <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-4 pt-3 pb-4">
-          <div className="grid grid-cols-2 gap-1.5">
-            {(["DISPATCH", "WORK"] as const).map((kind) => (
-              <button key={kind} type="button" className={segClass(value.kind === kind)} onClick={() => set("kind", kind)}>
-                {KIND_LABEL[kind]}
+        <div className="flex min-h-0 flex-1 flex-col gap-3 px-4 pt-3 pb-3">
+          {!isExpanded ? (
+            <>
+              <button
+                type="button"
+                aria-expanded={showSettings}
+                onClick={() => setShowSettings((v) => !v)}
+                className="flex min-h-9 items-center justify-between gap-2 text-left text-sm"
+              >
+                <span className="min-w-0 truncate">
+                  <span className="font-semibold">{KIND_LABEL[value.kind]}</span>
+                  <span className="text-muted-foreground"> · {clientName ?? "공통 (모든 거래처)"}</span>
+                </span>
+                <span className="flex shrink-0 items-center gap-0.5 text-xs text-muted-foreground">
+                  바꾸기
+                  <ChevronDown className={cn("size-4 transition-transform", showSettings && "rotate-180")} />
+                </span>
               </button>
-            ))}
-          </div>
 
-          <div>
-            <p className="mb-1.5 text-xs text-muted-foreground">어디에 둘까요</p>
-            <div className="grid grid-cols-2 gap-1.5">
-              <button type="button" className={segClass(!value.client_id)} onClick={() => set("client_id", null)}>
-                공통 (모든 거래처)
-              </button>
-              <button type="button" className={segClass(!!value.client_id)} onClick={() => setIsClientOpen(true)}>
-                <span className="truncate">{clientName ?? "거래처 고르기"}</span>
-                <ChevronRight className="size-4 shrink-0" />
-              </button>
-            </div>
-          </div>
+              {showSettings ? (
+                <div className="flex flex-col gap-2">
+                  <div className="grid grid-cols-2 gap-1.5">
+                    {(["DISPATCH", "WORK"] as const).map((kind) => (
+                      <button key={kind} type="button" className={segClass(value.kind === kind)} onClick={() => set("kind", kind)}>
+                        {KIND_LABEL[kind]}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    <button type="button" className={segClass(!value.client_id)} onClick={() => set("client_id", null)}>
+                      공통 (모든 거래처)
+                    </button>
+                    <button type="button" className={segClass(!!value.client_id)} onClick={() => setIsClientOpen(true)}>
+                      <span className="truncate">{clientName ?? "거래처 고르기"}</span>
+                      <ChevronRight className="size-4 shrink-0" />
+                    </button>
+                  </div>
+                </div>
+              ) : null}
 
-          <label className="flex flex-col gap-1.5">
-            <span className="text-xs text-muted-foreground">
-              제목{value.kind === "DISPATCH" ? " (경로)" : ""}
-            </span>
-            <input
-              value={value.title}
-              onChange={(e) => set("title", e.target.value)}
-              maxLength={100}
-              placeholder={value.kind === "DISPATCH" ? "예: 인천남동 - 광주 삼진냉장" : "예: 평택창고 출입"}
-              className="h-11 rounded-lg border bg-transparent px-3 text-base outline-none focus:border-foreground/40"
-            />
-            {value.kind === "DISPATCH" ? (
-              <span className="text-[11px] text-muted-foreground">
-                배차 경로와 비슷하면 차주 문자 보낼 때 이 메모를 먼저 골라 둬요
-              </span>
-            ) : null}
-          </label>
+              <input
+                value={value.title}
+                onChange={(e) => set("title", e.target.value)}
+                maxLength={100}
+                aria-label="제목"
+                placeholder={value.kind === "DISPATCH" ? "제목 (경로) 예: 인천남동 - 광주 삼진냉장" : "제목 예: 평택창고 출입"}
+                className="h-11 shrink-0 rounded-lg border bg-transparent px-3 text-base font-semibold outline-none focus:border-foreground/40"
+              />
+            </>
+          ) : null}
 
-          <label className="flex min-h-48 flex-1 flex-col gap-1.5">
-            <span className="text-xs text-muted-foreground">내용</span>
+          <div className="relative flex min-h-0 flex-1 flex-col">
             <textarea
               value={value.body}
               onChange={(e) => set("body", e.target.value)}
               maxLength={5000}
-              className="min-h-48 flex-1 resize-none rounded-lg border bg-transparent px-3 py-2.5 text-base leading-relaxed outline-none focus:border-foreground/40"
+              aria-label="내용"
+              placeholder="내용"
+              className="min-h-0 flex-1 resize-none rounded-lg border bg-transparent px-3 py-2.5 pr-11 text-base leading-relaxed outline-none focus:border-foreground/40"
             />
-          </label>
-
-          <button
-            type="button"
-            aria-pressed={value.pinned}
-            onClick={() => set("pinned", !value.pinned)}
-            className="flex h-10 items-center gap-2 text-sm"
-          >
-            <Star className={cn("size-5", value.pinned ? "fill-amber-400 text-amber-400" : "text-muted-foreground")} />
-            맨 위에 고정{value.kind === "WORK" ? " (홈 메모 버튼에서 먼저 보여요)" : ""}
-          </button>
+            <button
+              type="button"
+              aria-label={isExpanded ? "작게 보기" : "크게 보기"}
+              onClick={() => setIsExpanded((v) => !v)}
+              className="absolute top-1 right-1 flex size-9 items-center justify-center rounded-full text-muted-foreground active:bg-muted"
+            >
+              {isExpanded ? <Minimize2 className="size-4" /> : <Maximize2 className="size-4" />}
+            </button>
+          </div>
         </div>
 
         <div className="flex gap-2 border-t px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
