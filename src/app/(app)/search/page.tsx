@@ -126,7 +126,7 @@ export default async function SearchPage({
   const tabNav = (counts?: Record<SearchTab, number>) => (
     <nav
       aria-label="검색 결과 종류"
-      className="-mx-4 grid grid-cols-4 border-b px-2 md:mx-0 md:px-0"
+      className="flex flex-wrap gap-1.5 border-b pt-1 pb-2.5"
     >
       {SEARCH_TABS.map((item) => {
         const isActive = item.value === tab
@@ -138,18 +138,21 @@ export default async function SearchPage({
             scroll={false}
             aria-current={isActive ? "page" : undefined}
             className={cn(
-              "relative flex min-h-10 items-center justify-center gap-1 px-1 text-sm whitespace-nowrap",
-              isActive ? "font-semibold text-foreground" : "text-muted-foreground"
+              "inline-flex h-9 items-center gap-1 rounded-full px-3.5 text-sm whitespace-nowrap",
+              // 고른 탭만 흰 바탕·검은 글씨 (아래 회색 조건 칩과 구별)
+              isActive ? "bg-foreground font-semibold text-background" : "bg-muted text-muted-foreground"
             )}
           >
             {item.label}
             {counts ? (
-              <span className="text-[11px] tabular-nums text-muted-foreground">
+              <span
+                className={cn(
+                  "text-[11px] tabular-nums",
+                  isActive ? "text-background/70" : "text-muted-foreground"
+                )}
+              >
                 {counts[item.value]}
               </span>
-            ) : null}
-            {isActive ? (
-              <span aria-hidden className="absolute inset-x-3 -bottom-px h-0.5 rounded-full bg-red-400" />
             ) : null}
           </Link>
         )
