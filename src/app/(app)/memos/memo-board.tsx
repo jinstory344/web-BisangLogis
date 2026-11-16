@@ -134,11 +134,17 @@ export function MemoBoard({
             onClick={() => setKind(value)}
             className={cn(
               "inline-flex h-9 items-center justify-center gap-1 rounded-full text-sm",
-              kind === value ? "bg-foreground font-semibold text-background" : "bg-muted text-muted-foreground"
+              kind !== value
+                ? "bg-muted text-muted-foreground"
+                : value === "DISPATCH"
+                  ? "bg-[#34507d] font-semibold text-[#e3ecfb]"
+                  : value === "WORK"
+                    ? "bg-[#355a43] font-semibold text-[#e0f4e7]"
+                    : "bg-foreground font-semibold text-background"
             )}
           >
             {label}
-            <span className={kind === value ? "text-background/70" : "text-muted-foreground"}>
+            <span className="opacity-70">
               {value === "ALL" ? memos.length : memos.filter((m) => m.kind === value).length}
             </span>
           </button>
