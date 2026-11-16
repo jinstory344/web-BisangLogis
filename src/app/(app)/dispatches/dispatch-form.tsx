@@ -13,7 +13,7 @@ import {
 import { useForm } from "react-hook-form"
 
 import type { ClientSearchResult } from "@/app/(app)/clients/actions"
-import { ClientCombobox } from "@/components/clients/client-combobox"
+import { ClientPickerSheet } from "@/components/clients/client-picker-sheet"
 import { AmountInput } from "@/components/form/amount-input"
 import { AmountKeypadField } from "@/components/form/amount-keypad"
 import { DateRow } from "@/components/form/date-row"
@@ -218,8 +218,9 @@ export function DispatchForm({
 
         <FormItem>
           <FormLabel>거래처 *</FormLabel>
-          <ClientCombobox
+          <ClientPickerSheet
             value={selectedClient}
+            invalid={!!form.formState.errors.client_id}
             onChange={(client) => {
               setSelectedClient(client)
               form.setValue("client_id", client?.id ?? "", {

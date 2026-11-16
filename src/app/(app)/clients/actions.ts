@@ -50,11 +50,11 @@ export async function searchClientsAction(
 }
 
 /** 거래처 고르기 상자에 처음부터 보여 줄 전체 목록 (고정한 거래처 먼저, 그다음 이름순) */
-export async function listClientsAction(): Promise<ClientSearchResult[]> {
+export async function listClientsAction(): Promise<(ClientSearchResult & { pinned: boolean })[]> {
   const supabase = await createClient()
   const { data, error } = await supabase
     .from("clients")
-    .select("id, name, biz_no")
+    .select("id, name, biz_no, pin_order")
     .is("deleted_at", null)
     .order("pin_order", { ascending: true, nullsFirst: false })
     .order("name")
@@ -63,7 +63,7 @@ export async function listClientsAction(): Promise<ClientSearchResult[]> {
   if (error) {
     throw new Error(`거래처 목록 실패: ${error.message}`)
   }
-  return data
+  return data.map(({ pin_order, ...c }) => ({ ...c, pinned: pin_order !== null }))
 }
 
 /**
