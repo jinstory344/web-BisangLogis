@@ -1,10 +1,10 @@
 "use client"
 
-import { useEffect, useState, useTransition } from "react"
+import { useEffect, useState } from "react"
 import { toast } from "sonner"
 
 import {
-  searchClientsAction,
+  listClientsAction,
   quickCreateClientAction,
   type ClientSearchResult,
 } from "@/app/(app)/clients/actions"
@@ -27,13 +27,15 @@ interface ClientComboboxProps {
   newClientCategory?: ClientCategory
 }
 
-const MIN_QUERY_LENGTH = 2
 const CREATE_ID = "__create__"
 
+/** 띄어쓰기·대소문자·사업자번호의 "-"를 무시하고 비교 */
+const normalize = (text: string) => text.replace(/[\s-]/g, "").toLowerCase()
+
 /**
- * 2.2 거래처 자동완성: 거래처명 2글자 이상 입력 시 검색.
- * 일치하는 거래처가 없으면 목록 안에 "'X' 신규 등록" 항목이 나타나고,
- * 선택하는 즉시(별도 확인 창 없이) 등록과 선택이 함께 이루어진다.
+ * 2.2 거래처 고르기: 누르면 거래처 페이지의 전체 명단이 바로 뜨고, 글자를 치면 그 안에서 걸러진다.
+ * 명단에 없는 이름을 치면 목록 맨 아래 "'X' 직접 입력"이 나타나고,
+ * 고르는 즉시(별도 확인 창 없이) 거래처로 등록되면서 선택된다.
  */
 export function ClientCombobox({
   value,
@@ -42,34 +44,25 @@ export function ClientCombobox({
   newClientCategory,
 }: ClientComboboxProps) {
   const [inputValue, setInputValue] = useState(value?.name ?? "")
-  const [items, setItems] = useState<ClientSearchResult[]>([])
-  const [, startTransition] = useTransition()
+  const [allClients, setAllClients] = useState<ClientSearchResult[]>([])
   const [isCreating, setIsCreating] = useState(false)
 
   useEffect(() => {
-    const query = inputValue.trim()
-    if (query.length < MIN_QUERY_LENGTH) {
-      setItems([])
-      return
-    }
-
-    const timeout = setTimeout(() => {
-      startTransition(async () => {
-        try {
-          const results = await searchClientsAction(query)
-          setItems(results)
-        } catch {
-          setItems([])
-        }
-      })
-    }, 250)
-
-    return () => clearTimeout(timeout)
-  }, [inputValue])
+    listClientsAction()
+      .then(setAllClients)
+      .catch(() => setAllClients([]))
+  }, [])
 
   const trimmed = inputValue.trim()
-  const hasExactMatch = items.some((item) => item.name === trimmed)
-  const showCreateOption = trimmed.length >= MIN_QUERY_LENGTH && !hasExactMatch
+  // 고른 거래처 이름이 그대로 칸에 있으면 걸러 내지 않고 전체를 보여 준다(다른 거래처로 바꾸기 쉽게).
+  const query = trimmed === (value?.name ?? "") ? "" : normalize(trimmed)
+  const items = query
+    ? allClients.filter(
+        (c) => normalize(c.name).includes(query) || (c.biz_no ?? "").includes(query)
+      )
+    : allClients
+  const hasExactMatch = allClients.some((item) => item.name === trimmed)
+  const showCreateOption = query !== "" && !hasExactMatch
   const displayItems: ClientSearchResult[] = showCreateOption
     ? [...items, { id: CREATE_ID, name: trimmed, biz_no: null }]
     : items
@@ -87,6 +80,9 @@ export function ClientCombobox({
         const created = await quickCreateClientAction(
           next.name,
           newClientCategory
+        )
+        setAllClients((prev) =>
+          prev.some((c) => c.id === created.id) ? prev : [...prev, created]
         )
         onChange(created)
         setInputValue(created.name)
@@ -113,13 +109,13 @@ export function ClientCombobox({
       filter={null}
       disabled={disabled || isCreating}
     >
-      <ComboboxInput placeholder="거래처명 2글자 이상 입력" />
+      <ComboboxInput placeholder="눌러서 고르거나 직접 입력" />
       <ComboboxContent>
         <ComboboxList>
           {displayItems.map((item) =>
             item.id === CREATE_ID ? (
               <ComboboxItem key={item.id} value={item}>
-                &quot;{item.name}&quot; 신규 등록
+                &quot;{item.name}&quot; 직접 입력 (거래처에 추가)
               </ComboboxItem>
             ) : (
               <ComboboxItem key={item.id} value={item}>
@@ -131,7 +127,7 @@ export function ClientCombobox({
         </ComboboxList>
         <ComboboxEmpty>
           <p className="py-4 text-center text-sm text-muted-foreground">
-            거래처명을 2글자 이상 입력하세요
+            등록된 거래처가 없어요. 이름을 입력하세요
           </p>
         </ComboboxEmpty>
       </ComboboxContent>

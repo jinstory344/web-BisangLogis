@@ -49,6 +49,23 @@ export async function searchClientsAction(
   return data
 }
 
+/** 거래처 고르기 상자에 처음부터 보여 줄 전체 목록 (고정한 거래처 먼저, 그다음 이름순) */
+export async function listClientsAction(): Promise<ClientSearchResult[]> {
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from("clients")
+    .select("id, name, biz_no")
+    .is("deleted_at", null)
+    .order("pin_order", { ascending: true, nullsFirst: false })
+    .order("name")
+    .limit(500)
+
+  if (error) {
+    throw new Error(`거래처 목록 실패: ${error.message}`)
+  }
+  return data
+}
+
 /**
  * 2.2 거래처 콤보박스에서 "미등록 시 즉시 신규 등록" — 거래처명만으로 최소 생성.
  * 같은 이름의 거래처가 이미 있으면 새로 만들지 않고 그 거래처를 돌려준다. 검색 결과가 오기 전에
