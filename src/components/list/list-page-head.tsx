@@ -9,10 +9,11 @@ import { cn } from "@/lib/utils"
 
 /**
  * 모바일에서 첫째 고정 줄(ListPageHead) 바로 아래에 붙는 둘째 고정 영역의 top.
- * ListPageHead의 모바일 높이 = 위 여백 8px + 제목 줄 40px + 달 이동 40px = 88px(5.5rem).
+ * ListPageHead의 모바일 높이 = 위 여백 24px + 제목 줄 40px + 달 이동 40px = 104px(6.5rem).
+ * 위 여백은 아이폰 시계줄 바로 밑에 제목이 붙어 흐려 보이지 않게 넉넉히 둔다.
  */
 export const LIST_SUB_STICKY_CLASS =
-  "sticky top-[5.5rem] z-20 -mx-4 bg-background px-4 md:static md:mx-0 md:px-0"
+  "sticky top-[6.5rem] z-20 -mx-4 bg-background px-4 md:static md:mx-0 md:px-0"
 
 /** 목록 위 거르기 칩을 조금 작게 (36px) — 비상 화면 칩과 같은 크기 */
 export const LIST_CHIP_CLASS = "min-h-9 px-3.5 text-[13px] md:min-h-8"
@@ -42,7 +43,7 @@ export function ListPageHead({
   tintClassName?: string
 }) {
   return (
-    <div className={cn("sticky top-0 z-30 -mx-4 bg-background px-4 pt-2 md:static md:mx-0 md:bg-none md:px-0 md:pt-0", tintClassName)}>
+    <div className={cn("sticky top-0 z-30 -mx-4 bg-background px-4 pt-6 md:static md:mx-0 md:bg-none md:px-0 md:pt-0", tintClassName)}>
       <header className="grid h-10 grid-cols-[2.5rem_1fr_2.5rem] items-center md:hidden">
         <SearchButton />
         <h1 className="text-center text-lg font-semibold tracking-tight">{title}</h1>
