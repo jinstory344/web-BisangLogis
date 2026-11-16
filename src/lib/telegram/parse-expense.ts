@@ -36,17 +36,26 @@ export type ParsedExpense = {
 }
 
 /**
- * 금액 줄에서 "금액,리터"의 리터를 떼어 낸다 ("8만,50" "8만, 50L" "80000,50.5").
- * "80,000"처럼 천 단위 쉼표로 보이는 것(쉼표 바로 뒤 숫자 세 자리, 띄어쓰기·L 없음, 앞이 숫자)은 그대로 둔다.
+ * 금액 줄에서 "금액,리터"의 리터를 떼어 내고, 남은 쉼표는 띄어쓰기로 바꾼다.
+ * "74,331원,53,삼성복지" → 리터 53, 줄 "74,331원 삼성복지". "8만,50" "8만, 50L" "80000,50.5"도 된다.
+ * "80,000"처럼 천 단위 쉼표(앞이 숫자, 뒤가 숫자 딱 세 자리)는 금액으로 둔다.
  */
-export function splitLiters(line: string): { line: string; liters: number | null } {
-  const match = line.match(/(\d(?:만|천)?원?)\s*[,，](\s*)(\d{1,5}(?:\.\d)?)\s*(L|l|리터)?(?=\s|$)/)
-  if (!match) return { line, liters: null }
-  const [all, left, space, num, unit] = match
-  if (!space && !unit && /^\d{3}$/.test(num) && /\d$/.test(left)) return { line, liters: null }
-  const liters = Number(num)
-  if (!(liters > 0)) return { line, liters: null }
-  return { line: line.replace(all, left), liters }
+export function splitLiters(raw: string): { line: string; liters: number | null } {
+  // 글자 앞의 쉼표("…,삼성복지")는 띄어쓰기로
+  let line = raw.replace(/\s*[,，]\s*(?=[^\d\s])/g, " ")
+  let liters: number | null = null
+  const re = /(?<=\d(?:만|천)?원?)\s*[,，](\s*)(\d{1,5}(?:\.\d)?)\s*(L|l|리터)?(?=\s|$)/g
+  for (const match of line.matchAll(re)) {
+    const [all, space, num, unit] = match
+    const thousands = !space && !unit && /^\d{3}$/.test(num) && /\d/.test(line[match.index - 1] ?? "")
+    if (thousands || !(Number(num) > 0)) continue
+    liters = Number(num)
+    line = line.slice(0, match.index) + line.slice(match.index + all.length)
+    break
+  }
+  // 남은 쉼표 중 천 단위가 아닌 것("8만,3개월")도 띄어쓰기로
+  line = line.replace(/\s*[,，]\s*(?!\d{3}(?![\d.]))/g, " ").trim()
+  return { line, liters }
 }
 
 /** "50L" "50.5리터" → 리터, 아니면 null */

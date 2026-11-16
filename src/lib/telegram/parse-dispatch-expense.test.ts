@@ -148,6 +148,21 @@ describe("parseExpenseLines", () => {
     }
     const decimal = parseExpenseLines(["12만,85.5 신한복지", "주유"], { today, categories, cards: ["신한복지"] })
     expect(decimal.ok && decimal.value).toMatchObject({ amount: 120_000, liters: 85.5, card_name: "신한복지" })
+    // 사용자 예시: 금액(천 단위 쉼표)·리터·카드를 쉼표로 이어 쓰기
+    const joined = parseExpenseLines(["주유", "74,331원,53,삼성복지"], { today, categories, cards: ["삼성복지"] })
+    expect(joined.ok && joined.value).toMatchObject({
+      amount: 74_331,
+      liters: 53,
+      card_name: "삼성복지",
+      category_minor: "주유비",
+      memo: null,
+    })
+    for (const line of ["74331,53,삼성복지", "74,331,53,삼성복지", "74,331원, 53L, 삼성복지"]) {
+      const r = parseExpenseLines(["주유", line], { today, categories, cards: ["삼성복지"] })
+      expect(r.ok && r.value).toMatchObject({ amount: 74_331, liters: 53, card_name: "삼성복지" })
+    }
+    const months = parseExpenseLines(["60만,6개월", "주유"], { today, categories })
+    expect(months.ok && months.value).toMatchObject({ amount: 600_000, installment_months: 6, liters: null })
     // 천 단위 쉼표는 금액 그대로
     const thousands = parseExpenseLines(["80,000", "주유"], { today, categories })
     expect(thousands.ok && thousands.value).toMatchObject({ amount: 80_000, liters: null })
