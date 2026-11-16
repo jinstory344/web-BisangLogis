@@ -6,6 +6,8 @@ import { useMemo, useState, type ReactNode } from "react"
 import { ReturnToLink } from "@/components/common/return-to-link"
 import { DayHeader } from "@/components/list/day-header"
 import { ContactRow } from "@/components/common/contact-row"
+
+import { DispatchMessageSheet, type MessageTarget } from "./message-sheets"
 import { Button } from "@/components/ui/button"
 import {
   Sheet,
@@ -19,6 +21,7 @@ import { DROPOFF_TYPE_LABELS } from "@/lib/constants/dropoff-type"
 import { formatDateWithWeekday } from "@/lib/date"
 import { groupByDay, spansMultipleMonths } from "@/lib/day-groups"
 import { formatKRW } from "@/lib/money"
+import { MessageSquare, Send } from "lucide-react"
 import type { DispatchRow } from "@/lib/supabase/database.types"
 
 interface DispatchMobileListProps {
@@ -47,7 +50,7 @@ function vehicleLine(dispatch: DispatchRow): string {
 
 /**
  * 모바일 배차 목록: 날짜별 묶음 + 한 건당 두 줄 행(거래처 · 구간/차량·기사 · 운임/수수료).
- * 행에는 버튼이 없고, 행을 누르면 열리는 작업 시트에서 상세·수정·복사 등록·삭제를 한다.
+ * 행 아래 [차주 문자][거래처] 버튼으로 문자 판을 열고, 행의 나머지를 누르면 작업 시트(상세·수정·복사 등록·삭제).
  * 운임·수수료는 기사에게 지급하는 비용과 중개 수수료 기록이라 매출과 합치지 않는다.
  */
 export function DispatchMobileList({
@@ -67,6 +70,8 @@ export function DispatchMobileList({
   )
   const [sheetId, setSheetId] = useState<string | null>(null)
   const [isSheetOpen, setIsSheetOpen] = useState(false)
+  const [message, setMessage] = useState<{ target: MessageTarget; id: string } | null>(null)
+  const messageDispatch = message ? (dispatches.find((d) => d.id === message.id) ?? null) : null
 
   const spansMonths = spansMultipleMonths(groups)
   const sheetDispatch =
@@ -122,6 +127,23 @@ export function DispatchMobileList({
                 <p className="mt-0.5 truncate text-xs text-muted-foreground">
                   {vehicleLine(dispatch)}
                 </p>
+                {/* 행 전체 버튼 위에 올라오는 문자 버튼 두 개 */}
+                <div className="pointer-events-auto relative z-10 mt-1.5 flex gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setMessage({ target: "driver", id: dispatch.id })}
+                    className="inline-flex h-8 items-center gap-1 rounded-full bg-[#c4524e] px-3 text-xs font-semibold text-white active:opacity-80"
+                  >
+                    <MessageSquare className="size-3.5" /> 차주 문자
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setMessage({ target: "client", id: dispatch.id })}
+                    className="inline-flex h-8 items-center gap-1 rounded-full bg-muted px-3 text-xs font-semibold active:opacity-80"
+                  >
+                    <Send className="size-3.5" /> 거래처
+                  </button>
+                </div>
               </div>
 
               <div className="pointer-events-none flex shrink-0 flex-col items-end gap-0.5">
@@ -160,6 +182,16 @@ export function DispatchMobileList({
           ) : null}
         </SheetContent>
       </Sheet>
+
+      <DispatchMessageSheet
+        target={messageDispatch ? message!.target : null}
+        dispatch={messageDispatch}
+        clientName={messageDispatch ? clientNameOf(messageDispatch, clientNameMap) : ""}
+        clientNames={clientNameMap}
+        onOpenChange={(open) => {
+          if (!open) setMessage(null)
+        }}
+      />
     </div>
   )
 }

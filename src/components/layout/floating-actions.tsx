@@ -11,14 +11,17 @@ import {
   newEntryHref,
 } from "@/lib/entry-type"
 
+import { WorkMemoButton } from "@/components/memos/work-memo-sheet"
+
 import { QuickEntrySheet } from "./quick-entry-sheet"
 
 /** 떠 있는 버튼을 보여 줄 화면 (등록·수정 화면에서는 저장 바와 겹치지 않게 숨긴다) */
 const SHOWN_ON = ["/", "/dispatches", "/stats", "/sales", "/expenses", "/vehicles", "/clients"]
 
 /**
- * 모바일 오른쪽 아래 떠 있는 버튼 두 개 (가계부 앱 방식):
- * 차분한 벽돌빨강(#c4524e) ＋ = 통합 등록 화면(마지막에 고른 종류로), 회색 복사 = 이전 건 찾아 복사.
+ * 모바일 오른쪽 아래 떠 있는 버튼 세 개 (가계부 앱 방식):
+ * 회색 메모장 = 업무메모 판, 회색 복사 = 이전 건 찾아 복사,
+ * 차분한 벽돌빨강(#c4524e) ＋ = 통합 등록 화면(마지막에 고른 종류로).
  */
 export function FloatingActions() {
   const pathname = usePathname()
@@ -50,6 +53,7 @@ export function FloatingActions() {
     {/* 목록 맨 아래가 버튼에 가리지 않게 버튼 높이만큼 빈칸 */}
     <div aria-hidden className="h-16 md:hidden" />
     <div className="fixed right-4 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-40 flex items-center gap-3 md:hidden">
+      <WorkMemoButton />
       <QuickEntrySheet
         mode="copy"
         trigger={

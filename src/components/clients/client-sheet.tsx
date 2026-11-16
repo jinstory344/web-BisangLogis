@@ -45,6 +45,8 @@ export function ClientSheet({
   createCategory,
   counts,
   allCount,
+  countLabels = ["이 기간에 배차 있음", "배차 없음"],
+  unit = "건",
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -55,6 +57,10 @@ export function ClientSheet({
   createCategory?: ClientCategory
   counts?: Record<string, number>
   allCount?: number
+  /** counts가 있을 때 두 묶음 이름 */
+  countLabels?: [string, string]
+  /** 건수 뒤 단위 ("건", "개") */
+  unit?: string
 }) {
   const [clients, setClients] = useState<ListedClient[]>([])
   const [query, setQuery] = useState("")
@@ -87,8 +93,8 @@ export function ClientSheet({
       .sort((a, b) => (counts[b.id] ?? 0) - (counts[a.id] ?? 0))
     const unused = shown.filter((c) => !(counts[c.id] ?? 0))
     sections = [
-      { title: "이 기간에 배차 있음", clients: used },
-      { title: "배차 없음", clients: unused, muted: true },
+      { title: countLabels[0], clients: used },
+      { title: countLabels[1], clients: unused, muted: true },
     ]
   } else if (clients.some((c) => c.category === "OTHER")) {
     sections = [
@@ -164,7 +170,7 @@ export function ClientSheet({
               <span className={cn("text-base", selectedId === "" && "font-semibold text-red-400")}>
                 전체
               </span>
-              <span className="text-xs text-muted-foreground tabular-nums">{allCount ?? 0}건</span>
+              <span className="text-xs text-muted-foreground tabular-nums">{allCount ?? 0}{unit}</span>
             </button>
           ) : null}
 
@@ -196,7 +202,7 @@ export function ClientSheet({
                       </span>
                       <span className="shrink-0 text-xs text-muted-foreground tabular-nums">
                         {counts
-                          ? `${counts[client.id] ?? 0}건`
+                          ? `${counts[client.id] ?? 0}${unit}`
                           : client.biz_no
                             ? formatBizNo(client.biz_no)
                             : ""}

@@ -233,6 +233,17 @@ export type SettingsRow = BaseColumns & {
   popbill_is_test: boolean
 }
 
+export type MemoKind = "DISPATCH" | "WORK"
+
+/** 메모 — DISPATCH 배차메모(차주에게 보내는 문구) / WORK 업무메모. client_id 없으면 공통. */
+export type MemoRow = BaseColumns & {
+  kind: MemoKind
+  client_id: string | null
+  title: string
+  body: string
+  pinned: boolean
+}
+
 type TableDef<Row> = {
   Row: Row
   Insert: Partial<Row>
@@ -252,6 +263,7 @@ export type Database = {
       expense_categories: TableDef<ExpenseCategoryRow>
       sale_sources: TableDef<SaleSourceRow>
       expense_cards: TableDef<ExpenseCardRow>
+      memos: TableDef<MemoRow>
       tax_invoices: TableDef<TaxInvoiceRow>
       tax_invoice_dispatches: TableDef<TaxInvoiceDispatchRow>
       purchase_invoices: TableDef<PurchaseInvoiceRow>

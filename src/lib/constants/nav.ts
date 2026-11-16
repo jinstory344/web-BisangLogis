@@ -3,6 +3,7 @@ import {
   BarChart3,
   BookOpen,
   Car,
+  NotebookPen,
   Receipt,
   Settings,
   TrendingUp,
@@ -36,6 +37,7 @@ export const secondaryNavItems: NavItem[] = [
   { label: "매출 목록", href: "/sales", icon: TrendingUp },
   { label: "지출 목록", href: "/expenses", icon: Wallet },
   { label: "통계", href: "/stats", icon: BarChart3 },
+  { label: "메모", href: "/memos", icon: NotebookPen },
   { label: "계산서", href: "/tax-invoices", icon: Receipt, soon: true },
   { label: "설정", href: "/settings", icon: Settings },
 ]
@@ -61,6 +63,7 @@ export const sidebarNavGroups: NavItem[][] = [
     { label: "배차", href: "/dispatches", icon: Truck },
     { label: "거래처", href: "/clients", icon: Users },
     { label: "차량 정보", href: "/vehicles", icon: Car },
+    { label: "메모", href: "/memos", icon: NotebookPen },
   ],
   [
     { label: "계산서", href: "/tax-invoices", icon: Receipt, soon: true },
