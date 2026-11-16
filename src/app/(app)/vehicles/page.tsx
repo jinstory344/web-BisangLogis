@@ -88,13 +88,13 @@ export default async function VehiclesPage({
   )
 
   return (
-    <div className={cn("mx-auto max-w-2xl p-4 md:bg-none md:p-6", SECTION_COLORS.vehicle.pageTint)}>
+    <div className="mx-auto max-w-2xl p-4 md:p-6">
       {/* 모바일: 배차·HOME과 같은 머리 (왼쪽 통합검색 · 가운데 제목 · 오른쪽 등록). 데스크톱: 왼쪽 큰 제목 + 오른쪽 등록 */}
       <div className="mt-2 grid h-10 grid-cols-[2.5rem_1fr_2.5rem] items-center md:mt-0 md:flex md:h-auto md:justify-between md:gap-4">
         <span className="md:hidden">
           <SearchButton />
         </span>
-        <h1 className="text-center text-lg font-semibold tracking-tight md:text-left md:text-2xl md:tracking-normal">차량 정보</h1>
+        <h1 className={cn("text-center text-xl font-bold tracking-tight md:text-left md:text-2xl md:tracking-normal", SECTION_COLORS.vehicle.title)}>차량 정보</h1>
         <Link
           href="/vehicles/new"
           prefetch

@@ -46,7 +46,7 @@ export default async function DispatchesPage({
       <div className="flex flex-col md:gap-2">
         <ListPageHead
           title="배차"
-          tintClassName={SECTION_COLORS.dispatch.headTint}
+          titleClassName={SECTION_COLORS.dispatch.title}
           desktopTitle="배차 관리"
           desktopAction={
             <Button asChild size="sm">

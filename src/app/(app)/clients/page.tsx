@@ -34,13 +34,13 @@ export default async function ClientsPage({
   const contactsByClient = await getClientContacts((data ?? []).map((c) => c.id))
 
   return (
-    <div className={cn("mx-auto max-w-2xl p-4 md:bg-none md:p-6", SECTION_COLORS.client.pageTint)}>
+    <div className="mx-auto max-w-2xl p-4 md:p-6">
       {/* 모바일: 배차·HOME과 같은 머리 (왼쪽 통합검색 · 가운데 제목 · 오른쪽 등록). 데스크톱: 왼쪽 큰 제목 + 오른쪽 등록 */}
       <div className="mt-2 grid h-10 grid-cols-[2.5rem_1fr_2.5rem] items-center md:mt-0 md:flex md:h-auto md:justify-between md:gap-4">
         <span className="md:hidden">
           <SearchButton />
         </span>
-        <h1 className="text-center text-lg font-semibold tracking-tight md:text-left md:text-2xl md:tracking-normal">거래처</h1>
+        <h1 className={cn("text-center text-xl font-bold tracking-tight md:text-left md:text-2xl md:tracking-normal", SECTION_COLORS.client.title)}>거래처</h1>
         <Link
           href="/clients/new"
           prefetch

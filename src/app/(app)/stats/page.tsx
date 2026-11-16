@@ -50,7 +50,7 @@ export default async function StatsPage({
         <div className="sticky top-0 z-30 -mx-4 bg-background px-4 pt-2 md:static md:mx-0 md:px-0 md:pt-0">
           <header className="grid h-10 grid-cols-[2.5rem_1fr_2.5rem] items-center">
             <SearchButton />
-            <h1 className="text-center text-lg font-semibold tracking-tight">통계</h1>
+            <h1 className="text-center text-xl font-bold tracking-tight">통계</h1>
             <span aria-hidden />
           </header>
 

@@ -30,7 +30,7 @@ export function ListPageHead({
   desktopAction,
   statsHref,
   monthNav,
-  tintClassName,
+  titleClassName,
 }: {
   title: string
   desktopTitle: string
@@ -39,14 +39,14 @@ export function ListPageHead({
   statsHref: string
   /** 제목과 탭 사이의 ‹ 2026년 11월 › (모바일만, HOME과 같은 자리) */
   monthNav?: ReactNode
-  /** 모바일 머리 바탕에 은은하게 깔 메뉴 색 (예: 배차 노랑) */
-  tintClassName?: string
+  /** 제목 글자 색 (메뉴별 색, 예: 배차 노랑) */
+  titleClassName?: string
 }) {
   return (
-    <div className={cn("sticky top-0 z-30 -mx-4 bg-background px-4 pt-6 md:static md:mx-0 md:bg-none md:px-0 md:pt-0", tintClassName)}>
+    <div className="sticky top-0 z-30 -mx-4 bg-background px-4 pt-6 md:static md:mx-0 md:px-0 md:pt-0">
       <header className="grid h-10 grid-cols-[2.5rem_1fr_2.5rem] items-center md:hidden">
         <SearchButton />
-        <h1 className="text-center text-lg font-semibold tracking-tight">{title}</h1>
+        <h1 className={cn("text-center text-xl font-bold tracking-tight", titleClassName)}>{title}</h1>
         <Link
           href={statsHref}
           aria-label={`${title} 통계`}
