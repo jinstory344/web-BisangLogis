@@ -14,7 +14,7 @@ import {
 import { QuickEntrySheet } from "./quick-entry-sheet"
 
 /** 떠 있는 버튼을 보여 줄 화면 (등록·수정 화면에서는 저장 바와 겹치지 않게 숨긴다) */
-const SHOWN_ON = ["/", "/dispatches", "/stats", "/sales", "/expenses"]
+const SHOWN_ON = ["/", "/dispatches", "/stats", "/sales", "/expenses", "/vehicles", "/clients"]
 
 /**
  * 모바일 오른쪽 아래 떠 있는 버튼 두 개 (가계부 앱 방식):
@@ -46,6 +46,9 @@ export function FloatingActions() {
   if (!SHOWN_ON.includes(pathname)) return null
 
   return (
+    <>
+    {/* 목록 맨 아래가 버튼에 가리지 않게 버튼 높이만큼 빈칸 */}
+    <div aria-hidden className="h-16 md:hidden" />
     <div className="fixed right-4 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-40 flex items-center gap-3 md:hidden">
       <QuickEntrySheet
         mode="copy"
@@ -69,5 +72,6 @@ export function FloatingActions() {
         <Plus className="size-6" aria-hidden />
       </Link>
     </div>
+    </>
   )
 }
