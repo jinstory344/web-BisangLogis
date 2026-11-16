@@ -230,7 +230,7 @@ export function MemoBoard({
               <span
                 className={cn(
                   "shrink-0 rounded-full px-2 py-0.5 text-[11px]",
-                  memo.client_id ? "bg-background/60 text-muted-foreground" : "border border-foreground/20 text-foreground/80"
+                  memo.client_id ? "bg-background/60 text-foreground/90" : "border border-foreground/20 text-foreground/80"
                 )}
               >
                 {memo.client_id ? clientNames[memo.client_id] ?? "거래처" : "공통"}
