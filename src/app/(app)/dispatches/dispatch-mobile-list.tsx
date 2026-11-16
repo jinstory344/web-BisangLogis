@@ -258,16 +258,16 @@ export function DispatchActionSheetBody({
             <button
               type="button"
               onClick={() => onMessage("driver")}
-              className="flex h-12 items-center justify-center gap-1.5 rounded-xl bg-[#c4524e] text-[15px] font-semibold text-white active:opacity-80"
+              className="flex h-12 items-center justify-center gap-1.5 rounded-xl bg-[#34507d] text-[15px] font-semibold text-[#e3ecfb] active:opacity-80"
             >
               <MessageSquare className="size-4" /> 차주 문자
             </button>
             <button
               type="button"
               onClick={() => onMessage("client")}
-              className="flex h-12 items-center justify-center gap-1.5 rounded-xl bg-muted text-[15px] font-semibold active:opacity-80"
+              className="flex h-12 items-center justify-center gap-1.5 rounded-xl bg-[#355a43] text-[15px] font-semibold text-[#e0f4e7] active:opacity-80"
             >
-              <Send className="size-4" /> 거래처에 보내기
+              <Send className="size-4" /> 거래처 문자
             </button>
           </div>
         ) : null}

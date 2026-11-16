@@ -97,7 +97,7 @@ export function MemoEditor({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="bottom" showCloseButton={false} className="gap-0 p-0 data-[side=bottom]:h-[92svh]">
+      <SheetContent side="bottom" showCloseButton={false} className={cn("gap-0 p-0 transition-[height]", isExpanded ? "data-[side=bottom]:h-[92svh]" : "data-[side=bottom]:h-[70svh]")}>
         <div className="flex items-center justify-between bg-muted px-4 py-1.5">
           <SheetTitle className="text-base font-medium">{value.id ? "메모 고치기" : "새 메모"}</SheetTitle>
           <SheetDescription className="sr-only">메모를 쓰고 저장해요.</SheetDescription>

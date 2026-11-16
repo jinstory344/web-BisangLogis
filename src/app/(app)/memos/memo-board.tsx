@@ -197,7 +197,7 @@ export function MemoBoard({
             className={cn(
               "flex items-start gap-2 rounded-xl border-l-4 py-3 pr-3 pl-3",
               // 배차 = 파랑, 업무 = 초록 — 카드 바탕까지 은은하게 (눈이 덜 피로한 어두운 톤)
-              memo.kind === "DISPATCH" ? "border-l-[#5b7fb8] bg-[#21283a]" : "border-l-[#5a9a72] bg-[#212d26]"
+              memo.kind === "DISPATCH" ? "border-l-[#5b7fb8] bg-[#252f40]" : "border-l-[#5a9a72] bg-[#25352c]"
             )}
           >
           <button
