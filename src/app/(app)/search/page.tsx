@@ -8,6 +8,7 @@ import {
   INCOME_TEXT_CLASS,
 } from "@/components/ledger/colors"
 import { TotalsRow } from "@/components/list/totals-row"
+import { formatLiters } from "@/lib/fuel"
 import { getTodayInSeoul } from "@/lib/date"
 import { formatKRW } from "@/lib/money"
 import {
@@ -201,6 +202,9 @@ export default async function SearchPage({
       const saleTotal = sum(saleIn)
       const unpaidTotal = sum(saleIn.filter((r) => r.unpaid))
       const expenseTotal = sum(expenseIn)
+      // 주유비·요소수에 적은 리터 합 (적은 건이 있을 때만 칸을 보인다)
+      const literTotal = Math.round(expenseIn.reduce((t, r) => t + Number(r.liters ?? 0), 0) * 10) / 10
+      const literItem = literTotal > 0 ? [{ label: "리터", value: formatLiters(literTotal) }] : []
       const dispatchTotals = { freight: sum(dispatchIn), fee: dispatchIn.reduce((t, r) => t + r.fee, 0) }
       const totals =
         tab === "sale"
@@ -212,6 +216,7 @@ export default async function SearchPage({
           : tab === "expense"
             ? [
                 { label: "지출", value: formatKRW(expenseTotal), className: EXPENSE_TEXT_CLASS },
+                ...literItem,
                 { label: "건수", value: `${counts.expense}건` },
               ]
             : tab === "dispatch"
@@ -224,6 +229,7 @@ export default async function SearchPage({
                   { label: "매출", value: formatKRW(saleTotal), className: INCOME_TEXT_CLASS },
                   { label: "지출", value: formatKRW(expenseTotal), className: EXPENSE_TEXT_CLASS },
                   { label: "배차 운임", value: formatKRW(dispatchTotals.freight) },
+                  ...literItem,
                 ]
 
       const isTruncated = ledger.isTruncated || dispatch.isTruncated

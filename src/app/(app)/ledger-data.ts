@@ -257,6 +257,8 @@ export interface SearchAmountRow {
   date: string
   amount: number
   unpaid?: boolean
+  /** 지출에 적은 리터 (없으면 null) */
+  liters?: number | null
 }
 
 /**
@@ -280,7 +282,7 @@ export async function searchLedgerAmounts(
       return q.order("id").range(a, b)
     }),
     skip.expense ? Promise.resolve([]) : fetchAllRows((a, b) => {
-      let q = supabase.from("expenses").select("expense_date, amount").is("deleted_at", null)
+      let q = supabase.from("expenses").select("expense_date, amount, liters").is("deleted_at", null)
       if (filters.category) q = q.eq("category_minor", filters.category)
       if (query) q = q.or(buildIlikeOrFilter(["category_major", "category_minor", "card_name", "vendor", "memo"], query))
       return q.order("id").range(a, b)
@@ -288,7 +290,7 @@ export async function searchLedgerAmounts(
   ])
   return {
     sale: saleRows.map((r) => ({ date: r.sale_date, amount: r.supply_amount, unpaid: r.payment_status === "UNPAID" })),
-    expense: expenseRows.map((r) => ({ date: r.expense_date, amount: r.amount })),
+    expense: expenseRows.map((r) => ({ date: r.expense_date, amount: r.amount, liters: r.liters })),
   }
 }
 
