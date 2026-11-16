@@ -1,16 +1,17 @@
 "use client"
 
-import { ChevronDown, Plus, Search, Star } from "lucide-react"
+import { ChevronDown, ChevronUp, Plus, Search, Star } from "lucide-react"
 import { useState } from "react"
+import { toast } from "sonner"
 
 import { ClientSheet } from "@/components/clients/client-sheet"
 import { CopyMemoButton } from "@/components/memos/copy-memo-button"
 import { MemoEditor, type MemoDraft } from "@/components/memos/memo-editor"
-import { sortMemos } from "@/lib/memos"
+import { memoSwapNeighbor, sortMemos } from "@/lib/memos"
 import type { MemoKind } from "@/lib/supabase/database.types"
 import { cn } from "@/lib/utils"
 
-import type { MemoItem } from "./actions"
+import { swapMemoOrderAction, type MemoItem } from "./actions"
 
 const normalize = (text: string) => text.replace(/\s/g, "").toLowerCase()
 
@@ -43,6 +44,9 @@ export function MemoBoard({
   const [clientId, setClientId] = useState(initialClientId)
   const [query, setQuery] = useState("")
   const [isClientOpen, setIsClientOpen] = useState(false)
+  // 순서 바꾸기: 보이는 목록(전체 또는 고른 거래처)에서 한 칸씩 위·아래로 옮긴다
+  const [isReordering, setIsReordering] = useState(false)
+  const [movingId, setMovingId] = useState<string | null>(null)
   const [editor, setEditor] = useState<{ open: boolean; draft: MemoDraft }>({
     open: false,
     draft: { kind: initialKind === "ALL" ? "DISPATCH" : initialKind, client_id: null, title: "", body: "", pinned: false },
@@ -74,6 +78,32 @@ export function MemoBoard({
             pinned: false,
           },
     })
+  }
+
+  async function move(memo: MemoItem, dir: -1 | 1) {
+    const neighbor = memoSwapNeighbor(shown, memo.id, dir)
+    if (!neighbor || movingId) return
+    setMovingId(memo.id)
+    // 화면 먼저 바꾸고, 서버 결과로 맞춘다
+    setMemos((prev) =>
+      prev.map((m) =>
+        m.id === memo.id
+          ? { ...m, sort_order: neighbor.sort_order }
+          : m.id === neighbor.id
+            ? { ...m, sort_order: memo.sort_order }
+            : m
+      )
+    )
+    const result = await swapMemoOrderAction(memo.id, neighbor.id)
+    setMovingId(null)
+    if (!result.ok) {
+      toast.error(result.error)
+      setMemos((prev) =>
+        prev.map((m) => (m.id === memo.id ? memo : m.id === neighbor.id ? neighbor : m))
+      )
+      return
+    }
+    setMemos((prev) => prev.map((m) => result.memos.find((u) => u.id === m.id) ?? m))
   }
 
   function saved(memo: MemoItem) {
@@ -120,6 +150,20 @@ export function MemoBoard({
           <span className="font-semibold text-foreground">{clientId ? clientNames[clientId] ?? "거래처" : "전체"}</span>{" "}
           메모 {shown.length}개
         </span>
+        <span className="flex shrink-0 items-center gap-1.5">
+        {shown.length > 1 ? (
+          <button
+            type="button"
+            aria-pressed={isReordering}
+            onClick={() => setIsReordering((v) => !v)}
+            className={cn(
+              "h-9 rounded-full px-3 text-sm",
+              isReordering ? "bg-red-400/90 font-semibold text-white" : "text-muted-foreground underline underline-offset-4"
+            )}
+          >
+            {isReordering ? "완료" : "순서 바꾸기"}
+          </button>
+        ) : null}
         <button
           type="button"
           aria-haspopup="dialog"
@@ -132,6 +176,7 @@ export function MemoBoard({
           <span className="truncate">{clientId ? clientNames[clientId] ?? "거래처" : "거래처"}</span>
           <ChevronDown className="size-4 shrink-0" />
         </button>
+        </span>
       </div>
 
       <label className="mt-1 flex h-11 items-center gap-2 rounded-xl bg-muted px-3">
@@ -147,17 +192,31 @@ export function MemoBoard({
 
       <div className="mt-3 flex flex-col gap-2">
         {shown.map((memo) => (
-          <div key={memo.id} className="flex items-start gap-2 rounded-xl bg-muted/60 py-3 pr-3 pl-3.5">
+          <div
+            key={memo.id}
+            className={cn(
+              "flex items-start gap-2 rounded-xl border-l-4 bg-muted/60 py-3 pr-3 pl-3",
+              memo.kind === "DISPATCH" ? "border-l-sky-400" : "border-l-violet-400"
+            )}
+          >
           <button
             type="button"
+            disabled={isReordering}
             onClick={() => openEditor(memo)}
             className="flex min-w-0 flex-1 flex-col gap-1 text-left"
           >
             <span className="flex items-center gap-1.5">
               {memo.pinned ? <Star className="size-3.5 shrink-0 fill-amber-400 text-amber-400" /> : null}
               <span className="min-w-0 text-[15px] font-semibold break-keep wrap-anywhere">{memo.title}</span>
+            </span>
+            <span className="flex flex-wrap items-center gap-1">
               {kind === "ALL" ? (
-                <span className="shrink-0 rounded-full bg-background/60 px-2 py-0.5 text-[11px] text-muted-foreground">
+                <span
+                  className={cn(
+                    "shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold",
+                    memo.kind === "DISPATCH" ? "bg-sky-500/20 text-sky-300" : "bg-violet-500/20 text-violet-300"
+                  )}
+                >
                   {memo.kind === "DISPATCH" ? "배차" : "업무"}
                 </span>
               ) : null}
@@ -176,7 +235,27 @@ export function MemoBoard({
               </span>
             ) : null}
           </button>
-          <CopyMemoButton memo={memo} />
+          {isReordering ? (
+            <span className="flex shrink-0 gap-1">
+              {([-1, 1] as const).map((dir) => {
+                const canMove = memoSwapNeighbor(shown, memo.id, dir) !== null
+                return (
+                  <button
+                    key={dir}
+                    type="button"
+                    aria-label={dir < 0 ? "위로" : "아래로"}
+                    disabled={!canMove || movingId !== null}
+                    onClick={() => move(memo, dir)}
+                    className="flex size-10 items-center justify-center rounded-full bg-background/60 disabled:opacity-30"
+                  >
+                    {dir < 0 ? <ChevronUp className="size-5" /> : <ChevronDown className="size-5" />}
+                  </button>
+                )
+              })}
+            </span>
+          ) : (
+            <CopyMemoButton memo={memo} />
+          )}
           </div>
         ))}
 

@@ -2,7 +2,14 @@ import { describe, expect, it } from "vitest"
 
 import type { DispatchRow } from "@/lib/supabase/database.types"
 
-import { buildDispatchInfo, formatManwon, matchRouteMemo, smsHref, sortMemos } from "./memos"
+import {
+  buildDispatchInfo,
+  formatManwon,
+  matchRouteMemo,
+  memoSwapNeighbor,
+  smsHref,
+  sortMemos,
+} from "./memos"
 
 const dispatch = {
   dispatch_date: "2026-11-17",
@@ -62,12 +69,24 @@ describe("memos", () => {
     expect(smsHref(null, "a", false)).toBe("sms:?body=a")
   })
 
-  it("고정 먼저, 그다음 최근 순", () => {
+  it("고정 먼저, 그다음 정한 순서, 같으면 최근에 만든 순", () => {
     const rows = [
-      { id: "1", pinned: false, created_at: "2026-01-01", updated_at: "2026-03-01" },
-      { id: "2", pinned: true, created_at: "2026-01-01", updated_at: null },
-      { id: "3", pinned: false, created_at: "2026-02-01", updated_at: null },
+      { id: "1", pinned: false, sort_order: 20, created_at: "2026-01-01" },
+      { id: "2", pinned: true, sort_order: 30, created_at: "2026-01-01" },
+      { id: "3", pinned: false, sort_order: 10, created_at: "2026-02-01" },
+      { id: "4", pinned: false, sort_order: 10, created_at: "2026-03-01" },
     ]
-    expect(sortMemos(rows).map((r) => r.id)).toEqual(["2", "1", "3"])
+    expect(sortMemos(rows).map((r) => r.id)).toEqual(["2", "4", "3", "1"])
+  })
+
+  it("순서 바꾸기 이웃 — 고정 묶음은 넘지 않는다", () => {
+    const shown = [
+      { id: "a", pinned: true },
+      { id: "b", pinned: false },
+      { id: "c", pinned: false },
+    ]
+    expect(memoSwapNeighbor(shown, "b", 1)?.id).toBe("c")
+    expect(memoSwapNeighbor(shown, "b", -1)).toBeNull()
+    expect(memoSwapNeighbor(shown, "c", 1)).toBeNull()
   })
 })

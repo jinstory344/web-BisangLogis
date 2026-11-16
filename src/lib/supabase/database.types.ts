@@ -242,6 +242,8 @@ export type MemoRow = BaseColumns & {
   title: string
   body: string
   pinned: boolean
+  /** 순서 (작을수록 위) */
+  sort_order: number
 }
 
 type TableDef<Row> = {

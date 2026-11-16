@@ -69,12 +69,28 @@ export function smsHref(phone: string | null | undefined, body: string, isIOS: b
   return `sms:${to}${isIOS ? "&" : "?"}body=${encodeURIComponent(body)}`
 }
 
-/** 메모 정렬: 고정(★) 먼저, 그다음 최근에 고친 순 */
-export function sortMemos<T extends Pick<MemoRow, "pinned" | "created_at" | "updated_at">>(
+/** 메모 정렬: 고정(★) 먼저, 그다음 정한 순서(sort_order 작은 것 위), 같으면 최근에 만든 순 */
+export function sortMemos<T extends Pick<MemoRow, "pinned" | "sort_order" | "created_at">>(
   memos: readonly T[]
 ): T[] {
-  const time = (m: T) => m.updated_at ?? m.created_at
   return [...memos].sort(
-    (a, b) => Number(b.pinned) - Number(a.pinned) || time(b).localeCompare(time(a))
+    (a, b) =>
+      Number(b.pinned) - Number(a.pinned) ||
+      a.sort_order - b.sort_order ||
+      b.created_at.localeCompare(a.created_at)
   )
+}
+
+/**
+ * 보이는 목록에서 한 칸 위(-1)/아래(+1)로 옮길 때 자리를 바꿀 이웃. 고정 묶음을 넘지는 않는다.
+ * 옮길 수 없으면 null.
+ */
+export function memoSwapNeighbor<T extends Pick<MemoRow, "id" | "pinned">>(
+  shown: readonly T[],
+  id: string,
+  dir: -1 | 1
+): T | null {
+  const index = shown.findIndex((m) => m.id === id)
+  const neighbor = index < 0 ? undefined : shown[index + dir]
+  return neighbor && neighbor.pinned === shown[index].pinned ? neighbor : null
 }
