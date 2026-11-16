@@ -72,7 +72,7 @@ export function WorkMemoButton() {
               memos.map((memo) => {
                 const isOpen = expanded === memo.id
                 return (
-                  <div key={memo.id} className="border-b py-3">
+                  <div key={memo.id} className="border-b py-3 last:border-b-0">
                     <button
                       type="button"
                       aria-expanded={isOpen}
@@ -112,9 +112,9 @@ export function WorkMemoButton() {
           <Link
             href="/memos?tab=work"
             onClick={() => setOpen(false)}
-            className="flex min-h-14 items-center justify-between px-4 pb-[env(safe-area-inset-bottom)] text-[15px] font-semibold text-red-400"
+            className="mt-2 flex items-center justify-end gap-1 border-t px-4 pt-4 pb-[calc(1.5rem+env(safe-area-inset-bottom))] text-[15px] font-semibold text-red-400"
           >
-            메모 전체 보기 · 쓰기
+            메모 페이지로 이동
             <ChevronRight className="size-4" />
           </Link>
         </SheetContent>
