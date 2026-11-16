@@ -2,6 +2,7 @@ import Link from "next/link"
 import { Plus } from "lucide-react"
 
 import { SearchBox } from "@/components/common/search-box"
+import { SearchButton } from "@/components/layout/search-button"
 import { createClient } from "@/lib/supabase/server"
 import type { VehicleRow } from "@/lib/supabase/database.types"
 import { SECTION_COLORS } from "@/lib/constants/section-colors"
@@ -88,15 +89,19 @@ export default async function VehiclesPage({
 
   return (
     <div className={cn("mx-auto max-w-2xl p-4 md:bg-none md:p-6", SECTION_COLORS.vehicle.pageTint)}>
-      <div className="flex items-center justify-between gap-4">
-        <h1 className="text-2xl font-semibold">차량 정보</h1>
+      {/* 모바일: 배차·HOME과 같은 머리 (왼쪽 통합검색 · 가운데 제목 · 오른쪽 등록). 데스크톱: 왼쪽 큰 제목 + 오른쪽 등록 */}
+      <div className="-mt-2 grid h-10 grid-cols-[2.5rem_1fr_2.5rem] items-center md:mt-0 md:flex md:h-auto md:justify-between md:gap-4">
+        <span className="md:hidden">
+          <SearchButton />
+        </span>
+        <h1 className="text-center text-lg font-semibold tracking-tight md:text-left md:text-2xl md:tracking-normal">차량 정보</h1>
         <Link
           href="/vehicles/new"
           prefetch
           aria-label="차량 등록"
-          className={cn("-mr-2 flex size-10 items-center justify-center rounded-full hover:bg-muted", SECTION_COLORS.vehicle.accent)}
+          className={cn("flex size-10 items-center justify-center justify-self-end rounded-full hover:bg-muted md:-mr-2", SECTION_COLORS.vehicle.accent)}
         >
-          <Plus className="size-7" strokeWidth={1.75} />
+          <Plus className="size-6" strokeWidth={1.75} />
         </Link>
       </div>
 

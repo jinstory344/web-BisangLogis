@@ -7,9 +7,9 @@ export const SECTION_COLORS = {
   dispatch: {
     /** 아래 탭에서 고른 메뉴 아이콘·글씨 */
     tab: "data-[active=true]:text-[#d6a84a]",
-    /** 페이지 위쪽에 은은하게 깔리는 색 */
-    headTint: "bg-[linear-gradient(to_bottom,#3a3222,var(--background))]",
-    pageTint: "bg-[linear-gradient(to_bottom,#3a3222,transparent_11rem)]",
+    /** 페이지 위쪽에 은은하게 깔리는 색 — 위·아래 모두 바탕색으로 서서히 이어져 경계선이 안 보이게 */
+    headTint: "bg-[linear-gradient(to_bottom,var(--background),#3a3222_45%,var(--background))]",
+    pageTint: "bg-[linear-gradient(to_bottom,transparent,#3a3222_2.5rem,transparent_8rem)]",
     /** 고른 칩 */
     chip: "bg-[#5e4a22] font-semibold text-[#f2dfaa]",
     /** ＋·★ 같은 포인트 */
@@ -20,8 +20,8 @@ export const SECTION_COLORS = {
   },
   vehicle: {
     tab: "data-[active=true]:text-[#6f93cf]",
-    headTint: "bg-[linear-gradient(to_bottom,#252f40,var(--background))]",
-    pageTint: "bg-[linear-gradient(to_bottom,#252f40,transparent_11rem)]",
+    headTint: "bg-[linear-gradient(to_bottom,var(--background),#252f40_45%,var(--background))]",
+    pageTint: "bg-[linear-gradient(to_bottom,transparent,#252f40_2.5rem,transparent_8rem)]",
     chip: "bg-[#34507d] font-semibold text-[#d3e1f7]",
     accent: "text-[#6f93cf]",
     star: "fill-[#6f93cf] text-[#6f93cf]",
@@ -29,8 +29,8 @@ export const SECTION_COLORS = {
   },
   client: {
     tab: "data-[active=true]:text-[#6aad83]",
-    headTint: "bg-[linear-gradient(to_bottom,#25352c,var(--background))]",
-    pageTint: "bg-[linear-gradient(to_bottom,#25352c,transparent_11rem)]",
+    headTint: "bg-[linear-gradient(to_bottom,var(--background),#25352c_45%,var(--background))]",
+    pageTint: "bg-[linear-gradient(to_bottom,transparent,#25352c_2.5rem,transparent_8rem)]",
     chip: "bg-[#355a43] font-semibold text-[#d0eedb]",
     accent: "text-[#6aad83]",
     star: "fill-[#6aad83] text-[#6aad83]",
