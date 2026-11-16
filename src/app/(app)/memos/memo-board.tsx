@@ -201,7 +201,7 @@ export function MemoBoard({
           <div
             key={memo.id}
             className={cn(
-              "flex items-start gap-2 rounded-xl border-l-4 py-3 pr-3 pl-3",
+              "flex items-center gap-2 rounded-xl border-l-4 py-2 pr-2 pl-3",
               // 배차 = 파랑, 업무 = 초록 — 카드 바탕까지 은은하게 (눈이 덜 피로한 어두운 톤)
               memo.kind === "DISPATCH" ? "border-l-[#5b7fb8] bg-[#252f40]" : "border-l-[#5a9a72] bg-[#25352c]"
             )}
@@ -236,11 +236,6 @@ export function MemoBoard({
                 {memo.client_id ? clientNames[memo.client_id] ?? "거래처" : "공통"}
               </span>
             </span>
-            {memo.body ? (
-              <span className="line-clamp-2 text-[13px] leading-snug whitespace-pre-line text-muted-foreground">
-                {memo.body}
-              </span>
-            ) : null}
           </button>
           {isReordering ? (
             <span className="flex shrink-0 gap-1">
