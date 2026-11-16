@@ -195,8 +195,9 @@ export function MemoBoard({
           <div
             key={memo.id}
             className={cn(
-              "flex items-start gap-2 rounded-xl border-l-4 bg-muted/60 py-3 pr-3 pl-3",
-              memo.kind === "DISPATCH" ? "border-l-[#4a6185]" : "border-l-[#4f7360]"
+              "flex items-start gap-2 rounded-xl border-l-4 py-3 pr-3 pl-3",
+              // 배차 = 파랑, 업무 = 초록 — 카드 바탕까지 은은하게 (눈이 덜 피로한 어두운 톤)
+              memo.kind === "DISPATCH" ? "border-l-[#5b7fb8] bg-[#21283a]" : "border-l-[#5a9a72] bg-[#212d26]"
             )}
           >
           <button
@@ -214,7 +215,7 @@ export function MemoBoard({
                 <span
                   className={cn(
                     "shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold",
-                    memo.kind === "DISPATCH" ? "bg-[#2b3547] text-[#a9b9d3]" : "bg-[#2b3a31] text-[#a9c7b4]"
+                    memo.kind === "DISPATCH" ? "bg-[#34507d] text-[#d3e1f7]" : "bg-[#355a43] text-[#d0eedb]"
                   )}
                 >
                   {memo.kind === "DISPATCH" ? "배차" : "업무"}
