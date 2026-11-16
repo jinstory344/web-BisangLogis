@@ -196,7 +196,7 @@ export function MemoBoard({
             key={memo.id}
             className={cn(
               "flex items-start gap-2 rounded-xl border-l-4 bg-muted/60 py-3 pr-3 pl-3",
-              memo.kind === "DISPATCH" ? "border-l-sky-400" : "border-l-violet-400"
+              memo.kind === "DISPATCH" ? "border-l-blue-500" : "border-l-green-500"
             )}
           >
           <button
@@ -214,7 +214,7 @@ export function MemoBoard({
                 <span
                   className={cn(
                     "shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold",
-                    memo.kind === "DISPATCH" ? "bg-sky-500/20 text-sky-300" : "bg-violet-500/20 text-violet-300"
+                    memo.kind === "DISPATCH" ? "bg-blue-500/20 text-blue-300" : "bg-green-500/20 text-green-300"
                   )}
                 >
                   {memo.kind === "DISPATCH" ? "배차" : "업무"}
@@ -223,7 +223,7 @@ export function MemoBoard({
               <span
                 className={cn(
                   "shrink-0 rounded-full px-2 py-0.5 text-[11px]",
-                  memo.client_id ? "bg-background/60 text-muted-foreground" : "bg-emerald-900/50 text-emerald-300"
+                  memo.client_id ? "bg-background/60 text-muted-foreground" : "border border-foreground/20 text-foreground/80"
                 )}
               >
                 {memo.client_id ? clientNames[memo.client_id] ?? "거래처" : "공통"}
