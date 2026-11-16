@@ -1,10 +1,10 @@
 "use client"
 
-import { ExternalLink, Search, X } from "lucide-react"
+import { ExternalLink, Search } from "lucide-react"
 import { useState } from "react"
 
 import type { ClientSearchResult } from "@/app/(app)/clients/actions"
-import { ClientCombobox } from "@/components/clients/client-combobox"
+import { ClientSheet } from "@/components/clients/client-sheet"
 import { TaxInfoBadge } from "@/components/clients/tax-info-badge"
 import { ChoiceChips, chipVariants } from "@/components/form/choice-chips"
 import { getTaxInfoStatus } from "@/lib/client-tax-info"
@@ -33,7 +33,7 @@ interface ClientSourcePickerProps {
 /**
  * 매출 폼 출처 "거래처"의 소분류: 거래처 페이지에 등록된 명단에서 고른다.
  * 칩에는 내 거래처만 나오고(많이 쓴 순), 타 거래처나 칩에 안 보이는 거래처는 "다른 거래처 찾기"로
- * 검색하거나 없으면 이름만으로 바로 등록한다(구분은 타 거래처). 고른 거래처의 세금계산서 정보가
+ * 아래에서 올라오는 거래처 선택판으로 고르거나 없으면 이름만으로 바로 등록한다(구분은 타 거래처). 고른 거래처의 세금계산서 정보가
  * 비어 있으면 알려 주고 거래처 수정 화면으로 가는 링크를 준다.
  */
 export function ClientSourcePicker({
@@ -84,7 +84,6 @@ export function ClientSourcePicker({
       ])
     }
     onChange({ id: client.id, name: client.name })
-    setIsSearchOpen(false)
   }
 
   return (
@@ -99,34 +98,22 @@ export function ClientSourcePicker({
         />
       ) : null}
 
-      <div className="flex flex-col gap-2">
-        <button
-          type="button"
-          aria-expanded={isSearchOpen}
-          onClick={() => setIsSearchOpen((open) => !open)}
-          className={cn(
-            chipVariants({ selected: false }),
-            "w-fit border-dashed"
-          )}
-        >
-          {isSearchOpen ? <X /> : <Search />}
-          {isSearchOpen ? "닫기" : "다른 거래처 찾기·등록"}
-        </button>
-
-        {isSearchOpen ? (
-          <div className="flex flex-col gap-1">
-            <ClientCombobox
-              value={null}
-              onChange={handleSearchPicked}
-              newClientCategory="OTHER"
-            />
-            <p className="text-xs text-muted-foreground">
-              목록에 없으면 이름을 입력하고 &quot;신규 등록&quot;을 누르면 바로
-              등록돼요. 사업자 정보는 나중에 거래처에서 채우면 돼요.
-            </p>
-          </div>
-        ) : null}
-      </div>
+      <button
+        type="button"
+        aria-haspopup="dialog"
+        onClick={() => setIsSearchOpen(true)}
+        className={cn(chipVariants({ selected: false }), "w-fit border-dashed")}
+      >
+        <Search />
+        다른 거래처 찾기·등록
+      </button>
+      <ClientSheet
+        open={isSearchOpen}
+        onOpenChange={setIsSearchOpen}
+        selectedId={clientId}
+        onPick={handleSearchPicked}
+        createCategory="OTHER"
+      />
 
       {selected ? (
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">

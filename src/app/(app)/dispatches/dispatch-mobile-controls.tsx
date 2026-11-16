@@ -1,14 +1,12 @@
 "use client"
 
-import { SlidersHorizontal } from "lucide-react"
+import { ChevronDown, SlidersHorizontal } from "lucide-react"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { useState } from "react"
 
-import type { ClientSearchResult } from "@/app/(app)/clients/actions"
-import { ClientCombobox } from "@/components/clients/client-combobox"
+import { ClientSheet } from "@/components/clients/client-sheet"
 import { DateRangeInputs } from "@/components/list/date-range-inputs"
 import { LIST_SUB_STICKY_CLASS } from "@/components/list/list-page-head"
-import { ListPickerRow } from "@/components/list/list-picker-row"
 import { TotalsRow } from "@/components/list/totals-row"
 import { isAllPeriod, isFullMonthRange } from "@/lib/date"
 import type { DispatchSummary } from "@/lib/dispatch-list"
@@ -28,7 +26,7 @@ interface DispatchMobileControlsProps {
 
 /**
  * 모바일 배차 목록 상단: 요약(건수/운임/수수료) · "전체 N건 + 거래처 펼침 목록" · 접히는 자세한 필터.
- * 펼침 목록은 이 기간에 배차가 많은 거래처부터 이름 옆에 건수. 필터 안에는 목록에 없는 거래처 찾기와 기간 직접 지정.
+ * 거래처 버튼을 누르면 아래에서 거래처 선택판(배차 많은 순, 건수, 배차 없는 거래처도). 필터 안에는 기간 직접 지정.
  * 데스크톱은 기존 DispatchFilters를 그대로 쓴다.
  */
 export function DispatchMobileControls({
@@ -47,9 +45,7 @@ export function DispatchMobileControls({
   const isMonth = isFullMonthRange({ from, to }) || isAllPeriod({ from, to })
   const activeFilterCount = isMonth ? 0 : 1
   const [isFilterOpen, setIsFilterOpen] = useState(activeFilterCount > 0)
-  const [searchedClient, setSearchedClient] = useState<ClientSearchResult | null>(
-    clientId ? { id: clientId, name: clientName, biz_no: null } : null
-  )
+  const [isClientSheetOpen, setIsClientSheetOpen] = useState(false)
 
   function hrefWith(next: Record<string, string>) {
     const params = new URLSearchParams(searchParams.toString())
@@ -65,18 +61,7 @@ export function DispatchMobileControls({
     return clientNames[id] || (id === clientId ? clientName : "") || "거래처"
   }
 
-  const options = [
-    { value: "", label: "전체", count: summary.count },
-    ...summary.byClient.map((client) => ({
-      value: client.clientId,
-      label: nameOf(client.clientId),
-      count: client.count,
-    })),
-  ]
-  // 고른 거래처가 이 달에 배차가 없어도(다른 달에서 넘어옴) 목록에 남겨 풀 수 있게
-  if (clientId && !options.some((o) => o.value === clientId)) {
-    options.push({ value: clientId, label: nameOf(clientId), count: 0 })
-  }
+  const counts = Object.fromEntries(summary.byClient.map((c) => [c.clientId, c.count]))
 
   return (
     // contents: 자식들이 목록 영역의 직접 자식처럼 놓여서 아래 고정 영역이 목록 끝까지 붙어 있을 수 있다
@@ -93,14 +78,24 @@ export function DispatchMobileControls({
         />
       </div>
 
-      <ListPickerRow
-        placeholder="거래처"
-        value={clientId}
-        options={options.map((o) => ({
-          ...o,
-          href: hrefWith({ client_id: o.value, client_name: o.value ? o.label : "" }),
-        }))}
-        trailing={
+      <div className="flex min-h-10 items-center justify-between gap-2 text-sm text-muted-foreground">
+        <span className="min-w-0 truncate">
+          <span className="font-semibold text-foreground">{clientId ? nameOf(clientId) : "전체"}</span>{" "}
+          {clientId ? (counts[clientId] ?? 0) : summary.count}건
+        </span>
+        <div className="flex shrink-0 items-center gap-1.5">
+          <button
+            type="button"
+            aria-haspopup="dialog"
+            onClick={() => setIsClientSheetOpen(true)}
+            className={cn(
+              "inline-flex h-9 max-w-44 items-center gap-1 rounded-full px-3.5 text-sm",
+              clientId ? "bg-foreground font-semibold text-background" : "bg-muted text-foreground"
+            )}
+          >
+            <span className="truncate">{clientId ? nameOf(clientId) : "거래처"}</span>
+            <ChevronDown className="size-4 shrink-0" />
+          </button>
           <button
             type="button"
             aria-expanded={isFilterOpen}
@@ -113,22 +108,25 @@ export function DispatchMobileControls({
           >
             <SlidersHorizontal className="size-4" />
           </button>
+        </div>
+      </div>
+
+      <ClientSheet
+        open={isClientSheetOpen}
+        onOpenChange={setIsClientSheetOpen}
+        title="거래처로 보기"
+        selectedId={clientId}
+        counts={counts}
+        allCount={summary.count}
+        onPick={(next) =>
+          router.push(hrefWith({ client_id: next?.id ?? "", client_name: next?.name ?? "" }), {
+            scroll: false,
+          })
         }
       />
 
       {isFilterOpen ? (
         <div className="flex flex-col gap-3 rounded-xl border p-3">
-          <div className="flex flex-col gap-1">
-            <p className="text-xs text-muted-foreground">목록에 없는 거래처는 이름으로 찾으세요.</p>
-            <ClientCombobox
-              value={searchedClient}
-              onChange={(next) => {
-                setSearchedClient(next)
-                router.push(hrefWith({ client_id: next?.id ?? "", client_name: next?.name ?? "" }))
-              }}
-            />
-          </div>
-
           {/* 달을 넘기면 입력값도 새 기간으로 바뀌도록 기간이 바뀔 때 새로 만든다. */}
           <DateRangeInputs
             key={`${from}_${to}`}
