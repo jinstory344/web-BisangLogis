@@ -126,7 +126,7 @@ export default async function SearchPage({
   const tabNav = (counts?: Record<SearchTab, number>) => (
     <nav
       aria-label="검색 결과 종류"
-      className="flex flex-wrap gap-1.5 border-b pt-1 pb-2.5"
+      className="grid grid-cols-4 gap-1.5 border-b pt-1 pb-2.5"
     >
       {SEARCH_TABS.map((item) => {
         const isActive = item.value === tab
@@ -138,7 +138,8 @@ export default async function SearchPage({
             scroll={false}
             aria-current={isActive ? "page" : undefined}
             className={cn(
-              "inline-flex h-9 items-center gap-1 rounded-full px-3.5 text-sm whitespace-nowrap",
+              // 네 칸이 한 줄을 똑같이 나눠 쓴다 (건수가 붙어도 줄이 바뀌지 않게)
+              "inline-flex h-10 min-w-0 items-center justify-center gap-1 rounded-full px-2 text-[15px] whitespace-nowrap",
               // 고른 탭만 흰 바탕·검은 글씨 (아래 회색 조건 칩과 구별)
               isActive ? "bg-foreground font-semibold text-background" : "bg-muted text-muted-foreground"
             )}
