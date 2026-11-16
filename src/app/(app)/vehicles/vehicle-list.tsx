@@ -56,6 +56,7 @@ import {
   toggleVehiclePinAction,
 } from "./actions"
 import { VehicleDispatchHistory } from "./vehicle-dispatch-history"
+import { SECTION_COLORS } from "@/lib/constants/section-colors"
 
 export function VehicleList({
   pinned,
@@ -238,7 +239,7 @@ export function VehicleList({
                     }}
                   >
                     <Star
-                      className={cn(sheetVehicle.pin_order !== null && "fill-amber-400 text-amber-400")}
+                      className={cn(sheetVehicle.pin_order !== null && SECTION_COLORS.vehicle.star)}
                     />
                     {sheetVehicle.pin_order !== null ? "고정 풀기" : "위에 고정"}
                   </DropdownMenuItem>
@@ -331,7 +332,7 @@ function VehicleRowItem({
   onCopy: () => void
 }) {
   return (
-    <li className={cn("relative flex items-center gap-1 border-b px-4 py-2", isPinned && "bg-amber-400/[0.06]")}>
+    <li className={cn("relative flex items-center gap-1 border-b px-4 py-2", isPinned && SECTION_COLORS.vehicle.pinnedRow)}>
       {/* 줄 전체를 누르면 수정·삭제 메뉴 — 오른쪽 버튼들은 이 위에 따로 놓인다 */}
       <button
         type="button"
@@ -344,7 +345,7 @@ function VehicleRowItem({
         <p className="flex min-w-0 items-center gap-2 text-[15px] leading-snug">
           {/* 이름 칸 폭을 3글자에 맞춰 두어 외자·두 글자 이름이어도 차량번호가 같은 자리에서 시작한다 */}
           {isPinned ? (
-            <Star aria-label="고정" className="-mr-1 size-3 shrink-0 fill-amber-400 text-amber-400" />
+            <Star aria-label="고정" className={cn("-mr-1 size-3 shrink-0", SECTION_COLORS.vehicle.star)} />
           ) : null}
           <span className="min-w-[3.2em] shrink-0 font-semibold">{vehicle.driver_name}</span>
           <span className="truncate text-[14px]">{vehicle.plate_no}</span>

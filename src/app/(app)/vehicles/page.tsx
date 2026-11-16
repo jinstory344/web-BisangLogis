@@ -4,6 +4,7 @@ import { Plus } from "lucide-react"
 import { SearchBox } from "@/components/common/search-box"
 import { createClient } from "@/lib/supabase/server"
 import type { VehicleRow } from "@/lib/supabase/database.types"
+import { SECTION_COLORS } from "@/lib/constants/section-colors"
 import { cn } from "@/lib/utils"
 import {
   groupRecentDispatchesByVehicle,
@@ -86,14 +87,14 @@ export default async function VehiclesPage({
   )
 
   return (
-    <div className="mx-auto max-w-2xl p-4 md:p-6">
+    <div className={cn("mx-auto max-w-2xl p-4 md:bg-none md:p-6", SECTION_COLORS.vehicle.pageTint)}>
       <div className="flex items-center justify-between gap-4">
         <h1 className="text-2xl font-semibold">차량 정보</h1>
         <Link
           href="/vehicles/new"
           prefetch
           aria-label="차량 등록"
-          className="-mr-2 flex size-10 items-center justify-center rounded-full text-foreground hover:bg-muted"
+          className={cn("-mr-2 flex size-10 items-center justify-center rounded-full hover:bg-muted", SECTION_COLORS.vehicle.accent)}
         >
           <Plus className="size-7" strokeWidth={1.75} />
         </Link>
@@ -114,7 +115,7 @@ export default async function VehiclesPage({
             className={cn(
               "shrink-0 rounded-full px-3 py-1.5 text-[13px]",
               option.value === sort
-                ? "bg-foreground font-semibold text-background"
+                ? SECTION_COLORS.vehicle.chip
                 : "bg-muted text-muted-foreground"
             )}
           >

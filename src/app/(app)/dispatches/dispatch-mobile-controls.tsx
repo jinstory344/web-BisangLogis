@@ -7,6 +7,7 @@ import { useState } from "react"
 import { ClientSheet } from "@/components/clients/client-sheet"
 import { DateRangeInputs } from "@/components/list/date-range-inputs"
 import { LIST_SUB_STICKY_CLASS } from "@/components/list/list-page-head"
+import { SECTION_COLORS } from "@/lib/constants/section-colors"
 import { TotalsRow } from "@/components/list/totals-row"
 import { isAllPeriod, isFullMonthRange } from "@/lib/date"
 import type { DispatchSummary } from "@/lib/dispatch-list"
@@ -90,7 +91,7 @@ export function DispatchMobileControls({
             onClick={() => setIsClientSheetOpen(true)}
             className={cn(
               "inline-flex h-9 max-w-44 items-center gap-1 rounded-full px-3.5 text-sm",
-              clientId ? "bg-foreground font-semibold text-background" : "bg-muted text-foreground"
+              clientId ? SECTION_COLORS.dispatch.chip : "bg-muted text-foreground"
             )}
           >
             <span className="truncate">{clientId ? nameOf(clientId) : "거래처"}</span>
@@ -103,7 +104,7 @@ export function DispatchMobileControls({
             onClick={() => setIsFilterOpen((open) => !open)}
             className={cn(
               "relative flex size-9 items-center justify-center rounded-full",
-              activeFilterCount > 0 ? "bg-foreground text-background" : "bg-muted text-foreground"
+              activeFilterCount > 0 ? SECTION_COLORS.dispatch.chip : "bg-muted text-foreground"
             )}
           >
             <SlidersHorizontal className="size-4" />

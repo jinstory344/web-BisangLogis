@@ -7,6 +7,8 @@ import type { ClientRow } from "@/lib/supabase/database.types"
 
 import { getClientContacts } from "./actions"
 import { ClientList } from "./client-list"
+import { SECTION_COLORS } from "@/lib/constants/section-colors"
+import { cn } from "@/lib/utils"
 
 export default async function ClientsPage({
   searchParams,
@@ -31,14 +33,14 @@ export default async function ClientsPage({
   const contactsByClient = await getClientContacts((data ?? []).map((c) => c.id))
 
   return (
-    <div className="mx-auto max-w-2xl p-4 md:p-6">
+    <div className={cn("mx-auto max-w-2xl p-4 md:bg-none md:p-6", SECTION_COLORS.client.pageTint)}>
       <div className="flex items-center justify-between gap-4">
         <h1 className="text-2xl font-semibold">거래처</h1>
         <Link
           href="/clients/new"
           prefetch
           aria-label="거래처 등록"
-          className="-mr-2 flex size-10 items-center justify-center rounded-full text-foreground hover:bg-muted"
+          className={cn("-mr-2 flex size-10 items-center justify-center rounded-full hover:bg-muted", SECTION_COLORS.client.accent)}
         >
           <Plus className="size-7" strokeWidth={1.75} />
         </Link>

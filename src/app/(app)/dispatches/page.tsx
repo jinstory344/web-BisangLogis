@@ -4,6 +4,7 @@ import { Plus } from "lucide-react"
 
 import { ListBodyFallback } from "@/components/list/list-body-fallback"
 import { ListPageHead } from "@/components/list/list-page-head"
+import { SECTION_COLORS } from "@/lib/constants/section-colors"
 import { SummaryMonthNav } from "@/components/list/summary-month-nav"
 import { Button } from "@/components/ui/button"
 import { MonthSwipe } from "@/components/list/month-swipe"
@@ -45,6 +46,7 @@ export default async function DispatchesPage({
       <div className="flex flex-col md:gap-2">
         <ListPageHead
           title="배차"
+          tintClassName={SECTION_COLORS.dispatch.headTint}
           desktopTitle="배차 관리"
           desktopAction={
             <Button asChild size="sm">

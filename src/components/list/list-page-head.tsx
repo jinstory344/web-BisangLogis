@@ -5,6 +5,7 @@ import { ChartNoAxesColumn } from "lucide-react"
 import Link from "next/link"
 
 import { SearchButton } from "@/components/layout/search-button"
+import { cn } from "@/lib/utils"
 
 /**
  * 모바일에서 첫째 고정 줄(ListPageHead) 바로 아래에 붙는 둘째 고정 영역의 top.
@@ -28,6 +29,7 @@ export function ListPageHead({
   desktopAction,
   statsHref,
   monthNav,
+  tintClassName,
 }: {
   title: string
   desktopTitle: string
@@ -36,9 +38,11 @@ export function ListPageHead({
   statsHref: string
   /** 제목과 탭 사이의 ‹ 2026년 11월 › (모바일만, HOME과 같은 자리) */
   monthNav?: ReactNode
+  /** 모바일 머리 바탕에 은은하게 깔 메뉴 색 (예: 배차 노랑) */
+  tintClassName?: string
 }) {
   return (
-    <div className="sticky top-0 z-30 -mx-4 bg-background px-4 pt-2 md:static md:mx-0 md:px-0 md:pt-0">
+    <div className={cn("sticky top-0 z-30 -mx-4 bg-background px-4 pt-2 md:static md:mx-0 md:bg-none md:px-0 md:pt-0", tintClassName)}>
       <header className="grid h-10 grid-cols-[2.5rem_1fr_2.5rem] items-center md:hidden">
         <SearchButton />
         <h1 className="text-center text-lg font-semibold tracking-tight">{title}</h1>

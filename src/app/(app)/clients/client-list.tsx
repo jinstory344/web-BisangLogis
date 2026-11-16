@@ -43,6 +43,7 @@ import {
   moveClientPinAction,
   toggleClientPinAction,
 } from "./actions"
+import { SECTION_COLORS } from "@/lib/constants/section-colors"
 
 /** 거래처 목록: 차량 정보와 같은 줄 목록. 줄을 누르면 아래에서 상세·전화·수정·삭제 */
 export function ClientList({
@@ -130,7 +131,7 @@ export function ClientList({
     return (
       <li
         key={client.id}
-        className={cn("relative flex items-center border-b pr-3", isPinned && "bg-violet-400/[0.07]")}
+        className={cn("relative flex items-center border-b pr-3", isPinned && SECTION_COLORS.client.pinnedRow)}
       >
         <button
           type="button"
@@ -139,7 +140,7 @@ export function ClientList({
         >
           <span className="flex items-center gap-1 text-[15px] leading-snug font-semibold">
             {/* 거래처 고정 표시는 보라색 ★ (차량 정보의 노란 ★과 구별) */}
-            {isPinned ? <Star aria-label="고정" className="size-3 shrink-0 fill-violet-400 text-violet-400" /> : null}
+            {isPinned ? <Star aria-label="고정" className={cn("size-3 shrink-0", SECTION_COLORS.client.star)} /> : null}
             <span className="truncate">{client.name}</span>
           </span>
           {contact.length > 0 ? (
@@ -232,7 +233,7 @@ export function ClientList({
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-44">
                   <DropdownMenuItem className="h-10" disabled={isPending} onSelect={() => handleTogglePin(sheetClient)}>
-                    <Star className={cn(sheetClient.pin_order != null && "fill-violet-400 text-violet-400")} />
+                    <Star className={cn(sheetClient.pin_order != null && SECTION_COLORS.client.star)} />
                     {sheetClient.pin_order != null ? "고정 풀기" : "위에 고정"}
                   </DropdownMenuItem>
                   <DropdownMenuItem className="h-10" variant="destructive" onSelect={() => handleDeleteClick(sheetClient)}>

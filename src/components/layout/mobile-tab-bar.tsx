@@ -6,11 +6,13 @@ import { useEffect, useState } from "react"
 
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { primaryNavItems, secondaryNavItems } from "@/lib/constants/nav"
+import { TAB_ACTIVE_COLOR } from "@/lib/constants/section-colors"
 import { getTodayInSeoul } from "@/lib/date"
+import { cn } from "@/lib/utils"
 
 import { isNavItemActive, NavLink } from "./nav-link"
 
-/** 지금 열린 탭은 배경 대신 아이콘·글자를 빨간색으로 (가계부 앱 방식, 탭 밑줄과 같은 red-400) */
+/** 지금 열린 탭은 배경 대신 아이콘·글자를 빨간색으로 (가계부 앱 방식). 배차·차량·거래처는 메뉴별 색(TAB_ACTIVE_COLOR). */
 const TAB_CLASS_NAME =
   "flex flex-1 flex-col items-center justify-center gap-0.5 text-[11px] leading-4 data-[active=true]:bg-transparent data-[active=true]:text-red-400"
 
@@ -41,7 +43,7 @@ export function MobileTabBar() {
     <NavLink
       key={item.href}
       item={item.href === "/" ? { ...item, label: todayLabel } : item}
-      className={TAB_CLASS_NAME}
+      className={cn(TAB_CLASS_NAME, TAB_ACTIVE_COLOR[item.href])}
       iconClassName="size-5"
       labelClassName={item.href === "/" ? "tabular-nums" : undefined}
       active={pendingHref ? pendingHref === item.href : undefined}
