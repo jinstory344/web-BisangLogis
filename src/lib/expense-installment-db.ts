@@ -22,7 +22,12 @@ export async function insertExpenseWithInstallments(
   values: ExpenseInsert
 ): Promise<{ ids: string[]; rows: ExpenseInsert[] } | { error: string }> {
   const parts = splitInstallments(values, crypto.randomUUID())
-  const rows = parts.map((part) => ({ ...values, ...part }))
+  // 리터는 1회차에만 (회차마다 넣으면 통계에서 여러 번 더해진다)
+  const rows = parts.map((part) => ({
+    ...values,
+    ...part,
+    liters: (part.installment_no ?? 1) === 1 ? values.liters : null,
+  }))
   const { data, error } = await supabase.from("expenses").insert(rows).select("*")
   if (error || !data) return { error: error?.message ?? "저장 실패" }
 
@@ -73,7 +78,10 @@ export async function loadExpenseForForm(
   if (!self) return null
   const summary = summarizeInstallmentGroup(rows)
   return {
-    row: summary && self.installment_group_id ? { ...self, ...summary } : self,
+    row:
+      summary && self.installment_group_id
+        ? { ...self, ...summary, liters: rows[0]?.liters ?? null }
+        : self,
     groupSize: rows.length,
   }
 }

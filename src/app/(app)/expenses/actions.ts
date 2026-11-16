@@ -10,6 +10,7 @@ import {
   insertExpenseWithInstallments,
   softDeleteExpense,
 } from "@/lib/expense-installment-db"
+import { isFuelCategory, parseLiters } from "@/lib/fuel"
 import { checkInstallment, isInstallment } from "@/lib/installment"
 import { softDelete } from "@/lib/soft-delete/soft-delete"
 import { safeReturnPath } from "@/lib/return-to"
@@ -52,12 +53,14 @@ export async function createExpenseAction(
   if (installmentError) return { error: installmentError }
 
   const supabase = await createClient()
-  const { vendor, memo, installment_months, card_name, ...rest } = values
+  const { vendor, memo, installment_months, card_name, liters, ...rest } = values
   // 할부(2개월 이상)면 달마다 한 줄씩 나눠 저장한다
   const result = await insertExpenseWithInstallments(supabase, {
     ...rest,
     installment_months: installment_months ?? null,
     card_name: card_name || null,
+    // 리터는 주유비·요소수일 때만 남긴다
+    liters: isFuelCategory(values.category_major, values.category_minor) ? parseLiters(liters) : null,
     vendor: vendor || null,
     memo: memo || null,
   })
@@ -89,11 +92,13 @@ export async function updateExpenseAction(
   if (installmentError) return { error: installmentError }
 
   const supabase = await createClient()
-  const { vendor, memo, installment_months, card_name, ...rest } = values
+  const { vendor, memo, installment_months, card_name, liters, ...rest } = values
   const updateValues = {
     ...rest,
     installment_months: installment_months ?? null,
     card_name: card_name || null,
+    // 리터는 주유비·요소수일 때만 남긴다
+    liters: isFuelCategory(values.category_major, values.category_minor) ? parseLiters(liters) : null,
     vendor: vendor || null,
     memo: memo || null,
   }

@@ -1,3 +1,4 @@
+import { formatLiters } from "@/lib/fuel"
 import { expensePaymentLabel } from "@/lib/constants/payment-method"
 import { formatSaleSource } from "@/lib/constants/sale-sources"
 import type { AmountRow, LedgerEntry } from "@/lib/ledger"
@@ -131,7 +132,7 @@ function toExpenseEntry(row: ExpenseRow): ExpenseLedgerEntry {
     amount: row.amount,
     major: row.category_major,
     minor: row.category_minor,
-    note: [row.vendor, row.memo]
+    note: [row.liters !== null ? formatLiters(row.liters) : null, row.vendor, row.memo]
       .map((text) => text?.trim())
       .filter(Boolean)
       .join(" · "),

@@ -47,6 +47,7 @@ import {
   type ExpenseCategoryTree,
 } from "@/lib/constants/expense-categories"
 import { formatMonthDay, getTodayInSeoul } from "@/lib/date"
+import { isFuelCategory } from "@/lib/fuel"
 import { isInstallment, splitInstallments } from "@/lib/installment"
 import { formatKRW } from "@/lib/money"
 import {
@@ -107,6 +108,7 @@ export function ExpenseForm({
   // 새 등록(금액이 비어 있음)이면 화면을 열자마자 금액 키패드를 띄운다. 수정·복사는 띄우지 않는다.
   const [autoOpenKeypad] = useState(() => defaultValues.amount === 0)
   const categoryMajor = form.watch("category_major")
+  const categoryMinor = form.watch("category_minor")
   const paymentMethod = form.watch("payment_method")
   const installmentMonths = form.watch("installment_months")
   const watchedAmount = form.watch("amount")
@@ -413,6 +415,31 @@ export function ExpenseForm({
                     {installmentGroupSize}회 할부 전체를 고치는 중이에요. 금액은 총액, 날짜는 첫 회차예요.
                   </p>
                 ) : null}
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        ) : null}
+
+        {/* 리터는 차량 › 주유비·요소수일 때만 (안 적어도 된다). 통계 › 지출에서 달마다 모아 본다. */}
+        {isFuelCategory(categoryMajor, categoryMinor) ? (
+          <FormField
+            control={form.control}
+            name="liters"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>리터</FormLabel>
+                <div className="flex items-center gap-2">
+                  <FormControl>
+                    <Input
+                      {...field}
+                      inputMode="decimal"
+                      placeholder="넣은 양 (안 적어도 돼요)"
+                      className="h-11 flex-1 text-right"
+                    />
+                  </FormControl>
+                  <span className="shrink-0 text-base text-muted-foreground">L</span>
+                </div>
                 <FormMessage />
               </FormItem>
             )}

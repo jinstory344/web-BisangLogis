@@ -1,4 +1,5 @@
 import { matchCardName } from "@/lib/constants/expense-cards"
+import { isFuelCategory } from "@/lib/fuel"
 import type { ExpensePaymentMethod } from "@/lib/supabase/database.types"
 import {
   findByPrefix,
@@ -14,6 +15,7 @@ import {
  * 나머지 줄은 비고. 결제방법을 안 쓰면 카드.
  * 할부는 금액 줄에 "6개월" 또는 "할부6"(2~12개월, 카드만) — 달마다 나눠 지출로 잡힌다.
  * 카드 이름(앱의 카드 목록, 띄어쓰기 무시)은 금액 줄 안이나 따로 한 줄로 — 결제는 카드로 잡힌다.
+ * 리터는 금액 뒤에 쉼표 + 숫자("8만,50") 또는 "50L" — 주유비·요소수일 때만 저장한다.
  */
 
 export type ExpenseCategoryOption = { major: string; minor: string }
@@ -28,7 +30,29 @@ export type ParsedExpense = {
   installment_months: number | null
   /** 카드 목록에서 찾은 카드 이름 (없으면 null) */
   card_name: string | null
+  /** 리터 (주유비·요소수일 때만, 없으면 null) */
+  liters: number | null
   memo: string | null
+}
+
+/**
+ * 금액 줄에서 "금액,리터"의 리터를 떼어 낸다 ("8만,50" "8만, 50L" "80000,50.5").
+ * "80,000"처럼 천 단위 쉼표로 보이는 것(쉼표 바로 뒤 숫자 세 자리, 띄어쓰기·L 없음, 앞이 숫자)은 그대로 둔다.
+ */
+export function splitLiters(line: string): { line: string; liters: number | null } {
+  const match = line.match(/(\d(?:만|천)?원?)\s*[,，](\s*)(\d{1,5}(?:\.\d)?)\s*(L|l|리터)?(?=\s|$)/)
+  if (!match) return { line, liters: null }
+  const [all, left, space, num, unit] = match
+  if (!space && !unit && /^\d{3}$/.test(num) && /\d$/.test(left)) return { line, liters: null }
+  const liters = Number(num)
+  if (!(liters > 0)) return { line, liters: null }
+  return { line: line.replace(all, left), liters }
+}
+
+/** "50L" "50.5리터" → 리터, 아니면 null */
+function parseLiterToken(token: string): number | null {
+  const match = token.match(/^(\d{1,5}(?:\.\d)?)(?:L|l|리터)$/)
+  return match && Number(match[1]) > 0 ? Number(match[1]) : null
 }
 
 /** "6개월", "6개월할부", "할부6", "할부 6개월"의 6 (2~12만). 아니면 null */
@@ -54,13 +78,21 @@ function parseMoneyLine(
   payment: ExpensePaymentMethod | null
   months: number | null
   card: string | null
+  liters: number | null
 } | null {
   let amount: number | null = null
   let payment: ExpensePaymentMethod | null = null
   let months: number | null = null
   let card: string | null = null
+  const split = splitLiters(line)
+  let liters = split.liters
   // "할부 6개월"처럼 띄어 써도 한 덩어리로
-  for (const token of line.replace(/할부\s+(?=\d)/g, "할부").split(/\s+/)) {
+  for (const token of split.line.replace(/할부\s+(?=\d)/g, "할부").split(/\s+/)) {
+    const literToken = parseLiterToken(token)
+    if (literToken !== null) {
+      liters = literToken
+      continue
+    }
     if (PAYMENT_WORDS[token]) {
       payment = PAYMENT_WORDS[token]
       continue
@@ -82,7 +114,7 @@ function parseMoneyLine(
   // 카드 이름 하나만 있는 줄은 아래에서 따로 본다 (분류 이름과 겹칠 수 있어 금액 줄로 보지 않는다)
   return amount === null && payment === null && months === null
     ? null
-    : { amount, payment, months, card }
+    : { amount, payment, months, card, liters }
 }
 
 function parseCategoryLine(
@@ -116,6 +148,7 @@ export function parseExpenseLines(
   let months: number | null = null
   let category: ExpenseCategoryOption | null = null
   let card: string | null = null
+  let liters: number | null = null
   const cards = ctx.cards ?? []
   const rest: string[] = []
 
@@ -138,6 +171,7 @@ export function parseExpenseLines(
       if (money.payment) payment = money.payment
       if (money.months) months = money.months
       if (money.card) card = money.card
+      if (money.liters !== null) liters = money.liters
       continue
     }
 
@@ -184,6 +218,7 @@ export function parseExpenseLines(
       payment_method: payment ?? "CARD",
       installment_months: months,
       card_name: card,
+      liters: isFuelCategory(category.major, category.minor) ? liters : null,
       memo: rest.length > 0 ? rest.join(" / ") : null,
     },
   }

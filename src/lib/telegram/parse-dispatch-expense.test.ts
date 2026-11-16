@@ -135,9 +135,25 @@ describe("parseExpenseLines", () => {
         payment_method: "CARD",
         installment_months: null,
         card_name: null,
+        liters: null,
         memo: null,
       },
     })
+  })
+
+  it("리터: 금액 뒤 쉼표+숫자 또는 50L, 주유비·요소수만", () => {
+    for (const line of ["8만,50", "8만, 50", "8만,50L", "8만 50리터", "80000,50"]) {
+      const r = parseExpenseLines([line, "주유"], { today, categories })
+      expect(r.ok && r.value).toMatchObject({ amount: 80_000, liters: 50 })
+    }
+    const decimal = parseExpenseLines(["12만,85.5 신한복지", "주유"], { today, categories, cards: ["신한복지"] })
+    expect(decimal.ok && decimal.value).toMatchObject({ amount: 120_000, liters: 85.5, card_name: "신한복지" })
+    // 천 단위 쉼표는 금액 그대로
+    const thousands = parseExpenseLines(["80,000", "주유"], { today, categories })
+    expect(thousands.ok && thousands.value).toMatchObject({ amount: 80_000, liters: null })
+    // 주유비·요소수가 아니면 리터는 버린다
+    const food = parseExpenseLines(["1만,5", "식비"], { today, categories })
+    expect(food.ok && food.value).toMatchObject({ amount: 10_000, liters: null })
   })
 
   it("카드 이름: 금액 줄 안이나 따로 한 줄, 띄어쓰기·대소문자 무시", () => {

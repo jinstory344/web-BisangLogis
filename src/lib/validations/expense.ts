@@ -1,5 +1,6 @@
 import { z } from "zod"
 
+import { parseLiters } from "@/lib/fuel"
 import { amountSchema } from "@/lib/money"
 import type { ExpenseRow } from "@/lib/supabase/database.types"
 
@@ -20,6 +21,10 @@ export const expenseFormSchema = z.object({
   installment_months: z.number().int().min(1).max(12).optional(),
   /** 카드 이름 (결제방법이 카드일 때만, 빈칸이면 없음) */
   card_name: z.string().trim().max(20, "카드 이름은 20자 이하로 입력하세요"),
+  /** 리터 (주유비·요소수일 때만, 빈칸이면 없음). 글자로 두고 서버에서 숫자로 바꾼다 */
+  liters: z
+    .string()
+    .refine((v) => !Number.isNaN(parseLiters(v)), "리터는 숫자로 입력하세요 (예: 120 또는 85.5)"),
   vendor: z.string().trim(),
   has_tax_invoice: z.boolean(),
   memo: z.string().trim(),
@@ -35,6 +40,7 @@ export const expenseFormDefaults: ExpenseFormValues = {
   payment_method: "CARD",
   installment_months: undefined,
   card_name: "",
+  liters: "",
   vendor: "",
   has_tax_invoice: false,
   memo: "",
@@ -50,6 +56,7 @@ export function expenseRowToFormValues(row: ExpenseRow): ExpenseFormValues {
     payment_method: row.payment_method ?? "CARD",
     installment_months: row.installment_months ?? undefined,
     card_name: row.card_name ?? "",
+    liters: row.liters !== null ? String(row.liters) : "",
     vendor: row.vendor ?? "",
     has_tax_invoice: row.has_tax_invoice,
     memo: row.memo ?? "",
@@ -74,6 +81,7 @@ export function buildExpenseCopyDefaults(
     payment_method: row.payment_method ?? "CARD",
     installment_months: row.installment_months ?? undefined,
     card_name: row.card_name ?? "",
+    liters: row.liters !== null ? String(row.liters) : "",
     memo: row.memo ?? "",
   }
 }
@@ -109,6 +117,7 @@ export function coerceExpenseFormData(
         : Number(raw.installment_months),
     // 카드 이름도 카드일 때만
     card_name: raw.payment_method === "CARD" ? (raw.card_name ?? "") : "",
+    liters: raw.liters ?? "",
     has_tax_invoice: raw.has_tax_invoice === "true",
   }
 }

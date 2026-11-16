@@ -7,6 +7,7 @@ import { getTodayInSeoul } from "@/lib/date"
 import { formatKRW, isVatExemptForPayment } from "@/lib/money"
 import { CARGO_BOX_TYPE_LABELS } from "@/lib/constants/cargo-box-type"
 import { sortCardNames } from "@/lib/constants/expense-cards"
+import { formatLiters } from "@/lib/fuel"
 import { DROPOFF_TYPE_LABELS } from "@/lib/constants/dropoff-type"
 import {
   EXPENSE_PAYMENT_METHOD_LABELS,
@@ -199,6 +200,7 @@ async function handleExpense(chatId: number, lines: string[]) {
     payment_method: expense.payment_method,
     installment_months: expense.installment_months,
     card_name: expense.card_name,
+    liters: expense.liters,
     vendor: null,
     has_tax_invoice: false,
     memo: expense.memo,
@@ -216,7 +218,7 @@ async function handleExpense(chatId: number, lines: string[]) {
     `${expense.category_major} › ${expense.category_minor}`,
     `${formatKRW(expense.amount)} · ${EXPENSE_PAYMENT_METHOD_LABELS[expense.payment_method]}${
       expense.card_name ? ` · ${expense.card_name}` : ""
-    }`,
+    }${expense.liters !== null ? ` · ${formatLiters(expense.liters)}` : ""}`,
     parts.length > 1
       ? `할부 ${parts.length}개월: 매달 ${formatKRW(last.amount)} (${shortDate(parts[0].expense_date)}~${shortDate(last.expense_date)})`
       : null,

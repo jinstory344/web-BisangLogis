@@ -3,6 +3,7 @@ import { SummaryMonthNav } from "@/components/list/summary-month-nav"
 import type { ExpenseCategoryTree } from "@/lib/constants/expense-categories"
 import { formatYearMonth, getMonthRange, shiftMonthRange } from "@/lib/date"
 import { buildMonthBreakdown } from "@/lib/expense-list"
+import { formatLiters, FUEL_MAJOR, FUEL_MINORS, summarizeLiters } from "@/lib/fuel"
 import { formatKRW } from "@/lib/money"
 import { formatChangeRate, percentOf } from "@/lib/summary"
 import { createClient } from "@/lib/supabase/server"
@@ -26,7 +27,9 @@ export async function ExpenseSummary({
   const current = getMonthRange(from)
   const previous = shiftMonthRange(from, -1)
 
-  const [{ data: currentRows, error: currentError }, { data: previousRows }] =
+  // 리터 월 평균: 이번 달 포함 최근 12개월
+  const yearAgo = shiftMonthRange(from, -11)
+  const [{ data: currentRows, error: currentError }, { data: previousRows }, { data: literRows }] =
     await Promise.all([
       supabase
         .from("expenses")
@@ -40,6 +43,15 @@ export async function ExpenseSummary({
         .is("deleted_at", null)
         .gte("expense_date", previous.from)
         .lte("expense_date", previous.to),
+      supabase
+        .from("expenses")
+        .select("expense_date, category_minor, liters")
+        .is("deleted_at", null)
+        .eq("category_major", FUEL_MAJOR)
+        .in("category_minor", [...FUEL_MINORS])
+        .not("liters", "is", null)
+        .gte("expense_date", yearAgo.from)
+        .lte("expense_date", current.to),
     ])
 
   if (currentError) {
@@ -57,6 +69,7 @@ export async function ExpenseSummary({
     0
   )
   const breakdown = buildMonthBreakdown(categories, rows)
+  const liters = summarizeLiters(literRows ?? [], current.from)
 
   return (
     <div className="flex flex-col gap-4">
@@ -75,6 +88,26 @@ export async function ExpenseSummary({
           {formatChangeRate(grandTotal, previousTotal)} (지난 달{" "}
           {formatKRW(previousTotal)})
         </p>
+      </div>
+
+      {/* 주유비·요소수에 적은 리터: 이번 달 합 · 최근 12개월 중 적은 달의 월 평균 */}
+      <div className="rounded-md border">
+        <p className="border-b p-3 font-medium">넣은 양 (리터)</p>
+        {liters.map((item) => (
+          <div key={item.minor} className="flex items-start justify-between gap-3 border-b p-3 last:border-0">
+            <span>{item.minor}</span>
+            <span className="text-right">
+              <span className="font-medium">
+                {item.monthCount > 0 ? formatLiters(item.month) : "기록 없음"}
+              </span>
+              <span className="block text-sm text-muted-foreground">
+                {item.average !== null
+                  ? `월 평균 ${formatLiters(item.average)} (최근 ${item.averageMonths}개월)`
+                  : "지출 등록 때 리터를 적으면 모아 보여 줘요"}
+              </span>
+            </span>
+          </div>
+        ))}
       </div>
 
       <DonutChart

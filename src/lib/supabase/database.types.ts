@@ -148,6 +148,8 @@ export type ExpenseRow = BaseColumns & {
   installment_no: number | null
   /** 결제방법이 카드일 때 고른 카드 이름 (expense_cards 목록의 이름을 글자로 저장) */
   card_name: string | null
+  /** 주유비·요소수에 넣은 양(리터, 소수 첫째 자리). 안 적으면 null */
+  liters: number | null
   vendor: string | null
   has_tax_invoice: boolean
   memo: string | null

@@ -13,6 +13,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet"
+import { formatLiters } from "@/lib/fuel"
 import { expensePaymentLabel } from "@/lib/constants/payment-method"
 import { formatDateWithWeekday } from "@/lib/date"
 import { groupByDay, spansMultipleMonths } from "@/lib/day-groups"
@@ -36,7 +37,7 @@ function paymentSummary(expense: ExpenseRow): string {
 
 /** 행 둘째 줄: 사용처와 비고를 한 줄로 */
 function noteLine(expense: ExpenseRow): string {
-  return [expense.vendor, expense.memo]
+  return [expense.liters !== null ? formatLiters(expense.liters) : null, expense.vendor, expense.memo]
     .map((text) => text?.trim())
     .filter(Boolean)
     .join(" · ")
