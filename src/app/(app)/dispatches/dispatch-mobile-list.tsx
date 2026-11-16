@@ -21,7 +21,7 @@ import { DROPOFF_TYPE_LABELS } from "@/lib/constants/dropoff-type"
 import { formatDateWithWeekday } from "@/lib/date"
 import { groupByDay, spansMultipleMonths } from "@/lib/day-groups"
 import { formatKRW } from "@/lib/money"
-import { MessageSquare, Send } from "lucide-react"
+import { Building2, Truck } from "lucide-react"
 import type { DispatchRow } from "@/lib/supabase/database.types"
 
 interface DispatchMobileListProps {
@@ -260,14 +260,14 @@ export function DispatchActionSheetBody({
               onClick={() => onMessage("driver")}
               className="flex h-12 items-center justify-center gap-1.5 rounded-xl bg-[#34507d] text-[15px] font-semibold text-[#e3ecfb] active:opacity-80"
             >
-              <MessageSquare className="size-4" /> 차주 문자
+              <Truck className="size-4" /> 차주 문자
             </button>
             <button
               type="button"
               onClick={() => onMessage("client")}
               className="flex h-12 items-center justify-center gap-1.5 rounded-xl bg-[#355a43] text-[15px] font-semibold text-[#e0f4e7] active:opacity-80"
             >
-              <Send className="size-4" /> 거래처 문자
+              <Building2 className="size-4" /> 거래처 문자
             </button>
           </div>
         ) : null}
