@@ -42,6 +42,9 @@ export const viewport: Viewport = {
   // 홈 화면에서 앱처럼 열 때 아래 홈 막대 높이(safe-area-inset-bottom)를 알 수 있게 한다.
   // 하단 탭이 그 높이만큼 아래 여백을 둬서 막대가 탭 글씨에 겹치지 않는다.
   viewportFit: "cover",
+  // 아이폰은 글자가 16px보다 작은 입력 칸을 누르면 화면을 확대하고, 닫아도 확대된 채로 남아
+  // 양옆·아래 탭이 잘려 보인다. 자동 확대만 막는다(두 손가락 확대는 아이폰이 그대로 허용).
+  maximumScale: 1,
 };
 
 export default function RootLayout({

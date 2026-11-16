@@ -198,7 +198,7 @@ export function DispatchMessageSheet({
               value={text}
               onChange={(e) => setText(e.target.value)}
               rows={target === "driver" ? 11 : 8}
-              className="mt-1 w-full resize-none rounded-xl border bg-transparent px-3 py-2.5 text-[15px] leading-relaxed outline-none focus:border-foreground/40"
+              className="mt-1 w-full resize-none rounded-xl border bg-transparent px-3 py-2.5 text-base leading-relaxed outline-none focus:border-foreground/40"
             />
             <p className="text-xs text-muted-foreground">
               받는 번호: {phone || (target === "driver" ? "차주 번호 없음 — 문자 앱에서 골라요" : "담당자 번호 없음 — 카톡으로 보내거나 문자 앱에서 골라요")}
