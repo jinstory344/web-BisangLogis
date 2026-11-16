@@ -1,11 +1,11 @@
 "use client"
 
-import { ChevronRight, Copy, NotebookPen, Star, X } from "lucide-react"
+import { ChevronRight, NotebookPen, Star, X } from "lucide-react"
 import Link from "next/link"
 import { useState } from "react"
-import { toast } from "sonner"
 
 import { listMemosAction, type MemoItem } from "@/app/(app)/memos/actions"
+import { CopyMemoButton } from "@/components/memos/copy-memo-button"
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet"
 import { sortMemos } from "@/lib/memos"
 import { cn } from "@/lib/utils"
@@ -24,15 +24,6 @@ export function WorkMemoButton() {
     listMemosAction("WORK")
       .then((rows) => setMemos(sortMemos(rows)))
       .catch(() => setMemos([]))
-  }
-
-  async function copy(memo: MemoItem) {
-    try {
-      await navigator.clipboard.writeText(memo.body)
-      toast.success("복사했어요")
-    } catch {
-      toast.error("복사하지 못했어요")
-    }
   }
 
   return (
@@ -72,12 +63,12 @@ export function WorkMemoButton() {
               memos.map((memo) => {
                 const isOpen = expanded === memo.id
                 return (
-                  <div key={memo.id} className="border-b py-3 last:border-b-0">
+                  <div key={memo.id} className="flex items-start gap-2 border-b py-3 last:border-b-0">
                     <button
                       type="button"
                       aria-expanded={isOpen}
                       onClick={() => setExpanded(isOpen ? null : memo.id)}
-                      className="flex w-full flex-col gap-1 text-left"
+                      className="flex min-w-0 flex-1 flex-col gap-1 text-left"
                     >
                       <span className="flex items-center gap-1.5 text-[15px] font-semibold">
                         {memo.pinned ? <Star className="size-3.5 shrink-0 fill-amber-400 text-amber-400" /> : null}
@@ -94,15 +85,7 @@ export function WorkMemoButton() {
                         </span>
                       ) : null}
                     </button>
-                    {isOpen && memo.body ? (
-                      <button
-                        type="button"
-                        onClick={() => copy(memo)}
-                        className="mt-2 inline-flex h-9 items-center gap-1.5 rounded-full bg-muted px-3.5 text-sm"
-                      >
-                        <Copy className="size-4" /> 내용 복사
-                      </button>
-                    ) : null}
+                    <CopyMemoButton memo={memo} />
                   </div>
                 )
               })

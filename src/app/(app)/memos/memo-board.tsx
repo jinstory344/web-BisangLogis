@@ -4,6 +4,7 @@ import { ChevronDown, Plus, Search, Star } from "lucide-react"
 import { useState } from "react"
 
 import { ClientSheet } from "@/components/clients/client-sheet"
+import { CopyMemoButton } from "@/components/memos/copy-memo-button"
 import { MemoEditor, type MemoDraft } from "@/components/memos/memo-editor"
 import { sortMemos } from "@/lib/memos"
 import type { MemoKind } from "@/lib/supabase/database.types"
@@ -146,11 +147,11 @@ export function MemoBoard({
 
       <div className="mt-3 flex flex-col gap-2">
         {shown.map((memo) => (
+          <div key={memo.id} className="flex items-start gap-2 rounded-xl bg-muted/60 py-3 pr-3 pl-3.5">
           <button
-            key={memo.id}
             type="button"
             onClick={() => openEditor(memo)}
-            className="flex flex-col gap-1 rounded-xl bg-muted/60 px-3.5 py-3 text-left active:bg-muted"
+            className="flex min-w-0 flex-1 flex-col gap-1 text-left"
           >
             <span className="flex items-center gap-1.5">
               {memo.pinned ? <Star className="size-3.5 shrink-0 fill-amber-400 text-amber-400" /> : null}
@@ -175,6 +176,8 @@ export function MemoBoard({
               </span>
             ) : null}
           </button>
+          <CopyMemoButton memo={memo} />
+          </div>
         ))}
 
         {shown.length === 0 ? (
