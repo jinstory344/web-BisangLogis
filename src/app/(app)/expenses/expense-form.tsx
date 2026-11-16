@@ -57,6 +57,7 @@ import {
 
 import type { ExpenseActionState } from "./actions"
 import { CategoryPickerSheet } from "./category-picker-sheet"
+import { CardPickerSheet } from "./card-picker-sheet"
 import {
   addExpenseCategoryAction,
   deleteExpenseCategoryAction,
@@ -77,6 +78,9 @@ interface ExpenseFormProps {
   categoriesEditable: boolean
   /** 할부 묶음을 고치는 중이면 그 회차 수 (아니면 0) */
   installmentGroupSize?: number
+  /** 카드 이름 목록 (DB) */
+  cards: string[]
+  cardsEditable: boolean
 }
 
 export function ExpenseForm({
@@ -86,6 +90,8 @@ export function ExpenseForm({
   categories,
   categoriesEditable,
   installmentGroupSize = 0,
+  cards,
+  cardsEditable,
 }: ExpenseFormProps) {
   const [state, formAction, isPending] = useActionState(action, {
     error: null,
@@ -330,6 +336,7 @@ export function ExpenseForm({
                   // 카드가 아니면 할부 칸이 사라지므로 이미 고른 할부도 지운다.
                   if (method !== "CARD") {
                     form.setValue("installment_months", undefined)
+                    form.setValue("card_name", "")
                   }
                 }}
               />
@@ -337,6 +344,26 @@ export function ExpenseForm({
             </FormItem>
           )}
         />
+
+        {/* 카드 이름은 결제방법이 카드일 때만 보인다. */}
+        {paymentMethod === "CARD" ? (
+          <FormField
+            control={form.control}
+            name="card_name"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>카드</FormLabel>
+                <CardPickerSheet
+                  cards={cards}
+                  editable={cardsEditable}
+                  value={field.value}
+                  onChange={field.onChange}
+                />
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        ) : null}
 
         {/* 할부는 결제방법이 카드일 때만 보인다. */}
         {paymentMethod === "CARD" ? (

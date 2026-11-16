@@ -146,6 +146,8 @@ export type ExpenseRow = BaseColumns & {
   installment_group_id: string | null
   /** 할부 회차 1..installment_months (일시불은 null) */
   installment_no: number | null
+  /** 결제방법이 카드일 때 고른 카드 이름 (expense_cards 목록의 이름을 글자로 저장) */
+  card_name: string | null
   vendor: string | null
   has_tax_invoice: boolean
   memo: string | null
@@ -158,6 +160,12 @@ export type ExpenseRow = BaseColumns & {
 export type ExpenseCategoryRow = BaseColumns & {
   major: string
   minor: string | null
+  sort_order: number
+}
+
+/** 지출 카드 목록 (결제방법 "카드"의 하위 분류) */
+export type ExpenseCardRow = BaseColumns & {
+  name: string
   sort_order: number
 }
 
@@ -241,6 +249,7 @@ export type Database = {
       expenses: TableDef<ExpenseRow>
       expense_categories: TableDef<ExpenseCategoryRow>
       sale_sources: TableDef<SaleSourceRow>
+      expense_cards: TableDef<ExpenseCardRow>
       tax_invoices: TableDef<TaxInvoiceRow>
       tax_invoice_dispatches: TableDef<TaxInvoiceDispatchRow>
       purchase_invoices: TableDef<PurchaseInvoiceRow>

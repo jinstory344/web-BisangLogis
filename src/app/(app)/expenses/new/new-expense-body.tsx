@@ -9,6 +9,7 @@ import {
 } from "@/lib/validations/expense"
 
 import { createExpenseAction } from "../actions"
+import { getExpenseCards } from "../cards"
 import { getExpenseCategories } from "../categories"
 import { ExpenseForm } from "../expense-form"
 
@@ -31,9 +32,10 @@ async function loadExpenseCopyDefaults(
  * copyId가 있으면 그 건을 복사해 채운다(없는 건·삭제된 건이면 빈 폼).
  */
 export async function NewExpenseBody({ copyId }: { copyId: string | null }) {
-  const [copiedValues, categories] = await Promise.all([
+  const [copiedValues, categories, cards] = await Promise.all([
     copyId ? loadExpenseCopyDefaults(copyId) : null,
     getExpenseCategories(),
+    getExpenseCards(),
   ])
 
   return (
@@ -48,6 +50,8 @@ export async function NewExpenseBody({ copyId }: { copyId: string | null }) {
           submitLabel="등록"
           categories={categories.tree}
           categoriesEditable={categories.editable}
+          cards={cards.names}
+          cardsEditable={cards.editable}
         />
       </div>
     </>

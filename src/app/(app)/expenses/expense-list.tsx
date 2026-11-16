@@ -1,6 +1,5 @@
 "use client"
 
-import { installmentLabel } from "@/lib/installment"
 import Link from "next/link"
 import { usePathname, useSearchParams } from "next/navigation"
 import { ChevronDown, ChevronRight } from "lucide-react"
@@ -27,7 +26,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { EXPENSE_PAYMENT_METHOD_LABELS } from "@/lib/constants/payment-method"
+import { expensePaymentLabel } from "@/lib/constants/payment-method"
 import {
   formatDateWithWeekday,
   formatMonthDay,
@@ -194,12 +193,7 @@ export function ExpenseList({
                             {formatKRW(expense.amount)}
                           </TableCell>
                           <TableCell>
-                            {expense.payment_method
-                              ? EXPENSE_PAYMENT_METHOD_LABELS[expense.payment_method]
-                              : "-"}
-                            {installmentLabel(expense.installment_no, expense.installment_months)
-                              ? ` · ${installmentLabel(expense.installment_no, expense.installment_months)}`
-                              : ""}
+                            {expensePaymentLabel(expense) || "-"}
                           </TableCell>
                           <TableCell className="max-w-40 truncate">
                             {expense.memo ?? "-"}

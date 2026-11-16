@@ -18,6 +18,8 @@ export const expenseFormSchema = z.object({
   amount: amountSchema,
   payment_method: z.enum(["CARD", "TRANSFER", "CASH"]),
   installment_months: z.number().int().min(1).max(12).optional(),
+  /** 카드 이름 (결제방법이 카드일 때만, 빈칸이면 없음) */
+  card_name: z.string().trim().max(20, "카드 이름은 20자 이하로 입력하세요"),
   vendor: z.string().trim(),
   has_tax_invoice: z.boolean(),
   memo: z.string().trim(),
@@ -32,6 +34,7 @@ export const expenseFormDefaults: ExpenseFormValues = {
   amount: 0,
   payment_method: "CARD",
   installment_months: undefined,
+  card_name: "",
   vendor: "",
   has_tax_invoice: false,
   memo: "",
@@ -46,6 +49,7 @@ export function expenseRowToFormValues(row: ExpenseRow): ExpenseFormValues {
     amount: row.amount,
     payment_method: row.payment_method ?? "CARD",
     installment_months: row.installment_months ?? undefined,
+    card_name: row.card_name ?? "",
     vendor: row.vendor ?? "",
     has_tax_invoice: row.has_tax_invoice,
     memo: row.memo ?? "",
@@ -53,7 +57,7 @@ export function expenseRowToFormValues(row: ExpenseRow): ExpenseFormValues {
 }
 
 /**
- * 이전 건 복사 등록(/expenses/new?copy=id)의 기본값: 분류(대·소)·금액·결제방법·할부·비고만
+ * 이전 건 복사 등록(/expenses/new?copy=id)의 기본값: 분류(대·소)·금액·결제방법·카드·할부·비고만
  * 가져오고 지출일자는 오늘로 바꾼다. 폼에 보이지 않는 거래처(vendor)·증빙 수취 여부는
  * 복사하지 않고 새 등록 기본값을 쓴다 — 화면에서 확인할 수 없는 값이 조용히 따라오지 않도록.
  */
@@ -69,6 +73,7 @@ export function buildExpenseCopyDefaults(
     amount: row.amount,
     payment_method: row.payment_method ?? "CARD",
     installment_months: row.installment_months ?? undefined,
+    card_name: row.card_name ?? "",
     memo: row.memo ?? "",
   }
 }
@@ -102,6 +107,8 @@ export function coerceExpenseFormData(
       raw.installment_months === undefined
         ? undefined
         : Number(raw.installment_months),
+    // 카드 이름도 카드일 때만
+    card_name: raw.payment_method === "CARD" ? (raw.card_name ?? "") : "",
     has_tax_invoice: raw.has_tax_invoice === "true",
   }
 }

@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server"
 import { expenseRowToFormValues } from "@/lib/validations/expense"
 
 import { updateExpenseAction } from "../../actions"
+import { getExpenseCards } from "../../cards"
 import { getExpenseCategories } from "../../categories"
 import { ExpenseForm } from "../../expense-form"
 
@@ -22,9 +23,10 @@ export default async function EditExpensePage({
   const supabase = await createClient()
   // 지출 한 건과 분류 목록은 서로 기다릴 필요가 없어 함께 읽는다.
   // 할부 회차면 묶음 전체를 한 건처럼(첫 회차 날짜·총액) 띄운다
-  const [loaded, categories] = await Promise.all([
+  const [loaded, categories, cards] = await Promise.all([
     loadExpenseForForm(supabase, id),
     getExpenseCategories(),
+    getExpenseCards(),
   ])
 
   if (!loaded) {
@@ -43,6 +45,8 @@ export default async function EditExpensePage({
           submitLabel="저장"
           categories={categories.tree}
           categoriesEditable={categories.editable}
+          cards={cards.names}
+          cardsEditable={cards.editable}
           installmentGroupSize={loaded.row.installment_group_id ? loaded.groupSize : 0}
         />
       </div>

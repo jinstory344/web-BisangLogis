@@ -1,3 +1,4 @@
+import { installmentLabel } from "@/lib/installment"
 import type {
   ExpensePaymentMethod,
   PaymentMethod,
@@ -28,3 +29,24 @@ export const EXPENSE_PAYMENT_METHOD_OPTIONS = (
     string,
   ][]
 ).map(([value, label]) => ({ value, label }))
+
+/**
+ * 지출 결제 표시: "카드 · 신한복지 · 할부 3/6". 카드 이름·할부는 카드일 때만
+ * (카드가 아닌데 값이 남아 있는 옛 데이터는 숨긴다).
+ */
+export function expensePaymentLabel(row: {
+  payment_method: ExpensePaymentMethod | null
+  card_name: string | null
+  installment_no: number | null
+  installment_months: number | null
+}): string {
+  if (!row.payment_method) return ""
+  const isCard = row.payment_method === "CARD"
+  return [
+    EXPENSE_PAYMENT_METHOD_LABELS[row.payment_method],
+    isCard ? row.card_name : null,
+    isCard ? installmentLabel(row.installment_no, row.installment_months) : null,
+  ]
+    .filter(Boolean)
+    .join(" · ")
+}

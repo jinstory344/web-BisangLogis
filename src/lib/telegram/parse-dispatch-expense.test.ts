@@ -134,9 +134,27 @@ describe("parseExpenseLines", () => {
         amount: 80_000,
         payment_method: "CARD",
         installment_months: null,
+        card_name: null,
         memo: null,
       },
     })
+  })
+
+  it("카드 이름: 금액 줄 안이나 따로 한 줄, 띄어쓰기·대소문자 무시", () => {
+    const cards = ["신한복지", "신한RPM", "현대카드"]
+    const inLine = parseExpenseLines(["8만 신한복지 3개월", "주유"], { today, categories, cards })
+    expect(inLine.ok && inLine.value).toMatchObject({
+      amount: 80_000,
+      payment_method: "CARD",
+      card_name: "신한복지",
+      installment_months: 3,
+    })
+    const ownLine = parseExpenseLines(["8만", "신한 rpm", "주유"], { today, categories, cards })
+    expect(ownLine.ok && ownLine.value).toMatchObject({ card_name: "신한RPM", memo: null })
+    // "현대카드"는 결제 낱말 "카드"와 헷갈리지 않는다
+    const hyundai = parseExpenseLines(["8만 현대카드", "주유"], { today, categories, cards })
+    expect(hyundai.ok && hyundai.value).toMatchObject({ card_name: "현대카드" })
+    expect(parseExpenseLines(["8만 현금 신한복지", "주유"], { today, categories, cards }).ok).toBe(false)
   })
 
   it("할부: 6개월 / 할부6 / 할부 6개월, 카드만, 2~12개월", () => {

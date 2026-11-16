@@ -76,8 +76,11 @@ export function expensesToSheet(rows: ExpenseRow[]): SheetTable {
       text(e.category_major),
       text(e.category_minor),
       e.amount,
+      // 카드 이름이 있으면 "카드 · 신한복지" (칸 수는 그대로)
       e.payment_method
-        ? (EXPENSE_PAYMENT_METHOD_LABELS[e.payment_method] ?? e.payment_method)
+        ? [EXPENSE_PAYMENT_METHOD_LABELS[e.payment_method] ?? e.payment_method, e.payment_method === "CARD" ? e.card_name : null]
+            .filter(Boolean)
+            .join(" · ")
         : "",
       e.installment_months ?? "",
       text(e.vendor),

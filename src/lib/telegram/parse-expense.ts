@@ -1,3 +1,4 @@
+import { matchCardName } from "@/lib/constants/expense-cards"
 import type { ExpensePaymentMethod } from "@/lib/supabase/database.types"
 import {
   findByPrefix,
@@ -12,6 +13,7 @@ import {
  * 텔레그램 지출 메시지: 금액·날짜·결제방법(카드/이체/현금)·분류(소분류 앞글자, 또는 "차량,주유비")는 아무 줄에나,
  * 나머지 줄은 비고. 결제방법을 안 쓰면 카드.
  * 할부는 금액 줄에 "6개월" 또는 "할부6"(2~12개월, 카드만) — 달마다 나눠 지출로 잡힌다.
+ * 카드 이름(앱의 카드 목록, 띄어쓰기 무시)은 금액 줄 안이나 따로 한 줄로 — 결제는 카드로 잡힌다.
  */
 
 export type ExpenseCategoryOption = { major: string; minor: string }
@@ -24,6 +26,8 @@ export type ParsedExpense = {
   payment_method: ExpensePaymentMethod
   /** 2~12면 할부, 없으면 일시불 */
   installment_months: number | null
+  /** 카드 목록에서 찾은 카드 이름 (없으면 null) */
+  card_name: string | null
   memo: string | null
 }
 
@@ -43,15 +47,27 @@ const PAYMENT_WORDS: Record<string, ExpensePaymentMethod> = {
 }
 
 function parseMoneyLine(
-  line: string
-): { amount: number | null; payment: ExpensePaymentMethod | null; months: number | null } | null {
+  line: string,
+  cards: readonly string[]
+): {
+  amount: number | null
+  payment: ExpensePaymentMethod | null
+  months: number | null
+  card: string | null
+} | null {
   let amount: number | null = null
   let payment: ExpensePaymentMethod | null = null
   let months: number | null = null
+  let card: string | null = null
   // "할부 6개월"처럼 띄어 써도 한 덩어리로
   for (const token of line.replace(/할부\s+(?=\d)/g, "할부").split(/\s+/)) {
     if (PAYMENT_WORDS[token]) {
       payment = PAYMENT_WORDS[token]
+      continue
+    }
+    const cardName = matchCardName(cards, token)
+    if (cardName) {
+      card = cardName
       continue
     }
     const installment = parseInstallmentToken(token)
@@ -63,7 +79,10 @@ function parseMoneyLine(
     if (value === null || amount !== null) return null
     amount = value
   }
-  return amount === null && payment === null && months === null ? null : { amount, payment, months }
+  // 카드 이름 하나만 있는 줄은 아래에서 따로 본다 (분류 이름과 겹칠 수 있어 금액 줄로 보지 않는다)
+  return amount === null && payment === null && months === null
+    ? null
+    : { amount, payment, months, card }
 }
 
 function parseCategoryLine(
@@ -89,13 +108,15 @@ function parseCategoryLine(
 
 export function parseExpenseLines(
   lines: string[],
-  ctx: { today: string; categories: ExpenseCategoryOption[] }
+  ctx: { today: string; categories: ExpenseCategoryOption[]; cards?: readonly string[] }
 ): ParseResult<ParsedExpense> {
   let date: string | null = null
   let amount: number | null = null
   let payment: ExpensePaymentMethod | null = null
   let months: number | null = null
   let category: ExpenseCategoryOption | null = null
+  let card: string | null = null
+  const cards = ctx.cards ?? []
   const rest: string[] = []
 
   for (const raw of lines) {
@@ -108,7 +129,7 @@ export function parseExpenseLines(
       continue
     }
 
-    const money = parseMoneyLine(line)
+    const money = parseMoneyLine(line, cards)
     if (money) {
       if (money.amount !== null) {
         if (amount !== null) return { ok: false, error: "금액이 두 줄에 있어요. 한 줄만 써 주세요." }
@@ -116,6 +137,13 @@ export function parseExpenseLines(
       }
       if (money.payment) payment = money.payment
       if (money.months) months = money.months
+      if (money.card) card = money.card
+      continue
+    }
+
+    const lineCard = card === null ? matchCardName(cards, line) : null
+    if (lineCard) {
+      card = lineCard
       continue
     }
 
@@ -136,6 +164,9 @@ export function parseExpenseLines(
   if (months !== null && payment !== null && payment !== "CARD") {
     return { ok: false, error: "할부는 카드일 때만 돼요." }
   }
+  if (card !== null && payment !== null && payment !== "CARD") {
+    return { ok: false, error: "카드 이름은 결제가 카드일 때만 써 주세요." }
+  }
   if (months !== null && amount < months) {
     return { ok: false, error: `할부 금액이 너무 작아요 (${months}개월이면 ${months}원 이상)` }
   }
@@ -152,6 +183,7 @@ export function parseExpenseLines(
       amount,
       payment_method: payment ?? "CARD",
       installment_months: months,
+      card_name: card,
       memo: rest.length > 0 ? rest.join(" / ") : null,
     },
   }

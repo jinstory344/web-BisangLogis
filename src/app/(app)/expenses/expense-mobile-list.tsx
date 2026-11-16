@@ -1,6 +1,5 @@
 "use client"
 
-import { installmentLabel } from "@/lib/installment"
 import Link from "next/link"
 import { useMemo, useState } from "react"
 
@@ -14,7 +13,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet"
-import { EXPENSE_PAYMENT_METHOD_LABELS } from "@/lib/constants/payment-method"
+import { expensePaymentLabel } from "@/lib/constants/payment-method"
 import { formatDateWithWeekday } from "@/lib/date"
 import { groupByDay, spansMultipleMonths } from "@/lib/day-groups"
 import { formatKRW } from "@/lib/money"
@@ -30,17 +29,9 @@ interface ExpenseMobileListProps {
   onDelete: (expense: ExpenseRow) => void
 }
 
-/** 결제수단과 할부: "카드 · 할부 3/6" (할부가 없으면 결제수단만) */
+/** 결제수단·카드·할부: "카드 · 신한복지 · 할부 3/6" */
 function paymentSummary(expense: ExpenseRow): string {
-  const method = expense.payment_method
-    ? EXPENSE_PAYMENT_METHOD_LABELS[expense.payment_method]
-    : ""
-  // 할부는 카드일 때만 표시한다 (카드가 아닌데 값이 남아 있는 옛 데이터는 숨긴다).
-  const installment =
-    expense.payment_method === "CARD"
-      ? installmentLabel(expense.installment_no, expense.installment_months)
-      : ""
-  return [method, installment].filter(Boolean).join(" · ")
+  return expensePaymentLabel(expense)
 }
 
 /** 행 둘째 줄: 사용처와 비고를 한 줄로 */

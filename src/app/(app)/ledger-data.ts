@@ -1,5 +1,4 @@
-import { installmentLabel } from "@/lib/installment"
-import { EXPENSE_PAYMENT_METHOD_LABELS } from "@/lib/constants/payment-method"
+import { expensePaymentLabel } from "@/lib/constants/payment-method"
 import { formatSaleSource } from "@/lib/constants/sale-sources"
 import type { AmountRow, LedgerEntry } from "@/lib/ledger"
 import { appendClientIdFilter, buildIlikeOrFilter, type SearchFilters } from "@/lib/search"
@@ -136,13 +135,8 @@ function toExpenseEntry(row: ExpenseRow): ExpenseLedgerEntry {
       .map((text) => text?.trim())
       .filter(Boolean)
       .join(" · "),
-    // "카드 · 할부 3/6"
-    paymentLabel: [
-      row.payment_method ? EXPENSE_PAYMENT_METHOD_LABELS[row.payment_method] : "",
-      installmentLabel(row.installment_no, row.installment_months),
-    ]
-      .filter(Boolean)
-      .join(" · "),
+    // "카드 · 신한복지 · 할부 3/6"
+    paymentLabel: expensePaymentLabel(row),
     row,
   }
 }

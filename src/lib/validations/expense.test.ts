@@ -25,6 +25,7 @@ const baseRow: ExpenseRow = {
   installment_months: 3,
   installment_group_id: null,
   installment_no: null,
+  card_name: "신한복지",
   vendor: "OO주유소",
   has_tax_invoice: true,
   memo: "만땅",
@@ -52,6 +53,7 @@ describe("expenseRowToFormValues (수정 화면)", () => {
       amount: 50000,
       payment_method: "CARD",
       installment_months: 3,
+      card_name: "신한복지",
       vendor: "OO주유소",
       has_tax_invoice: true,
       memo: "만땅",
@@ -111,6 +113,15 @@ describe("buildExpenseCopyDefaults (이전 건 복사)", () => {
       coerceExpenseFormData(submittedEntries(copied))
     )
     expect(parsed.success).toBe(true)
+  })
+})
+
+describe("coerceExpenseFormData 카드 이름", () => {
+  it("카드가 아니면 카드 이름을 버린다", () => {
+    const cash = coerceExpenseFormData({ payment_method: "CASH", card_name: "신한복지", amount: "1" })
+    expect(cash.card_name).toBe("")
+    const card = coerceExpenseFormData({ payment_method: "CARD", card_name: "신한복지", amount: "1" })
+    expect(card.card_name).toBe("신한복지")
   })
 })
 

@@ -52,11 +52,12 @@ export async function createExpenseAction(
   if (installmentError) return { error: installmentError }
 
   const supabase = await createClient()
-  const { vendor, memo, installment_months, ...rest } = values
+  const { vendor, memo, installment_months, card_name, ...rest } = values
   // 할부(2개월 이상)면 달마다 한 줄씩 나눠 저장한다
   const result = await insertExpenseWithInstallments(supabase, {
     ...rest,
     installment_months: installment_months ?? null,
+    card_name: card_name || null,
     vendor: vendor || null,
     memo: memo || null,
   })
@@ -88,10 +89,11 @@ export async function updateExpenseAction(
   if (installmentError) return { error: installmentError }
 
   const supabase = await createClient()
-  const { vendor, memo, installment_months, ...rest } = values
+  const { vendor, memo, installment_months, card_name, ...rest } = values
   const updateValues = {
     ...rest,
     installment_months: installment_months ?? null,
+    card_name: card_name || null,
     vendor: vendor || null,
     memo: memo || null,
   }

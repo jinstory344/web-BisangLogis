@@ -6,6 +6,7 @@ import { recordAuditLog } from "@/lib/audit/log"
 import { getTodayInSeoul } from "@/lib/date"
 import { formatKRW, isVatExemptForPayment } from "@/lib/money"
 import { CARGO_BOX_TYPE_LABELS } from "@/lib/constants/cargo-box-type"
+import { sortCardNames } from "@/lib/constants/expense-cards"
 import { DROPOFF_TYPE_LABELS } from "@/lib/constants/dropoff-type"
 import {
   EXPENSE_PAYMENT_METHOD_LABELS,
@@ -175,10 +176,16 @@ async function handleExpense(chatId: number, lines: string[]) {
     .is("deleted_at", null)
     .not("minor", "is", null)
   if (catError) throw new Error("지출 분류 목록을 못 읽었습니다")
+  // 카드 목록은 못 읽어도 카드 이름 없이 등록은 된다
+  const { data: cards } = await supabase
+    .from("expense_cards")
+    .select("name, sort_order, created_at")
+    .is("deleted_at", null)
 
   const parsed = parseExpenseLines(lines, {
     today: getTodayInSeoul(),
     categories: categories.map((c) => ({ major: c.major, minor: c.minor as string })),
+    cards: sortCardNames(cards ?? []),
   })
   if (!parsed.ok) return askAgain(chatId, parsed.error)
   const expense = parsed.value
@@ -191,6 +198,7 @@ async function handleExpense(chatId: number, lines: string[]) {
     amount: expense.amount,
     payment_method: expense.payment_method,
     installment_months: expense.installment_months,
+    card_name: expense.card_name,
     vendor: null,
     has_tax_invoice: false,
     memo: expense.memo,
@@ -206,7 +214,9 @@ async function handleExpense(chatId: number, lines: string[]) {
   const text = [
     `✅ 지출 등록 (${shortDate(expense.expense_date)})`,
     `${expense.category_major} › ${expense.category_minor}`,
-    `${formatKRW(expense.amount)} · ${EXPENSE_PAYMENT_METHOD_LABELS[expense.payment_method]}`,
+    `${formatKRW(expense.amount)} · ${EXPENSE_PAYMENT_METHOD_LABELS[expense.payment_method]}${
+      expense.card_name ? ` · ${expense.card_name}` : ""
+    }`,
     parts.length > 1
       ? `할부 ${parts.length}개월: 매달 ${formatKRW(last.amount)} (${shortDate(parts[0].expense_date)}~${shortDate(last.expense_date)})`
       : null,
