@@ -111,7 +111,7 @@ export function DispatchMobileList({
                 onClick={() => openSheet(dispatch)}
               />
 
-              <div className="pointer-events-none w-16 shrink-0 truncate pt-0.5 text-xs leading-snug text-muted-foreground">
+              <div className="pointer-events-none w-16 shrink-0 pt-0.5 wrap-anywhere text-xs leading-snug text-muted-foreground">
                 {clientNameOf(dispatch, clientNameMap)}
               </div>
 
