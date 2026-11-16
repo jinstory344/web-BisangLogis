@@ -122,7 +122,46 @@ export default async function SearchPage({
       />
     </div>
   )
-  let fixedPart: ReactNode = chips()
+  // 매출·지출·배차·전체 탭 줄 (검색 전에는 건수 없이 — 누르면 그 종류 전체 기간 합계가 나온다)
+  const tabNav = (counts?: Record<SearchTab, number>) => (
+    <nav
+      aria-label="검색 결과 종류"
+      className="-mx-4 grid grid-cols-4 border-b px-2 md:mx-0 md:px-0"
+    >
+      {SEARCH_TABS.map((item) => {
+        const isActive = item.value === tab
+        return (
+          <Link
+            key={item.value}
+            href={searchHref(query, item.value, period, filtersForTab(item.value, filters))}
+            replace
+            scroll={false}
+            aria-current={isActive ? "page" : undefined}
+            className={cn(
+              "relative flex min-h-10 items-center justify-center gap-1 px-1 text-sm whitespace-nowrap",
+              isActive ? "font-semibold text-foreground" : "text-muted-foreground"
+            )}
+          >
+            {item.label}
+            {counts ? (
+              <span className="text-[11px] tabular-nums text-muted-foreground">
+                {counts[item.value]}
+              </span>
+            ) : null}
+            {isActive ? (
+              <span aria-hidden className="absolute inset-x-3 -bottom-px h-0.5 rounded-full bg-red-400" />
+            ) : null}
+          </Link>
+        )
+      })}
+    </nav>
+  )
+  let fixedPart: ReactNode = (
+    <>
+      {tabNav()}
+      {chips()}
+    </>
+  )
   // 아무것도 안 쳤을 때: 이번 달 숫자가 보이는 빠른 조건 + 최근에 찾은 조건
   let list: ReactNode = (
     <Suspense
@@ -138,7 +177,8 @@ export default async function SearchPage({
     </Suspense>
   )
 
-  if (query || period || hasFilters(filters)) {
+  // 검색어가 없어도 매출·지출·배차 탭을 고르면 그 종류 전체(기간 칩이 없으면 전체 기간)를 보여 준다
+  if (query || period || hasFilters(filters) || tab !== "all") {
     try {
       const supabase = await createClient()
       const clientIds = query ? await searchClientIds(supabase, query) : []
@@ -274,35 +314,7 @@ export default async function SearchPage({
             </div>
           ) : null}
 
-          <nav
-            aria-label="검색 결과 종류"
-            className="-mx-4 grid grid-cols-4 border-b px-2 md:mx-0 md:px-0"
-          >
-            {SEARCH_TABS.map((item) => {
-              const isActive = item.value === tab
-              return (
-                <Link
-                  key={item.value}
-                  href={searchHref(query, item.value, period, filtersForTab(item.value, filters))}
-                  replace
-                  scroll={false}
-                  aria-current={isActive ? "page" : undefined}
-                  className={cn(
-                    "relative flex min-h-10 items-center justify-center gap-1 px-1 text-sm whitespace-nowrap",
-                    isActive ? "font-semibold text-foreground" : "text-muted-foreground"
-                  )}
-                >
-                  {item.label}
-                  <span className="text-[11px] tabular-nums text-muted-foreground">
-                    {counts[item.value]}
-                  </span>
-                  {isActive ? (
-                    <span aria-hidden className="absolute inset-x-3 -bottom-px h-0.5 rounded-full bg-red-400" />
-                  ) : null}
-                </Link>
-              )
-            })}
-          </nav>
+          {tabNav(counts)}
 
           {chips(monthCounts)}
 
@@ -332,9 +344,12 @@ export default async function SearchPage({
           .join(" · ") || "전체"
       list = (
         <>
-        <RememberSearch
-          search={{ href: searchHref(query, tab, period, filters), label: recentLabel, kind: tabLabel }}
-        />
+        {/* 탭만 고른 것(조건 없음)은 '최근에 찾은 조건'에 남기지 않는다 */}
+        {query || period || hasFilters(filters) ? (
+          <RememberSearch
+            search={{ href: searchHref(query, tab, period, filters), label: recentLabel, kind: tabLabel }}
+          />
+        ) : null}
         <SearchResultList
           items={items}
           clientNameMap={dispatch.clientNameMap}
