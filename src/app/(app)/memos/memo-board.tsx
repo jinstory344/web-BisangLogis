@@ -196,7 +196,7 @@ export function MemoBoard({
             key={memo.id}
             className={cn(
               "flex items-start gap-2 rounded-xl border-l-4 bg-muted/60 py-3 pr-3 pl-3",
-              memo.kind === "DISPATCH" ? "border-l-blue-500" : "border-l-green-500"
+              memo.kind === "DISPATCH" ? "border-l-blue-900" : "border-l-green-900"
             )}
           >
           <button
@@ -214,7 +214,7 @@ export function MemoBoard({
                 <span
                   className={cn(
                     "shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold",
-                    memo.kind === "DISPATCH" ? "bg-blue-500/20 text-blue-300" : "bg-green-500/20 text-green-300"
+                    memo.kind === "DISPATCH" ? "bg-blue-950 text-blue-300/80" : "bg-green-950 text-green-300/80"
                   )}
                 >
                   {memo.kind === "DISPATCH" ? "배차" : "업무"}
