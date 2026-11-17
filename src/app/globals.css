@@ -338,3 +338,14 @@
     background-image: none;
   }
 }
+
+/* HOME 제목 밑 빨간 줄: 숨 쉬듯 천천히 줄었다 늘었다 */
+@keyframes title-bar-breathe {
+  0%,
+  100% {
+    transform: scaleX(0.35);
+  }
+  50% {
+    transform: scaleX(1);
+  }
+}
