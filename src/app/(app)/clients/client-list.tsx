@@ -229,7 +229,7 @@ export function ClientList({
       ) : null}
 
       <section className="-mx-4 md:mx-0">
-        <div className={cn("sticky z-20 flex h-11 items-center bg-background px-4 text-sm text-muted-foreground md:static", SECTION_COLORS.client.line, UNDER_STICKY_HEAD)}>
+        <div className={cn("sticky z-20 flex h-11 items-center bg-background px-4 text-sm text-muted-foreground md:static", "border-b", UNDER_STICKY_HEAD)}>
           <span>
             <span className="font-semibold text-foreground">전체</span> {others.length}곳
           </span>
