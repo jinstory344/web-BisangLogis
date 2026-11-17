@@ -1,6 +1,6 @@
 "use client"
 
-import { ChevronDown, ChevronUp, Ellipsis, Star, Trash2 } from "lucide-react"
+import { ChevronDown, ChevronUp, Copy, Ellipsis, Star, Trash2 } from "lucide-react"
 import Link from "next/link"
 import { useState, useTransition } from "react"
 import { toast } from "sonner"
@@ -31,6 +31,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet"
 import { formatBizNo } from "@/lib/biz-no"
+import { clientBizInfoText } from "@/lib/client-tax-info"
 import { formatPhoneNumber } from "@/lib/phone"
 import type { ClientRow } from "@/lib/supabase/database.types"
 import { cn } from "@/lib/utils"
@@ -74,6 +75,13 @@ export function ClientList({
     .filter((c) => c.pin_order != null)
     .sort((a, b) => (a.pin_order ?? 0) - (b.pin_order ?? 0))
   const others = clients.filter((c) => c.pin_order == null)
+
+  function handleCopy(client: ClientRow) {
+    navigator.clipboard.writeText(clientBizInfoText(client)).then(
+      () => toast.success(`복사했어요 · ${client.name} 사업자정보`),
+      () => toast.error("복사하지 못했어요")
+    )
+  }
 
   function handleTogglePin(client: ClientRow) {
     setSheetClient(null)
@@ -147,6 +155,18 @@ export function ClientList({
             <span className="mt-0.5 truncate text-[13px] text-muted-foreground">{contact.join(" · ")}</span>
           ) : null}
         </button>
+        {!isReordering ? (
+          <Button
+            type="button"
+            variant="secondary"
+            size="icon"
+            className="relative size-10 shrink-0"
+            aria-label={`${client.name} 사업자정보 복사`}
+            onClick={() => handleCopy(client)}
+          >
+            <Copy />
+          </Button>
+        ) : null}
         {isReordering && index !== null ? (
           <div className="flex gap-1">
             <Button
@@ -232,6 +252,10 @@ export function ClientList({
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-44">
+                  <DropdownMenuItem className="h-10" onSelect={() => handleCopy(sheetClient)}>
+                    <Copy />
+                    사업자정보 복사
+                  </DropdownMenuItem>
                   <DropdownMenuItem className="h-10" disabled={isPending} onSelect={() => handleTogglePin(sheetClient)}>
                     <Star className={cn(sheetClient.pin_order != null && SECTION_COLORS.client.star)} />
                     {sheetClient.pin_order != null ? "고정 풀기" : "위에 고정"}

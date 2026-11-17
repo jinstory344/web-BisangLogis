@@ -45,3 +45,31 @@ export function formatTaxInfoStatus(status: TaxInfoStatus): string {
   if (status.level === "empty") return "계산서 정보 없음"
   return `계산서 정보 ${status.filled}/${status.total}`
 }
+
+/**
+ * 거래처 목록 [복사] — 계산서용 사업자 정보를 문자로 보내기 좋은 모양으로.
+ * < 조은물류 사업자정보 > / (빈 줄) / 사업자번호 / 상호 / 대표 / 주소 / 업태, 종목 / 이메일 / 비고(전화·팩스·안내 문구).
+ * 빈 칸은 줄째로 뺀다. 비고의 줄바꿈(\r\n)은 그대로 살린다.
+ */
+export function clientBizInfoText(c: {
+  name: string
+  biz_no: string | null
+  ceo_name: string | null
+  address: string | null
+  biz_type: string | null
+  biz_item: string | null
+  contact_email: string | null
+  memo: string | null
+}): string {
+  const bizNo = (c.biz_no ?? "").replace(/\D/g, "")
+  const lines = [
+    bizNo.length === 10 ? `${bizNo.slice(0, 3)}-${bizNo.slice(3, 5)}-${bizNo.slice(5)}` : c.biz_no?.trim(),
+    c.name.trim(),
+    c.ceo_name?.trim(),
+    c.address?.trim(),
+    [c.biz_type?.trim(), c.biz_item?.trim()].filter(Boolean).join(", "),
+    c.contact_email?.trim(),
+  ].filter(Boolean)
+  const memo = (c.memo ?? "").replace(/\r\n?/g, "\n").trim()
+  return [`< ${c.name.trim()} 사업자정보 >`, "", ...lines, ...(memo ? [memo] : [])].join("\n")
+}
