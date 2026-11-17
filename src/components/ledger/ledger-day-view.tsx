@@ -47,8 +47,8 @@ export function LedgerDayView({
   return (
     <>
       <LedgerKindChips value={kind} onChange={choose} counts={counts} monthLabel={`${Number(anchor.slice(5, 7))}월`} />
-      {/* 날짜 줄은 위 고정 머리 + 거르기 칩 줄(52px) 밑에 붙는다 */}
-      <LedgerDayList buckets={buckets} dayStickyTopClassName="top-[calc(var(--sticky-head-h,0px)_+_51px)]" />
+      {/* 날짜 줄은 위 고정 머리 + 거르기 줄(52px + 아래 선 1px) 밑에 붙는다 */}
+      <LedgerDayList buckets={buckets} dayStickyTopClassName="top-[calc(var(--sticky-head-h,0px)_+_52px)]" />
     </>
   )
 }

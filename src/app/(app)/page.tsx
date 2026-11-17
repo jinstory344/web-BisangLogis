@@ -201,7 +201,7 @@ export default async function LedgerPage({
           className="flex flex-col"
         >
           {/* 위에 고정되는 부분: 목록을 내려도 제목·날짜·보기 탭·합계·미입금이 계속 보인다 */}
-          <StickyHead className="z-20 -mx-4 px-4 pt-6 md:-mx-6 md:px-6 md:pt-6">
+          <StickyHead className="z-30 -mx-4 px-4 pt-6 md:-mx-6 md:px-6 md:pt-6">
             {/* 가계부 앱처럼: 왼쪽 검색 · 가운데 제목 */}
             <header className="grid grid-cols-[2.5rem_1fr_2.5rem] items-center">
               <SearchButton />

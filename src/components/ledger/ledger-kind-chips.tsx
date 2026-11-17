@@ -13,6 +13,7 @@ import { cn } from "@/lib/utils"
  * 일일 장부 거르기 한 줄 (배차 목록과 같은 모양): 왼쪽 "11월 전체 84건", 오른쪽 [전체 ▾] 펼침 목록.
  * 이미 받아 둔 그 달 내역을 화면에서 바로 거르므로 서버를 다시 부르지 않는다.
  * 위 고정 머리 바로 밑에 붙어 함께 고정된다. 날짜 줄(z-10)이 밀려 올라올 때 이 줄 아래로 들어가게 한 층 위(z-20).
+ * 위 머리(z-30)가 1px 겹친 자리를 덮어 합계 줄 아래 선이 남고, 이 줄 아래 선은 스크롤해도 같이 붙어 있다.
  */
 export function LedgerKindChips({
   value,
@@ -35,7 +36,7 @@ export function LedgerKindChips({
     <nav
       aria-label="보기 거르기"
       className={cn(
-        "sticky z-20 -mx-4 flex min-h-[52px] items-center justify-between gap-2 bg-background px-4 py-2 text-sm text-muted-foreground md:-mx-6 md:px-6",
+        "sticky z-20 -mx-4 flex min-h-[52px] items-center justify-between gap-2 border-b bg-background px-4 py-2 text-sm text-muted-foreground md:-mx-6 md:px-6",
         UNDER_STICKY_HEAD
       )}
     >
