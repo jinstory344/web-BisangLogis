@@ -6,7 +6,8 @@ import { useState } from "react"
 
 import { ClientSheet } from "@/components/clients/client-sheet"
 import { DateRangeInputs } from "@/components/list/date-range-inputs"
-import { LIST_SUB_STICKY_CLASS } from "@/components/list/list-page-head"
+import { StickyHead } from "@/components/layout/sticky-head"
+import { LIST_PAGE_HEAD_PX, LIST_SUB_STICKY_CLASS } from "@/components/list/list-page-head"
 import { SECTION_COLORS } from "@/lib/constants/section-colors"
 import { TotalsRow } from "@/components/list/totals-row"
 import { isAllPeriod, isFullMonthRange } from "@/lib/date"
@@ -68,7 +69,7 @@ export function DispatchMobileControls({
     // contents: 자식들이 목록 영역의 직접 자식처럼 놓여서 아래 고정 영역이 목록 끝까지 붙어 있을 수 있다
     <div className="contents">
       {/* 위에 고정: 합계 줄 (달 이동은 위 머리에 있다) */}
-      <div className={LIST_SUB_STICKY_CLASS}>
+      <StickyHead topPx={LIST_PAGE_HEAD_PX} className={LIST_SUB_STICKY_CLASS}>
         <TotalsRow
           items={[
             { label: "배차", value: `${summary.count}건` },
@@ -110,7 +111,7 @@ export function DispatchMobileControls({
           </button>
         </div>
       </div>
-      </div>
+      </StickyHead>
 
       <ClientSheet
         open={isClientSheetOpen}

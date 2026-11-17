@@ -12,6 +12,9 @@ import { SearchButton } from "@/components/layout/search-button"
  * ListPageHead의 모바일 높이 = 위 여백 24px + 제목 줄 40px + 달 이동 40px = 104px(6.5rem).
  * 위 여백은 아이폰 시계줄 바로 밑에 제목이 붙어 흐려 보이지 않게 넉넉히 둔다.
  */
+/** ListPageHead 모바일 높이(px) — 합계 줄이 그 밑에 붙는 위치 */
+export const LIST_PAGE_HEAD_PX = 104
+
 export const LIST_SUB_STICKY_CLASS =
   "sticky top-[6.5rem] z-20 -mx-4 bg-background px-4 md:static md:mx-0 md:px-0"
 

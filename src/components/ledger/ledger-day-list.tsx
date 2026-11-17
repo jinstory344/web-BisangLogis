@@ -22,9 +22,12 @@ import { SaleSourceCell } from "./sale-source-cell"
 export function LedgerDayList({
   buckets,
   emptyMessage = "이 달에 기록된 매출·지출이 없습니다.",
+  dayStickyTopClassName,
 }: {
   buckets: DayBucket<DayLedgerEntry>[]
   emptyMessage?: string
+  /** 날짜 줄이 고정될 위치 (일일 보기는 거르기 칩 줄 밑) */
+  dayStickyTopClassName?: string
 }) {
   const [sheetEntry, setSheetEntry] = useState<DayLedgerEntry | null>(null)
   const [isSheetOpen, setIsSheetOpen] = useState(false)
@@ -47,6 +50,7 @@ export function LedgerDayList({
           <DayHeader
             date={bucket.date}
             showMonth={spansMonths}
+            stickyTopClassName={dayStickyTopClassName}
             totalLabel={
               // 매출(파랑)과 지출(빨강) 사이를 넉넉히 띄운다
               <span className="flex items-center gap-5">
