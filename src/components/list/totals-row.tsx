@@ -16,7 +16,7 @@ export function TotalsRow({
 }: {
   items: TotalsRowItem[]
   /**
-   * lg: 앱 공통 요약 크기 (이름 14px, 금액 15px) — HOME·검색·매출·지출·배차 목록 모두 같다.
+   * lg: 앱 공통 요약 크기 (이름 14px, 금액 16px 굵게, 위아래 여백 12px) — HOME·검색·매출·지출·배차 목록 모두 같다.
    * 강조할 금액(수익, 지출 합계)은 항목 className에 굵게를 더한다.
    */
   size?: "md" | "lg"
@@ -26,7 +26,7 @@ export function TotalsRow({
     <dl
       className={cn(
         "-mx-4 grid border-b px-2 md:mx-0 md:px-0",
-        large ? "py-2" : "py-1.5"
+        large ? "py-3" : "py-1.5"
       )}
       style={{ gridTemplateColumns: `repeat(${items.length}, minmax(0, 1fr))` }}
     >
@@ -42,8 +42,10 @@ export function TotalsRow({
           >{item.label || "합계"}</dt>
           <dd
             className={cn(
-              "max-w-full truncate font-medium tabular-nums",
-              large ? "text-[15px] leading-7" : "text-sm leading-5",
+              "max-w-full truncate tabular-nums",
+              large ? "font-bold" : "font-medium",
+              // 줄 높이를 글자에 딱 맞게(24px) 해서 위아래 여백이 같아 보이게
+              large ? "text-base leading-6" : "text-sm leading-5",
               item.className
             )}
           >
