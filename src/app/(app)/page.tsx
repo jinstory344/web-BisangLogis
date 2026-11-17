@@ -209,7 +209,10 @@ export default async function LedgerPage({
               <span aria-hidden />
             </header>
 
-            <LedgerNav view={view} anchor={anchor} kind={kind} />
+            {/* 시계와 달 이동 사이를 8px 띄워 답답하지 않게 */}
+            <div className="mt-2">
+              <LedgerNav view={view} anchor={anchor} kind={kind} />
+            </div>
             <LedgerViewTabs view={view} anchor={anchor} />
             <Suspense fallback={<SummaryFallback />}>
               <SummarySlot {...slot} />

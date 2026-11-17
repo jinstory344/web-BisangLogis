@@ -9,14 +9,14 @@ import { SearchButton } from "@/components/layout/search-button"
 
 /**
  * 모바일에서 첫째 고정 줄(ListPageHead) 바로 아래에 붙는 둘째 고정 영역의 top.
- * ListPageHead의 모바일 높이 = 위 여백 24px + 제목 줄 40px + 달 이동 40px = 104px(6.5rem).
+ * ListPageHead의 모바일 높이 = 위 여백 24px + 제목 줄 40px + 간격 8px + 달 이동 40px = 112px(7rem).
  * 위 여백은 아이폰 시계줄 바로 밑에 제목이 붙어 흐려 보이지 않게 넉넉히 둔다.
  */
 /** ListPageHead 모바일 높이(px) — 합계 줄이 그 밑에 붙는 위치 */
-export const LIST_PAGE_HEAD_PX = 104
+export const LIST_PAGE_HEAD_PX = 112
 
 export const LIST_SUB_STICKY_CLASS =
-  "sticky top-[6.5rem] z-20 -mx-4 bg-background px-4 md:static md:mx-0 md:px-0"
+  "sticky top-[7rem] z-20 -mx-4 bg-background px-4 md:static md:mx-0 md:px-0"
 
 /** 목록 위 거르기 칩을 조금 작게 (36px) — 비상 화면 칩과 같은 크기 */
 export const LIST_CHIP_CLASS = "min-h-9 px-3.5 text-[13px] md:min-h-8"
@@ -59,7 +59,8 @@ export function ListPageHead({
         </Link>
       </header>
 
-      {monthNav ? <div className="md:hidden">{monthNav}</div> : null}
+      {/* 제목과 달 이동 사이를 8px 띄워 답답하지 않게 */}
+      {monthNav ? <div className="mt-2 md:hidden">{monthNav}</div> : null}
 
       <div className="hidden items-center justify-between gap-4 md:flex">
         <h1 className="text-2xl font-semibold">{desktopTitle}</h1>

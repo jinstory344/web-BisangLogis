@@ -47,7 +47,7 @@ export default async function StatsPage({
     <div className="px-4 pb-4 md:p-6">
       <div className="mx-auto flex max-w-2xl flex-col gap-3">
         {/* 위에 고정: 제목 + 종류 탭 (비상 화면과 같은 모양) */}
-        <div className="sticky top-0 z-30 -mx-4 bg-background px-4 pt-2 md:static md:mx-0 md:px-0 md:pt-0">
+        <div className="sticky top-0 z-30 -mx-4 bg-background px-4 pt-6 md:static md:mx-0 md:px-0 md:pt-0">
           <header className="grid h-10 grid-cols-[2.5rem_1fr_2.5rem] items-center">
             <SearchButton />
             <h1 className="text-center text-xl font-bold tracking-tight">통계</h1>
@@ -55,7 +55,9 @@ export default async function StatsPage({
           </header>
 
           {/* HOME과 같은 순서: 제목 → ‹ 달 › → 종류 탭 */}
-          <SummaryMonthNav from={month.from} to={month.to} />
+          <div className="mt-2">
+            <SummaryMonthNav from={month.from} to={month.to} />
+          </div>
 
           <nav
             aria-label="통계 종류"
