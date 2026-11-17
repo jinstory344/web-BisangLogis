@@ -1,3 +1,5 @@
+import type { ReactNode } from "react"
+
 import { cn } from "@/lib/utils"
 
 /**
@@ -9,7 +11,7 @@ export function PageTitle({
   barClassName,
   className,
 }: {
-  title: string
+  title: ReactNode
   barClassName?: string
   className?: string
 }) {
