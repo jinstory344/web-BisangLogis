@@ -11,6 +11,8 @@ export const SECTION_COLORS = {
     titleBar: "bg-[#d6a84a]",
     /** 위에 고정되는 부분 맨 아래 얇은 선 */
     line: "border-b border-[#d6a84a]/70",
+    /** 거르기 줄 달 배지 */
+    badge: "bg-[#d6a84a] text-[#241c0c]",
     /** 고른 칩 */
     chip: "bg-[#5e4a22] font-semibold text-[#f2dfaa]",
     /** ＋·★ 같은 포인트 */

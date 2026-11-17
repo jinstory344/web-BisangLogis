@@ -8,6 +8,7 @@ import { ClientSheet } from "@/components/clients/client-sheet"
 import { DateRangeInputs } from "@/components/list/date-range-inputs"
 import { StickyHead } from "@/components/layout/sticky-head"
 import { LIST_PAGE_HEAD_PX, LIST_SUB_STICKY_CLASS } from "@/components/list/list-page-head"
+import { MonthBadge } from "@/components/list/month-badge"
 import { SECTION_COLORS } from "@/lib/constants/section-colors"
 import { TotalsRow } from "@/components/list/totals-row"
 import { isAllPeriod, isFullMonthRange } from "@/lib/date"
@@ -82,8 +83,9 @@ export function DispatchMobileControls({
         />
 
       <div className="flex min-h-[52px] items-center justify-between gap-2 py-2 text-sm text-muted-foreground">
-        <span className="min-w-0 truncate">
-          <span className="font-semibold text-foreground">{monthPrefix ? `${monthPrefix} ` : ""}{clientId ? nameOf(clientId) : "전체"}</span>{" "}
+        <span className="flex min-w-0 items-center truncate">
+          {monthPrefix ? <MonthBadge label={monthPrefix} className={SECTION_COLORS.dispatch.badge} /> : null}
+          <span className="font-semibold text-foreground">{clientId ? nameOf(clientId) : "전체"}</span>&nbsp;
           {clientId ? (counts[clientId] ?? 0) : summary.count}건
         </span>
         <div className="flex shrink-0 items-center gap-2">

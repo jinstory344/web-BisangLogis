@@ -4,6 +4,7 @@ import { Check, ChevronDown } from "lucide-react"
 import { useState } from "react"
 
 import { UNDER_STICKY_HEAD } from "@/components/layout/sticky-head"
+import { MonthBadge } from "@/components/list/month-badge"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { LEDGER_KIND_FILTERS, type LedgerKindFilter } from "@/lib/ledger"
 import { cn } from "@/lib/utils"
@@ -38,11 +39,9 @@ export function LedgerKindChips({
         UNDER_STICKY_HEAD
       )}
     >
-      <span className="truncate">
-        <span className="font-semibold text-foreground">
-          {monthLabel} {selected.label}
-        </span>{" "}
-        {counts[value]}건
+      <span className="flex min-w-0 items-center truncate">
+        <MonthBadge label={monthLabel} />
+        <span className="font-semibold text-foreground">{selected.label}</span>&nbsp;{counts[value]}건
       </span>
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>

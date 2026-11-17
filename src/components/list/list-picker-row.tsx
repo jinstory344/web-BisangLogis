@@ -7,6 +7,8 @@ import { useState, type ReactNode } from "react"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
 
+import { MonthBadge } from "./month-badge"
+
 export interface ListPickerOption {
   value: string
   label: string
@@ -26,6 +28,7 @@ export function ListPickerRow({
   trailing,
   amount,
   prefix,
+  prefixClassName,
 }: {
   options: ListPickerOption[]
   value: string
@@ -34,8 +37,10 @@ export function ListPickerRow({
   trailing?: ReactNode
   /** 건수 오른쪽에 띄워 보여 줄 금액 (예: 분류를 골랐을 때 그 분류 합계) */
   amount?: string
-  /** 왼쪽 이름 앞에 붙일 글자 (보고 있는 달, 예: "11월") */
+  /** 왼쪽 이름 앞 달 배지 (보고 있는 달, 예: "11월") */
   prefix?: string
+  /** 달 배지 색 (기본 빨강) */
+  prefixClassName?: string
 }) {
   const [open, setOpen] = useState(false)
   const selected = options.find((o) => o.value === value) ?? options[0]
@@ -44,8 +49,9 @@ export function ListPickerRow({
   return (
     <div className="flex min-h-[52px] items-center justify-between gap-2 py-2 text-sm text-muted-foreground">
       <span className="flex min-w-0 items-baseline gap-3">
-        <span className="truncate">
-          <span className="font-semibold text-foreground">{prefix ? `${prefix} ` : ""}{selected.label}</span> {selected.count}건
+        <span className="flex min-w-0 items-center truncate">
+          {prefix ? <MonthBadge label={prefix} className={prefixClassName} /> : null}
+          <span className="font-semibold text-foreground">{selected.label}</span>&nbsp;{selected.count}건
         </span>
         {amount ? (
           <span className="shrink-0 text-[15px] font-semibold text-foreground tabular-nums">{amount}</span>
