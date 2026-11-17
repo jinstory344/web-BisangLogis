@@ -35,9 +35,9 @@ export function MobileTabBar() {
     isNavItemActive(item, pathname)
   )
 
-  // 홈(비상) 탭은 이름 대신 오늘 날짜(서울 기준, 예: "11.12.")를 보여 준다 (가계부 앱 방식).
+  // 홈(비상) 탭은 이름 대신 오늘 날짜(서울 기준, 예: "11.12", 굵게)를 보여 준다 (가계부 앱 방식).
   const today = getTodayInSeoul()
-  const todayLabel = `${Number(today.slice(5, 7))}.${Number(today.slice(8, 10))}.`
+  const todayLabel = `${Number(today.slice(5, 7))}.${Number(today.slice(8, 10))}`
 
   const renderTab = (item: (typeof primaryNavItems)[number]) => (
     <NavLink
@@ -45,7 +45,7 @@ export function MobileTabBar() {
       item={item.href === "/" ? { ...item, label: todayLabel } : item}
       className={cn(TAB_CLASS_NAME, TAB_ACTIVE_COLOR[item.href])}
       iconClassName="size-5"
-      labelClassName={item.href === "/" ? "tabular-nums" : undefined}
+      labelClassName={item.href === "/" ? "font-bold tabular-nums" : undefined}
       active={pendingHref ? pendingHref === item.href : undefined}
       onNavigate={() => {
         if (!isNavItemActive(item, pathname)) setPendingHref(item.href)
