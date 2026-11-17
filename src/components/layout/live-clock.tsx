@@ -14,5 +14,13 @@ export function LiveClock() {
     return () => clearInterval(timer)
   }, [])
 
-  return <span className="tabular-nums">{now ? formatSeoulClock(now) : " "}</span>
+  if (!now) return <span>{"\u00a0"}</span>
+  // "11-17"만 굵게, 요일·시간은 보통 굵기
+  const [date, ...rest] = formatSeoulClock(now).split(" ")
+  return (
+    <span className="tabular-nums">
+      <span className="font-bold">{date}</span>
+      <span className="font-normal"> {rest.join(" ")}</span>
+    </span>
+  )
 }
