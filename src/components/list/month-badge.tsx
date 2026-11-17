@@ -5,7 +5,7 @@ export function MonthBadge({ label, className }: { label: string; className?: st
   return (
     <span
       className={cn(
-        "mr-1.5 inline-flex h-6 shrink-0 items-center rounded-full bg-[#9e4a47] px-2.5 text-[13px] font-bold text-[#f7e4e2]",
+        "mr-1.5 inline-flex h-6 shrink-0 items-center rounded-full bg-[#c65a55] px-2.5 text-[13px] font-bold text-[#fff3f2]",
         className
       )}
     >
