@@ -17,7 +17,7 @@ export function PageTitle({
 }) {
   return (
     <h1 className={cn("flex flex-col items-center text-xl leading-6 font-bold tracking-tight", className)}>
-      <span className="inline-flex flex-col items-center gap-1">
+      <span className="inline-flex flex-col items-center gap-2">
         {title}
         {barClassName ? (
           <span aria-hidden className={cn("h-[3px] w-6 rounded-full", barClassName)} />

@@ -219,7 +219,10 @@ export default async function LedgerPage({
                 />
               )}
             </header>
-            <LedgerViewTabs view={view} anchor={anchor} />
+            {/* 제목과 보기 탭 사이를 넉넉히 */}
+            <div className="mt-3">
+              <LedgerViewTabs view={view} anchor={anchor} />
+            </div>
             <Suspense fallback={<SummaryFallback />}>
               <SummarySlot {...slot} />
             </Suspense>
