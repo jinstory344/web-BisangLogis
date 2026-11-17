@@ -210,7 +210,7 @@ export function ClientList({
     <>
       {pinned.length > 0 ? (
         <section className="-mx-4 md:mx-0">
-          <div className={cn("sticky z-20 flex h-9 items-center justify-between bg-background px-4 text-sm text-muted-foreground md:static", UNDER_STICKY_HEAD)}>
+          <div className={cn("sticky z-20 flex h-9 items-center justify-between bg-background px-4 text-sm text-muted-foreground md:static", SECTION_COLORS.client.line, UNDER_STICKY_HEAD)}>
             <span>
               <span className="font-semibold text-foreground">고정</span> {pinned.length}/{MAX_PINNED_VEHICLES}
             </span>
@@ -224,17 +224,17 @@ export function ClientList({
               </button>
             ) : null}
           </div>
-          <ul className="border-t">{pinned.map((c, i) => row(c, i))}</ul>
+          <ul>{pinned.map((c, i) => row(c, i))}</ul>
         </section>
       ) : null}
 
       <section className="-mx-4 md:mx-0">
-        <div className={cn("sticky z-20 flex h-11 items-center bg-background px-4 text-sm text-muted-foreground md:static", UNDER_STICKY_HEAD)}>
+        <div className={cn("sticky z-20 flex h-11 items-center bg-background px-4 text-sm text-muted-foreground md:static", SECTION_COLORS.client.line, UNDER_STICKY_HEAD)}>
           <span>
             <span className="font-semibold text-foreground">전체</span> {others.length}곳
           </span>
         </div>
-        <ul className="border-t">{others.map((c) => row(c, null))}</ul>
+        <ul>{others.map((c) => row(c, null))}</ul>
       </section>
 
       <Sheet open={sheetClient !== null} onOpenChange={(open) => !open && setSheetClient(null)}>

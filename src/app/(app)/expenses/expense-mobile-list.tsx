@@ -22,11 +22,6 @@ import type { ExpenseRow } from "@/lib/supabase/database.types"
 
 interface ExpenseMobileListProps {
   expenses: ExpenseRow[]
-  /** 대분류·소분류 필터에 맞는 전체 건수와 합계 (페이지가 아니라 필터 전체 기준) */
-  count: number
-  total: number
-  /** 필터가 걸려 있을 때만 목록 위에 합계를 보여 준다 (아니면 상단 요약 카드와 같은 숫자). */
-  isFiltered: boolean
   onDelete: (expense: ExpenseRow) => void
 }
 
@@ -49,8 +44,6 @@ function noteLine(expense: ExpenseRow): string {
  */
 export function ExpenseMobileList({
   expenses,
-  total,
-  isFiltered,
   onDelete,
 }: ExpenseMobileListProps) {
   const groups = useMemo(
@@ -75,14 +68,8 @@ export function ExpenseMobileList({
 
   return (
     <div className="flex flex-col gap-3">
-      {/* 건수는 보여 주지 않는다. 분류를 골랐을 때만 그 분류의 합계를 한 줄로 */}
-      {isFiltered ? (
-        <p className="flex min-h-9 items-center text-xs text-muted-foreground tabular-nums">
-          합계 {formatKRW(total)}
-        </p>
-      ) : (
-        <div aria-hidden className="h-1" />
-      )}
+      {/* 분류 합계는 위 고정 줄의 "전체 N건" 오른쪽에 보인다 */}
+      <div aria-hidden className="h-1" />
 
       {groups.map((group) => (
         <section key={group.date} className="-mx-4 -mt-3 border-b">

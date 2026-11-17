@@ -35,6 +35,8 @@ interface ExpenseMobileControlsProps {
   summary: ExpenseSummary
   /** 분류 목록 (DB) — 소분류 필터 선택지 */
   categories: ExpenseCategoryTree
+  /** 분류(대·소)를 골랐을 때 그 분류의 합계 — "전체 N건" 오른쪽에 보여 준다 */
+  filteredTotal: number
 }
 
 /**
@@ -49,6 +51,7 @@ export function ExpenseMobileControls({
   categoryMinor,
   summary,
   categories,
+  filteredTotal,
 }: ExpenseMobileControlsProps) {
   const router = useRouter()
   const pathname = usePathname()
@@ -93,7 +96,7 @@ export function ExpenseMobileControls({
         <TotalsRow
           items={[
             {
-              label: "지출 합계",
+              label: "",
               value: formatKRW(summary.total),
               // 강조 금액은 다른 화면의 수익처럼 굵게 (크기는 앱 공통 14px · 18px)
               className: `${EXPENSE_TEXT_CLASS} font-bold`,
@@ -103,6 +106,7 @@ export function ExpenseMobileControls({
         />
         {/* 대분류 칩 줄 대신 "전체 35건 + [분류 ▾]" (칩 줄을 밀면 화면 전체가 밀리던 문제) */}
         <ListPickerRow
+          amount={categoryMajor || categoryMinor ? formatKRW(filteredTotal) : undefined}
           placeholder="분류"
           value={categoryMajor}
           options={chips.map((chip) => ({

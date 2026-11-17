@@ -166,7 +166,7 @@ export function VehicleList({
     <>
       {pinned.length > 0 ? (
         <section className="-mx-4 md:mx-0">
-          <div className={cn("sticky z-20 flex h-9 items-center justify-between bg-background px-4 text-sm text-muted-foreground md:static", UNDER_STICKY_HEAD)}>
+          <div className={cn("sticky z-20 flex h-9 items-center justify-between bg-background px-4 text-sm text-muted-foreground md:static", SECTION_COLORS.vehicle.line, UNDER_STICKY_HEAD)}>
             <span>
               <span className="font-semibold text-foreground">고정</span> {pinned.length}/
               {MAX_PINNED_VEHICLES}
@@ -181,12 +181,12 @@ export function VehicleList({
               </button>
             ) : null}
           </div>
-          <ul className="border-t">{pinned.map((v, i) => row(v, i))}</ul>
+          <ul>{pinned.map((v, i) => row(v, i))}</ul>
         </section>
       ) : null}
 
       <section className="-mx-4 md:mx-0">
-        <div className={cn("sticky z-20 flex h-11 items-center justify-between bg-background px-4 text-sm text-muted-foreground md:static", UNDER_STICKY_HEAD)}>
+        <div className={cn("sticky z-20 flex h-11 items-center justify-between bg-background px-4 text-sm text-muted-foreground md:static", SECTION_COLORS.vehicle.line, UNDER_STICKY_HEAD)}>
           <span>
             <span className="font-semibold text-foreground">전체</span> {others.length}대
           </span>
@@ -212,7 +212,7 @@ export function VehicleList({
             )}
           </Link>
         </div>
-        <ul className="border-t">{others.map((v) => row(v, null))}</ul>
+        <ul>{others.map((v) => row(v, null))}</ul>
       </section>
 
       <Sheet open={sheetVehicle !== null} onOpenChange={(open) => !open && setSheetVehicle(null)}>

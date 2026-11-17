@@ -69,7 +69,7 @@ export function DispatchMobileControls({
     // contents: 자식들이 목록 영역의 직접 자식처럼 놓여서 아래 고정 영역이 목록 끝까지 붙어 있을 수 있다
     <div className="contents">
       {/* 위에 고정: 합계 줄 (달 이동은 위 머리에 있다) */}
-      <StickyHead topPx={LIST_PAGE_HEAD_PX} className={LIST_SUB_STICKY_CLASS}>
+      <StickyHead topPx={LIST_PAGE_HEAD_PX} className={cn(LIST_SUB_STICKY_CLASS, SECTION_COLORS.dispatch.line)}>
         <TotalsRow
           items={[
             { label: "배차", value: `${summary.count}건` },
@@ -79,18 +79,18 @@ export function DispatchMobileControls({
           size="lg"
         />
 
-      <div className="flex min-h-10 items-center justify-between gap-2 text-sm text-muted-foreground">
+      <div className="flex min-h-[52px] items-center justify-between gap-2 py-2 text-sm text-muted-foreground">
         <span className="min-w-0 truncate">
           <span className="font-semibold text-foreground">{clientId ? nameOf(clientId) : "전체"}</span>{" "}
           {clientId ? (counts[clientId] ?? 0) : summary.count}건
         </span>
-        <div className="flex shrink-0 items-center gap-1.5">
+        <div className="flex shrink-0 items-center gap-2">
           <button
             type="button"
             aria-haspopup="dialog"
             onClick={() => setIsClientSheetOpen(true)}
             className={cn(
-              "inline-flex h-9 max-w-44 items-center gap-1 rounded-full px-3.5 text-sm",
+              "inline-flex h-9 max-w-44 items-center gap-1 rounded-full px-3.5 text-[13px]",
               clientId ? SECTION_COLORS.dispatch.chip : "bg-muted text-foreground"
             )}
           >

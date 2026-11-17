@@ -145,6 +145,7 @@ async function ExpensesBody({ params }: { params: ExpenseSearchParams }) {
               categoryMinor={categoryMinor}
               summary={rangeSummary}
               categories={categories}
+              filteredTotal={filtered.total}
             />
           </div>
 

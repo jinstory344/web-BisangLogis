@@ -9,6 +9,8 @@ export const SECTION_COLORS = {
     tab: "data-[active=true]:text-[#d6a84a]",
     /** 페이지 제목 밑 짧은 색 줄 */
     titleBar: "bg-[#d6a84a]",
+    /** 위에 고정되는 부분 맨 아래 얇은 선 */
+    line: "border-b border-[#d6a84a]/70",
     /** 고른 칩 */
     chip: "bg-[#5e4a22] font-semibold text-[#f2dfaa]",
     /** ＋·★ 같은 포인트 */
@@ -21,6 +23,8 @@ export const SECTION_COLORS = {
     tab: "data-[active=true]:text-[#6f93cf]",
     /** 페이지 제목 밑 짧은 색 줄 */
     titleBar: "bg-[#6f93cf]",
+    /** 위에 고정되는 부분 맨 아래 얇은 선 */
+    line: "border-b border-[#6f93cf]/70",
     chip: "bg-[#34507d] font-semibold text-[#d3e1f7]",
     accent: "text-[#6f93cf]",
     star: "fill-[#6f93cf] text-[#6f93cf]",
@@ -30,6 +34,8 @@ export const SECTION_COLORS = {
     tab: "data-[active=true]:text-[#6aad83]",
     /** 페이지 제목 밑 짧은 색 줄 */
     titleBar: "bg-[#6aad83]",
+    /** 위에 고정되는 부분 맨 아래 얇은 선 */
+    line: "border-b border-[#6aad83]/70",
     chip: "bg-[#355a43] font-semibold text-[#d0eedb]",
     accent: "text-[#6aad83]",
     star: "fill-[#6aad83] text-[#6aad83]",

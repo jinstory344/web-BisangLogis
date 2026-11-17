@@ -243,12 +243,6 @@ export function ExpenseList({
       <div className="md:hidden">
         <ExpenseMobileList
           expenses={expenses}
-          count={summary.count}
-          total={summary.total}
-          isFiltered={Boolean(
-            searchParams.get("category_major") ||
-              searchParams.get("category_minor")
-          )}
           onDelete={setDeleteTarget}
         />
       </div>

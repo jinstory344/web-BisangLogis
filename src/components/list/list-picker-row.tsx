@@ -24,29 +24,37 @@ export function ListPickerRow({
   value,
   placeholder,
   trailing,
+  amount,
 }: {
   options: ListPickerOption[]
   value: string
   /** 아무것도 안 골랐을 때 버튼 글자 (예: "입금 상태") */
   placeholder: string
   trailing?: ReactNode
+  /** 건수 오른쪽에 띄워 보여 줄 금액 (예: 분류를 골랐을 때 그 분류 합계) */
+  amount?: string
 }) {
   const [open, setOpen] = useState(false)
   const selected = options.find((o) => o.value === value) ?? options[0]
   const isFiltered = value !== ""
 
   return (
-    <div className="flex min-h-10 items-center justify-between gap-2 text-sm text-muted-foreground">
-      <span>
-        <span className="font-semibold text-foreground">{selected.label}</span> {selected.count}건
+    <div className="flex min-h-[52px] items-center justify-between gap-2 py-2 text-sm text-muted-foreground">
+      <span className="flex min-w-0 items-baseline gap-3">
+        <span className="truncate">
+          <span className="font-semibold text-foreground">{selected.label}</span> {selected.count}건
+        </span>
+        {amount ? (
+          <span className="shrink-0 text-[15px] font-semibold text-foreground tabular-nums">{amount}</span>
+        ) : null}
       </span>
-      <div className="flex items-center gap-1.5">
+      <div className="flex shrink-0 items-center gap-2">
         <Popover open={open} onOpenChange={setOpen}>
           <PopoverTrigger asChild>
             <button
               type="button"
               className={cn(
-                "inline-flex h-9 max-w-44 items-center gap-1 rounded-full px-3.5 text-sm",
+                "inline-flex h-9 max-w-44 items-center gap-1 rounded-full px-3.5 text-[13px]",
                 isFiltered ? "bg-foreground font-semibold text-background" : "bg-muted text-foreground"
               )}
             >

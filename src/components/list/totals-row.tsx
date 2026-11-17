@@ -31,13 +31,15 @@ export function TotalsRow({
       style={{ gridTemplateColumns: `repeat(${items.length}, minmax(0, 1fr))` }}
     >
       {items.map((item) => (
-        <div key={item.label} className="flex min-w-0 flex-col items-center">
+        <div key={item.label || "total"} className="flex min-w-0 flex-col items-center">
+          {/* 이름이 빈 칸이면 금액만 (예: 지출 화면) */}
           <dt
             className={cn(
               "text-muted-foreground",
-              large ? "text-sm leading-5" : "text-[11px] leading-4"
+              large ? "text-sm leading-5" : "text-[11px] leading-4",
+              !item.label && "sr-only"
             )}
-          >{item.label}</dt>
+          >{item.label || "합계"}</dt>
           <dd
             className={cn(
               "max-w-full truncate font-medium tabular-nums",
