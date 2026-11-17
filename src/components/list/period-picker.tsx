@@ -91,9 +91,10 @@ export function PeriodPicker({ mode, value, label, hrefFor, iconText }: PeriodPi
           className="relative flex size-10 items-center justify-center rounded-full text-muted-foreground hover:bg-muted"
           aria-label={`${label}, ${mode === "month" ? "달 고르기" : "해 고르기"}`}
         >
-          <Calendar className="size-7" strokeWidth={1.6} aria-hidden />
+          {/* 왼쪽 검색 아이콘(20px)과 비슷하게 보이는 크기·선 굵기 */}
+          <Calendar className="size-[22px]" strokeWidth={2} aria-hidden />
           {iconText ? (
-            <span className="absolute top-[17px] left-1/2 -translate-x-1/2 text-[12px] leading-none font-bold text-foreground tabular-nums">
+            <span className="absolute top-[18px] left-1/2 -translate-x-1/2 text-[10px] leading-none font-bold text-foreground tabular-nums">
               {iconText}
             </span>
           ) : null}
