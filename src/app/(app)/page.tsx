@@ -1,6 +1,6 @@
 import { cache, Suspense } from "react"
 
-import { LiveClock } from "@/components/layout/live-clock"
+import { HomeTitle } from "@/components/layout/home-title"
 import { PageTitle } from "@/components/layout/page-title"
 import { StickyHead } from "@/components/layout/sticky-head"
 import { SearchButton } from "@/components/layout/search-button"
@@ -205,7 +205,7 @@ export default async function LedgerPage({
             {/* 가계부 앱처럼: 왼쪽 검색 · 가운데 제목 */}
             <header className="grid grid-cols-[2.5rem_1fr_2.5rem] items-center">
               <SearchButton />
-              <PageTitle title={<LiveClock />} barClassName="bg-red-400" className="text-[21px]" fullBar />
+              <PageTitle title={<HomeTitle />} barClassName="bg-red-400" className="text-[21px]" fullBar />
               {/* 오른쪽 끝 달력 아이콘: 누르면 달(월별 보기는 해) 고르기. 이전·다음은 좌우로 쓸어 넘긴다. 연별은 전체라 없음 */}
               {view === "year" ? (
                 <span aria-hidden />
