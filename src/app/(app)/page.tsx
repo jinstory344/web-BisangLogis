@@ -6,13 +6,13 @@ import { StickyHead } from "@/components/layout/sticky-head"
 import { SearchButton } from "@/components/layout/search-button"
 import { LedgerCalendar } from "@/components/ledger/ledger-calendar"
 import { LedgerDayView } from "@/components/ledger/ledger-day-view"
-import { LedgerNav } from "@/components/ledger/ledger-nav"
+import { LedgerPeriodPicker } from "@/components/ledger/ledger-period-picker"
 import { LedgerRangeList } from "@/components/ledger/ledger-range-list"
 import { LedgerSummary } from "@/components/ledger/ledger-summary"
 import { LedgerViewTabs } from "@/components/ledger/ledger-view-tabs"
 import { SwipePager } from "@/components/ledger/swipe-pager"
 import { TotalsRow } from "@/components/list/totals-row"
-import { getTodayInSeoul } from "@/lib/date"
+import { formatYearMonth, getTodayInSeoul } from "@/lib/date"
 import {
   buildDayBuckets,
   buildMonthBuckets,
@@ -206,13 +206,19 @@ export default async function LedgerPage({
             <header className="grid grid-cols-[2.5rem_1fr_2.5rem] items-center">
               <SearchButton />
               <PageTitle title={<LiveClock />} barClassName="bg-red-400" className="text-[21px]" fullBar />
-              <span aria-hidden />
+              {/* 오른쪽 끝 달력 아이콘: 누르면 달(월별 보기는 해) 고르기. 이전·다음은 좌우로 쓸어 넘긴다. 연별은 전체라 없음 */}
+              {view === "year" ? (
+                <span aria-hidden />
+              ) : (
+                <LedgerPeriodPicker
+                  view={view}
+                  anchor={anchor}
+                  kind={kind}
+                  label={view === "month" ? `${anchor.slice(0, 4)}년` : formatYearMonth(anchor)}
+                  iconText={view === "month" ? anchor.slice(2, 4) : String(Number(anchor.slice(5, 7)))}
+                />
+              )}
             </header>
-
-            {/* 시계와 달 이동 사이를 8px 띄워 답답하지 않게 */}
-            <div className="mt-2">
-              <LedgerNav view={view} anchor={anchor} kind={kind} />
-            </div>
             <LedgerViewTabs view={view} anchor={anchor} />
             <Suspense fallback={<SummaryFallback />}>
               <SummarySlot {...slot} />

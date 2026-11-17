@@ -9,11 +9,14 @@ export function LedgerPeriodPicker({
   anchor,
   kind,
   label,
+  iconText,
 }: {
   view: LedgerView
   anchor: string
   kind: LedgerKindFilter
   label: string
+  /** 있으면 머리 오른쪽 달력 아이콘으로 (아이콘 안 글자: 달 "11" / 월별 보기는 해 "26") */
+  iconText?: string
 }) {
   return (
     <PeriodPicker
@@ -21,6 +24,7 @@ export function LedgerPeriodPicker({
       value={anchor}
       label={label}
       hrefFor={(date) => ledgerHref(view, date, kind)}
+      iconText={iconText}
     />
   )
 }

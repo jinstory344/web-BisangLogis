@@ -5,10 +5,10 @@ import { Plus } from "lucide-react"
 import { ListBodyFallback } from "@/components/list/list-body-fallback"
 import { ListPageHead } from "@/components/list/list-page-head"
 import { SECTION_COLORS } from "@/lib/constants/section-colors"
-import { SummaryMonthNav } from "@/components/list/summary-month-nav"
+import { SummaryMonthPicker } from "@/components/list/summary-month-picker"
 import { Button } from "@/components/ui/button"
 import { MonthSwipe } from "@/components/list/month-swipe"
-import { getCurrentMonthRangeInSeoul, isAllPeriod } from "@/lib/date"
+import { getCurrentMonthRangeInSeoul } from "@/lib/date"
 import { createClient } from "@/lib/supabase/server"
 import type { DispatchRow } from "@/lib/supabase/database.types"
 
@@ -56,8 +56,7 @@ export default async function DispatchesPage({
               </Link>
             </Button>
           }
-          monthNav={<SummaryMonthNav from={from} to={to} />}
-          statsHref={`/stats?type=dispatches&from=${isAllPeriod({ from, to }) ? defaultRange.from : from}`}
+          periodPicker={<SummaryMonthPicker from={from} to={to} />}
         />
 
         {/* 제목·달 이동은 바로 보내고, 합계·목록은 데이터를 읽는 대로 채운다(스트리밍) */}

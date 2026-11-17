@@ -1,47 +1,42 @@
 
 import type { ReactNode } from "react"
 
-import { ChartNoAxesColumn } from "lucide-react"
-import Link from "next/link"
 
 import { PageTitle } from "@/components/layout/page-title"
 import { SearchButton } from "@/components/layout/search-button"
 
 /**
  * 모바일에서 첫째 고정 줄(ListPageHead) 바로 아래에 붙는 둘째 고정 영역의 top.
- * ListPageHead의 모바일 높이 = 위 여백 24px + 제목 줄 40px + 간격 8px + 달 이동 40px = 112px(7rem).
+ * ListPageHead의 모바일 높이 = 위 여백 24px + 제목 줄 40px = 64px(4rem). (달 이동 줄 대신 제목 오른쪽 달력 아이콘)
  * 위 여백은 아이폰 시계줄 바로 밑에 제목이 붙어 흐려 보이지 않게 넉넉히 둔다.
  */
 /** ListPageHead 모바일 높이(px) — 합계 줄이 그 밑에 붙는 위치 */
-export const LIST_PAGE_HEAD_PX = 112
+export const LIST_PAGE_HEAD_PX = 64
 
 export const LIST_SUB_STICKY_CLASS =
-  "sticky top-[7rem] z-20 -mx-4 bg-background px-4 md:static md:mx-0 md:px-0"
+  "sticky top-[4rem] z-20 -mx-4 bg-background px-4 md:static md:mx-0 md:px-0"
 
 /** 목록 위 거르기 칩을 조금 작게 (36px) — 비상 화면 칩과 같은 크기 */
 export const LIST_CHIP_CLASS = "min-h-9 px-3.5 text-[13px] md:min-h-8"
 
 /**
  * 매출·지출·배차 목록 화면의 머리.
- * 모바일: HOME 화면과 같은 순서(왼쪽 검색 · 가운데 제목 · 오른쪽 통계 아이콘 → ‹ 달 ›), 위에 고정되어 스크롤해도 보인다.
- * 월간 집계는 통계 화면과 같은 내용이라 탭을 두지 않고, 오른쪽 위 아이콘으로 그 달 통계에 간다.
+ * 모바일: HOME 화면과 같은 모양(왼쪽 검색 · 가운데 제목 · 오른쪽 달력 아이콘), 위에 고정되어 스크롤해도 보인다.
+ * 달은 아이콘으로 고르고, 이전·다음 달은 목록을 쓸어 넘긴다. 통계는 메뉴에서 간다.
  * 데스크톱: 왼쪽 큰 제목 + 오른쪽 등록 버튼(기존 모양), 고정하지 않는다.
  */
 export function ListPageHead({
   title,
   desktopTitle,
   desktopAction,
-  statsHref,
-  monthNav,
+  periodPicker,
   titleBarClassName,
 }: {
   title: string
   desktopTitle: string
   desktopAction?: ReactNode
-  /** 오른쪽 위 통계 아이콘이 갈 곳 (그 달의 이 종류 통계) */
-  statsHref: string
-  /** 제목과 탭 사이의 ‹ 2026년 11월 › (모바일만, HOME과 같은 자리) */
-  monthNav?: ReactNode
+  /** 오른쪽 위 달력 아이콘(누르면 달 고르기). 이전·다음 달은 목록을 쓸어 넘긴다. */
+  periodPicker?: ReactNode
   /** 제목 밑 짧은 색 줄 (메뉴별 색, 예: 배차 노랑) */
   titleBarClassName?: string
 }) {
@@ -50,17 +45,8 @@ export function ListPageHead({
       <header className="grid h-10 grid-cols-[2.5rem_1fr_2.5rem] items-center md:hidden">
         <SearchButton />
         <PageTitle title={title} barClassName={titleBarClassName} />
-        <Link
-          href={statsHref}
-          aria-label={`${title} 통계`}
-          className="flex size-10 items-center justify-center rounded-full text-muted-foreground hover:bg-muted"
-        >
-          <ChartNoAxesColumn className="size-5" />
-        </Link>
+        {periodPicker ?? <span aria-hidden />}
       </header>
-
-      {/* 제목과 달 이동 사이를 8px 띄워 답답하지 않게 */}
-      {monthNav ? <div className="mt-2 md:hidden">{monthNav}</div> : null}
 
       <div className="hidden items-center justify-between gap-4 md:flex">
         <h1 className="text-2xl font-semibold">{desktopTitle}</h1>

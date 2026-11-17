@@ -1,6 +1,6 @@
 "use client"
 
-import { ChevronDown, ChevronLeft, ChevronRight } from "lucide-react"
+import { Calendar, ChevronDown, ChevronLeft, ChevronRight } from "lucide-react"
 import Link from "next/link"
 import { useState } from "react"
 
@@ -24,13 +24,18 @@ interface PeriodPickerProps {
   label: string
   /** 고른 달·해의 첫날(yyyy-MM-01 / yyyy-01-01)로 갈 주소 */
   hrefFor: (date: string) => string
+  /**
+   * 있으면 글자 대신 머리 오른쪽 끝의 달력 아이콘으로 연다. 아이콘 안에 이 글자(보고 있는 달 "11")를
+   * 작게 넣어, 달 이동 줄이 없어도 몇 월을 보고 있는지 보이게 한다. 빈 글자면 아이콘만.
+   */
+  iconText?: string
 }
 
 /**
  * 달 이동 가운데의 "2026년 11월"을 누르면 1~12월을 바로 고르는 창이 뜬다.
  * 화살표·스와이프로 여러 달을 넘기지 않아도 된다.
  */
-export function PeriodPicker({ mode, value, label, hrefFor }: PeriodPickerProps) {
+export function PeriodPicker({ mode, value, label, hrefFor, iconText }: PeriodPickerProps) {
   const [open, setOpen] = useState(false)
   const selectedYear = Number(value.slice(0, 4))
   const selectedMonth = Number(value.slice(5, 7))
@@ -81,14 +86,31 @@ export function PeriodPicker({ mode, value, label, hrefFor }: PeriodPickerProps)
 
   return (
     <Popover open={open} onOpenChange={handleOpenChange}>
-      <PopoverTrigger
-        className="flex min-h-10 items-center gap-1 rounded-md px-2 text-lg font-semibold hover:bg-muted"
-        aria-label={mode === "month" ? "달 고르기" : "해 고르기"}
+      {iconText !== undefined ? (
+        <PopoverTrigger
+          className="relative flex size-10 items-center justify-center rounded-full text-muted-foreground hover:bg-muted"
+          aria-label={`${label}, ${mode === "month" ? "달 고르기" : "해 고르기"}`}
+        >
+          <Calendar className="size-[22px]" strokeWidth={1.75} aria-hidden />
+          {iconText ? (
+            <span className="absolute top-[17px] left-1/2 -translate-x-1/2 text-[10px] leading-none font-bold text-foreground tabular-nums">
+              {iconText}
+            </span>
+          ) : null}
+        </PopoverTrigger>
+      ) : (
+        <PopoverTrigger
+          className="flex min-h-10 items-center gap-1 rounded-md px-2 text-lg font-semibold hover:bg-muted"
+          aria-label={mode === "month" ? "달 고르기" : "해 고르기"}
+        >
+          {label}
+          <ChevronDown className="size-4 text-muted-foreground" aria-hidden />
+        </PopoverTrigger>
+      )}
+      <PopoverContent
+        className="w-[min(20rem,calc(100vw-2rem))] gap-0 p-0"
+        align={iconText !== undefined ? "end" : "center"}
       >
-        {label}
-        <ChevronDown className="size-4 text-muted-foreground" aria-hidden />
-      </PopoverTrigger>
-      <PopoverContent className="w-[min(20rem,calc(100vw-2rem))] gap-0 p-0" align="center">
         <div className="flex items-center justify-between border-b px-3 py-2">
           <span className="text-sm text-muted-foreground">
             {mode === "month" ? "달 고르기" : "해 고르기"}
