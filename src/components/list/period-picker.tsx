@@ -82,7 +82,7 @@ export function PeriodPicker({ mode, value, label, hrefFor }: PeriodPickerProps)
   return (
     <Popover open={open} onOpenChange={handleOpenChange}>
       <PopoverTrigger
-        className="flex min-h-10 items-center gap-1 rounded-md px-2 text-base font-semibold hover:bg-muted"
+        className="flex min-h-10 items-center gap-1 rounded-md px-2 text-lg font-semibold hover:bg-muted"
         aria-label={mode === "month" ? "달 고르기" : "해 고르기"}
       >
         {label}

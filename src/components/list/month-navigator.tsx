@@ -69,7 +69,7 @@ export function MonthNavigator({ from, to, hrefForRange }: MonthNavigatorProps) 
             hrefFor={(date) => hrefForRange(getMonthRange(date))}
           />
         ) : (
-          <span className="text-base font-semibold">{label}</span>
+          <span className="text-lg font-semibold">{label}</span>
         )}
         {isCurrentMonth ? null : (
           <Link

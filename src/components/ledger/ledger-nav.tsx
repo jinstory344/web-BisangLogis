@@ -28,7 +28,7 @@ export function LedgerNav({
   if (view === "year" || !neighbors) {
     return (
       <div className="flex min-h-10 items-center justify-center">
-        <span className="text-base font-semibold">전체</span>
+        <span className="text-lg font-semibold">전체</span>
       </div>
     )
   }
