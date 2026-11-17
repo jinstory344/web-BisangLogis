@@ -35,7 +35,6 @@ import { PeriodFilter } from "./period-filter"
 import { QuickCards } from "./quick-cards"
 import { RememberSearch } from "./recent-searches"
 import { SearchBox } from "./search-box"
-import { getClientContacts } from "../clients/actions"
 
 import { EntityCards } from "./entity-cards"
 import {
@@ -195,10 +194,7 @@ export default async function SearchPage({
           ? searchEntities(supabase, query || filters.clientName || "")
           : Promise.resolve({ clients: [], vehicles: [] }),
       ])
-      const [contactsByClient, people] = await Promise.all([
-        getClientContacts(entities.clients.map((c) => c.id)),
-        query ? searchPeople(supabase, query) : Promise.resolve([]),
-      ])
+      const people = query ? await searchPeople(supabase, query) : []
       // 합계·건수는 목록(최근 몇백 건)이 아니라 조건에 맞는 전부로, 기간은 여기서 거른다
       const saleIn = amounts.sale.filter((r) => inPeriod(r.date, period))
       const expenseIn = amounts.expense.filter((r) => inPeriod(r.date, period))
@@ -281,15 +277,7 @@ export default async function SearchPage({
 
       fixedPart = (
         <>
-          <EntityCards
-            clients={entities.clients}
-            vehicles={entities.vehicles}
-            contactsByClient={contactsByClient}
-            query={query}
-            tab={tab}
-            period={period}
-            filters={filters}
-          />
+          <EntityCards vehicles={entities.vehicles} />
           {/* 동명이인: 검색어가 들어간 이름이 둘 이상이면 사람별로 나눠 보기 */}
           {people.length > 1 ? (
             <div className="flex flex-wrap gap-1.5 pb-2">
