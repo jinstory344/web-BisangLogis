@@ -4,6 +4,7 @@ import { Plus } from "lucide-react"
 import { SearchBox } from "@/components/common/search-box"
 import { PageTitle } from "@/components/layout/page-title"
 import { SearchButton } from "@/components/layout/search-button"
+import { StickyHead } from "@/components/layout/sticky-head"
 import { createClient } from "@/lib/supabase/server"
 import type { ClientRow } from "@/lib/supabase/database.types"
 
@@ -36,33 +37,37 @@ export default async function ClientsPage({
 
   return (
     <div className="mx-auto max-w-2xl p-4 md:p-6">
-      {/* 모바일: 배차·HOME과 같은 머리 (왼쪽 통합검색 · 가운데 제목 · 오른쪽 등록). 데스크톱: 왼쪽 큰 제목 + 오른쪽 등록 */}
-      <div className="mt-2 grid h-10 grid-cols-[2.5rem_1fr_2.5rem] items-center md:mt-0 md:flex md:h-auto md:justify-between md:gap-4">
-        <span className="md:hidden">
-          <SearchButton />
-        </span>
-        <PageTitle title="거래처" barClassName={SECTION_COLORS.client.titleBar} className="md:hidden" />
-        <h1 className="hidden text-2xl font-semibold md:block">거래처</h1>
-        <Link
-          href="/clients/new"
-          prefetch
-          aria-label="거래처 등록"
-          className={cn("flex size-10 items-center justify-center justify-self-end rounded-full hover:bg-muted md:-mr-2", SECTION_COLORS.client.accent)}
-        >
-          <Plus className="size-6" strokeWidth={1.75} />
-        </Link>
-      </div>
+      {/* 스크롤해도 제목·검색(·정렬 칩)까지 위에 고정 */}
+      <StickyHead className="-mx-4 -mt-4 px-4 pt-4 pb-2 md:static md:mx-0 md:mt-0 md:px-0 md:pt-0">
+        {/* 모바일: 배차·HOME과 같은 머리 (왼쪽 통합검색 · 가운데 제목 · 오른쪽 등록). 데스크톱: 왼쪽 큰 제목 + 오른쪽 등록 */}
+        <div className="mt-2 grid h-10 grid-cols-[2.5rem_1fr_2.5rem] items-center md:mt-0 md:flex md:h-auto md:justify-between md:gap-4">
+          <span className="md:hidden">
+            <SearchButton />
+          </span>
+          <PageTitle title="거래처" barClassName={SECTION_COLORS.client.titleBar} className="md:hidden" />
+          <h1 className="hidden text-2xl font-semibold md:block">거래처</h1>
+          <Link
+            href="/clients/new"
+            prefetch
+            aria-label="거래처 등록"
+            className={cn("flex size-10 items-center justify-center justify-self-end rounded-full hover:bg-muted md:-mr-2", SECTION_COLORS.client.accent)}
+          >
+            <Plus className="size-6" strokeWidth={1.75} />
+          </Link>
+        </div>
 
-      <div className="mt-3">
-        <SearchBox defaultValue={query} placeholder="거래처명 또는 담당자 검색" />
-      </div>
+        <div className="mt-3">
+          <SearchBox defaultValue={query} placeholder="거래처명 또는 담당자 검색" />
+        </div>
+      </StickyHead>
+
 
       {error ? (
         <p className="mt-6 text-sm text-destructive">
           거래처 목록을 불러오지 못했습니다: {error.message}
         </p>
       ) : (
-        <div className="mt-2">
+        <div className="mt-0 md:mt-2">
           <ClientList clients={(data ?? []) as ClientRow[]} contactsByClient={contactsByClient} />
         </div>
       )}

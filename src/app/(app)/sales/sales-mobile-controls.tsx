@@ -108,33 +108,32 @@ export function SalesMobileControls({
           ]}
           size="lg"
         />
+        {/* 입금 상태 칩 줄 대신 "전체 28건 + [입금 상태 ▾]" (칩 줄을 밀면 화면 전체가 밀리던 문제) */}
+        <ListPickerRow
+          placeholder="입금 상태"
+          value={paymentStatus}
+          options={STATUS_CHIPS.map((chip) => ({
+            value: chip.value,
+            label: chip.label,
+            count: summary[chip.key].count,
+            href: hrefWith({ payment_status: chip.value }),
+          }))}
+          trailing={
+            <button
+              type="button"
+              aria-expanded={isFilterOpen}
+              aria-label={`자세한 필터${activeFilterCount > 0 ? ` ${activeFilterCount}개 사용 중` : ""}`}
+              onClick={() => setIsFilterOpen((open) => !open)}
+              className={cn(
+                "relative flex size-9 items-center justify-center rounded-full",
+                activeFilterCount > 0 ? "bg-foreground text-background" : "bg-muted text-foreground"
+              )}
+            >
+              <SlidersHorizontal className="size-4" />
+            </button>
+          }
+        />
       </div>
-
-      {/* 입금 상태 칩 줄 대신 "전체 28건 + [입금 상태 ▾]" (칩 줄을 밀면 화면 전체가 밀리던 문제) */}
-      <ListPickerRow
-        placeholder="입금 상태"
-        value={paymentStatus}
-        options={STATUS_CHIPS.map((chip) => ({
-          value: chip.value,
-          label: chip.label,
-          count: summary[chip.key].count,
-          href: hrefWith({ payment_status: chip.value }),
-        }))}
-        trailing={
-          <button
-            type="button"
-            aria-expanded={isFilterOpen}
-            aria-label={`자세한 필터${activeFilterCount > 0 ? ` ${activeFilterCount}개 사용 중` : ""}`}
-            onClick={() => setIsFilterOpen((open) => !open)}
-            className={cn(
-              "relative flex size-9 items-center justify-center rounded-full",
-              activeFilterCount > 0 ? "bg-foreground text-background" : "bg-muted text-foreground"
-            )}
-          >
-            <SlidersHorizontal className="size-4" />
-          </button>
-        }
-      />
 
       {isFilterOpen ? (
         <div className="flex flex-col gap-3 rounded-xl border p-3">

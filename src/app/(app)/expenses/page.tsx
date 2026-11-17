@@ -19,7 +19,7 @@ import { ExpenseList } from "./expense-list"
 import { ExpenseMobileControls } from "./expense-mobile-controls"
 import { getExpenseCategories } from "./categories"
 
-const PAGE_SIZE = 50
+const PAGE_SIZE = 100 // 100건까지는 페이지 넘기기 없이
 
 interface ExpenseSearchParams {
   from?: string

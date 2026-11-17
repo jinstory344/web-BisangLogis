@@ -5,6 +5,7 @@ import { useState } from "react"
 import { toast } from "sonner"
 
 import { ClientSheet } from "@/components/clients/client-sheet"
+import { StickyHead } from "@/components/layout/sticky-head"
 import { CopyMemoButton } from "@/components/memos/copy-memo-button"
 import { MemoEditor, type MemoDraft } from "@/components/memos/memo-editor"
 import { memoSwapNeighbor, sortMemos } from "@/lib/memos"
@@ -113,90 +114,93 @@ export function MemoBoard({
 
   return (
     <div className="mx-auto max-w-2xl p-4 md:p-6">
-      <div className="flex items-center justify-between gap-4">
-        <h1 className="text-2xl font-semibold">메모</h1>
-        <button
-          type="button"
-          aria-label="새 메모"
-          onClick={() => openEditor()}
-          className="-mr-2 flex size-10 items-center justify-center rounded-full hover:bg-muted"
-        >
-          <Plus className="size-7" strokeWidth={1.75} />
-        </button>
-      </div>
-
-      <nav className="mt-3 grid grid-cols-3 gap-1.5">
-        {TABS.map(([value, label]) => (
-          <button
-            key={value}
-            type="button"
-            aria-pressed={kind === value}
-            onClick={() => setKind(value)}
-            className={cn(
-              "inline-flex h-9 items-center justify-center gap-1 rounded-full text-sm",
-              kind !== value
-                ? "bg-muted text-muted-foreground"
-                : value === "DISPATCH"
-                  ? "bg-[#34507d] font-semibold text-[#e3ecfb]"
-                  : value === "WORK"
-                    ? "bg-[#355a43] font-semibold text-[#e0f4e7]"
-                    : "bg-foreground font-semibold text-background"
-            )}
-          >
-            {label}
-            <span className="opacity-70">
-              {value === "ALL" ? memos.length : memos.filter((m) => m.kind === value).length}
-            </span>
-          </button>
-        ))}
-      </nav>
-
-      <div className="mt-3 flex min-h-10 items-center justify-between gap-2 text-sm text-muted-foreground">
-        <span className="min-w-0 truncate">
-          <span className="font-semibold text-foreground">{clientId ? clientNames[clientId] ?? "거래처" : "전체"}</span>{" "}
-          메모 {shown.length}개
-        </span>
-        <span className="flex shrink-0 items-center gap-1.5">
-        {shown.length > 1 ? (
+      {/* 스크롤해도 제목·탭·거래처·찾기 칸까지 위에 고정 */}
+      <StickyHead className="-mx-4 -mt-4 px-4 pt-4 pb-2 md:static md:mx-0 md:mt-0 md:px-0 md:pt-0">
+        <div className="flex items-center justify-between gap-4">
+          <h1 className="text-2xl font-semibold">메모</h1>
           <button
             type="button"
-            aria-pressed={isReordering}
-            onClick={() => setIsReordering((v) => !v)}
+            aria-label="새 메모"
+            onClick={() => openEditor()}
+            className="-mr-2 flex size-10 items-center justify-center rounded-full hover:bg-muted"
+          >
+            <Plus className="size-7" strokeWidth={1.75} />
+          </button>
+        </div>
+
+        <nav className="mt-3 grid grid-cols-3 gap-1.5">
+          {TABS.map(([value, label]) => (
+            <button
+              key={value}
+              type="button"
+              aria-pressed={kind === value}
+              onClick={() => setKind(value)}
+              className={cn(
+                "inline-flex h-9 items-center justify-center gap-1 rounded-full text-sm",
+                kind !== value
+                  ? "bg-muted text-muted-foreground"
+                  : value === "DISPATCH"
+                    ? "bg-[#34507d] font-semibold text-[#e3ecfb]"
+                    : value === "WORK"
+                      ? "bg-[#355a43] font-semibold text-[#e0f4e7]"
+                      : "bg-foreground font-semibold text-background"
+              )}
+            >
+              {label}
+              <span className="opacity-70">
+                {value === "ALL" ? memos.length : memos.filter((m) => m.kind === value).length}
+              </span>
+            </button>
+          ))}
+        </nav>
+
+        <div className="mt-3 flex min-h-10 items-center justify-between gap-2 text-sm text-muted-foreground">
+          <span className="min-w-0 truncate">
+            <span className="font-semibold text-foreground">{clientId ? clientNames[clientId] ?? "거래처" : "전체"}</span>{" "}
+            메모 {shown.length}개
+          </span>
+          <span className="flex shrink-0 items-center gap-1.5">
+          {shown.length > 1 ? (
+            <button
+              type="button"
+              aria-pressed={isReordering}
+              onClick={() => setIsReordering((v) => !v)}
+              className={cn(
+                "h-9 rounded-full px-3 text-sm",
+                isReordering ? "bg-red-400/90 font-semibold text-white" : "text-muted-foreground underline underline-offset-4"
+              )}
+            >
+              {isReordering ? "완료" : "순서 바꾸기"}
+            </button>
+          ) : null}
+          <button
+            type="button"
+            aria-haspopup="dialog"
+            onClick={() => setIsClientOpen(true)}
             className={cn(
-              "h-9 rounded-full px-3 text-sm",
-              isReordering ? "bg-red-400/90 font-semibold text-white" : "text-muted-foreground underline underline-offset-4"
+              "inline-flex h-9 max-w-44 shrink-0 items-center gap-1 rounded-full px-3.5 text-sm",
+              clientId ? "bg-foreground font-semibold text-background" : "bg-muted text-foreground"
             )}
           >
-            {isReordering ? "완료" : "순서 바꾸기"}
+            <span className="truncate">{clientId ? clientNames[clientId] ?? "거래처" : "거래처"}</span>
+            <ChevronDown className="size-4 shrink-0" />
           </button>
-        ) : null}
-        <button
-          type="button"
-          aria-haspopup="dialog"
-          onClick={() => setIsClientOpen(true)}
-          className={cn(
-            "inline-flex h-9 max-w-44 shrink-0 items-center gap-1 rounded-full px-3.5 text-sm",
-            clientId ? "bg-foreground font-semibold text-background" : "bg-muted text-foreground"
-          )}
-        >
-          <span className="truncate">{clientId ? clientNames[clientId] ?? "거래처" : "거래처"}</span>
-          <ChevronDown className="size-4 shrink-0" />
-        </button>
-        </span>
-      </div>
+          </span>
+        </div>
 
-      <label className="mt-1 flex h-11 items-center gap-2 rounded-xl bg-muted px-3">
-        <Search className="size-4 shrink-0 text-muted-foreground" />
-        <input
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="제목·내용으로 찾기"
-          enterKeyHint="search"
-          className="min-w-0 flex-1 bg-transparent text-base outline-none placeholder:text-muted-foreground"
-        />
-      </label>
+        <label className="mt-1 flex h-11 items-center gap-2 rounded-xl bg-muted px-3">
+          <Search className="size-4 shrink-0 text-muted-foreground" />
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="제목·내용으로 찾기"
+            enterKeyHint="search"
+            className="min-w-0 flex-1 bg-transparent text-base outline-none placeholder:text-muted-foreground"
+          />
+        </label>
+      </StickyHead>
 
-      <div className="mt-3 flex flex-col gap-2">
+      <div className="mt-1 flex flex-col gap-2 md:mt-3">
         {shown.map((memo) => (
           <div
             key={memo.id}

@@ -39,13 +39,18 @@ function clientNameOf(
   return dispatch.client_id ? (clientNameMap[dispatch.client_id] ?? "-") : "-"
 }
 
-/** 행 둘째 줄: "12가3456 · 김기사" (차량을 아직 정하지 않았으면 "차량 미정") */
-function vehicleLine(dispatch: DispatchRow): string {
-  const text = [dispatch.driver_name_snapshot, dispatch.plate_no_snapshot]
-    .map((part) => part?.trim())
-    .filter(Boolean)
-    .join(" · ")
-  return text || "차량 미정"
+/** 행 둘째 줄: 차주 이름(흰색, 조금 크게) · 차량번호 (차량을 아직 정하지 않았으면 "차량 미정") */
+function VehicleLine({ dispatch }: { dispatch: DispatchRow }) {
+  const name = dispatch.driver_name_snapshot?.trim()
+  const plate = dispatch.plate_no_snapshot?.trim()
+  if (!name && !plate) return <>차량 미정</>
+  return (
+    <>
+      {name ? <span className="text-[13px] text-foreground">{name}</span> : null}
+      {name && plate ? " · " : null}
+      {plate}
+    </>
+  )
 }
 
 /**
@@ -125,7 +130,7 @@ export function DispatchMobileList({
                   {dispatch.origin} → {dispatch.destination}
                 </p>
                 <p className="mt-0.5 truncate text-xs text-muted-foreground">
-                  {vehicleLine(dispatch)}
+                  <VehicleLine dispatch={dispatch} />
                 </p>
               </div>
 

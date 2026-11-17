@@ -21,7 +21,7 @@ import { DispatchFilters } from "./dispatch-filters"
 import { DispatchList } from "./dispatch-list"
 import { DispatchMobileControls } from "./dispatch-mobile-controls"
 
-const PAGE_SIZE = 50
+const PAGE_SIZE = 200 // 한 달 배차가 많아 200건까지는 페이지 넘기기 없이
 
 interface DispatchSearchParams {
   from?: string

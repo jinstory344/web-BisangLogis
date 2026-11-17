@@ -57,6 +57,7 @@ import {
 } from "./actions"
 import { VehicleDispatchHistory } from "./vehicle-dispatch-history"
 import { SECTION_COLORS } from "@/lib/constants/section-colors"
+import { UNDER_STICKY_HEAD } from "@/components/layout/sticky-head"
 
 export function VehicleList({
   pinned,
@@ -165,7 +166,7 @@ export function VehicleList({
     <>
       {pinned.length > 0 ? (
         <section className="-mx-4 md:mx-0">
-          <div className="flex h-9 items-center justify-between px-4 text-sm text-muted-foreground">
+          <div className={cn("sticky z-20 flex h-9 items-center justify-between bg-background px-4 text-sm text-muted-foreground md:static", UNDER_STICKY_HEAD)}>
             <span>
               <span className="font-semibold text-foreground">고정</span> {pinned.length}/
               {MAX_PINNED_VEHICLES}
@@ -185,7 +186,7 @@ export function VehicleList({
       ) : null}
 
       <section className="-mx-4 md:mx-0">
-        <div className="flex h-11 items-center justify-between px-4 text-sm text-muted-foreground">
+        <div className={cn("sticky z-20 flex h-11 items-center justify-between bg-background px-4 text-sm text-muted-foreground md:static", UNDER_STICKY_HEAD)}>
           <span>
             <span className="font-semibold text-foreground">전체</span> {others.length}대
           </span>

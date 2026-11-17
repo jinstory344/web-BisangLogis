@@ -24,7 +24,7 @@ export function DayHeader({ date, totalLabel, showMonth = false }: DayHeaderProp
         <span className="text-lg leading-none font-semibold tabular-nums">
           {Number(date.slice(8, 10))}
         </span>
-        <span className="rounded bg-muted px-1.5 py-0.5 text-xs text-muted-foreground">
+        <span className="rounded bg-muted px-1.5 py-0.5 text-xs text-foreground">
           {getWeekdayLabel(date)}요일
         </span>
       </span>

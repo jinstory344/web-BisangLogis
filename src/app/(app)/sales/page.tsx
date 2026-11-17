@@ -18,7 +18,7 @@ import { SalesList } from "./sales-list"
 import { SalesMobileControls } from "./sales-mobile-controls"
 import { getSaleSources } from "./sources"
 
-const PAGE_SIZE = 50
+const PAGE_SIZE = 100 // 100건까지는 페이지 넘기기 없이
 
 interface SalesSearchParams {
   from?: string

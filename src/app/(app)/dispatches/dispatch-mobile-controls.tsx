@@ -77,7 +77,6 @@ export function DispatchMobileControls({
           ]}
           size="lg"
         />
-      </div>
 
       <div className="flex min-h-10 items-center justify-between gap-2 text-sm text-muted-foreground">
         <span className="min-w-0 truncate">
@@ -110,6 +109,7 @@ export function DispatchMobileControls({
             <SlidersHorizontal className="size-4" />
           </button>
         </div>
+      </div>
       </div>
 
       <ClientSheet

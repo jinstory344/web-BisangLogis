@@ -45,6 +45,7 @@ import {
   toggleClientPinAction,
 } from "./actions"
 import { SECTION_COLORS } from "@/lib/constants/section-colors"
+import { UNDER_STICKY_HEAD } from "@/components/layout/sticky-head"
 
 /** 거래처 목록: 차량 정보와 같은 줄 목록. 줄을 누르면 아래에서 상세·전화·수정·삭제 */
 export function ClientList({
@@ -209,7 +210,7 @@ export function ClientList({
     <>
       {pinned.length > 0 ? (
         <section className="-mx-4 md:mx-0">
-          <div className="flex h-9 items-center justify-between px-4 text-sm text-muted-foreground">
+          <div className={cn("sticky z-20 flex h-9 items-center justify-between bg-background px-4 text-sm text-muted-foreground md:static", UNDER_STICKY_HEAD)}>
             <span>
               <span className="font-semibold text-foreground">고정</span> {pinned.length}/{MAX_PINNED_VEHICLES}
             </span>
@@ -228,7 +229,7 @@ export function ClientList({
       ) : null}
 
       <section className="-mx-4 md:mx-0">
-        <div className="flex h-11 items-center px-4 text-sm text-muted-foreground">
+        <div className={cn("sticky z-20 flex h-11 items-center bg-background px-4 text-sm text-muted-foreground md:static", UNDER_STICKY_HEAD)}>
           <span>
             <span className="font-semibold text-foreground">전체</span> {others.length}곳
           </span>

@@ -2,6 +2,7 @@ import { cache, Suspense } from "react"
 
 import { LiveClock } from "@/components/layout/live-clock"
 import { PageTitle } from "@/components/layout/page-title"
+import { StickyHead } from "@/components/layout/sticky-head"
 import { SearchButton } from "@/components/layout/search-button"
 import { LedgerCalendar } from "@/components/ledger/ledger-calendar"
 import { LedgerDayView } from "@/components/ledger/ledger-day-view"
@@ -206,7 +207,7 @@ export default async function LedgerPage({
           className="flex flex-col"
         >
           {/* 위에 고정되는 부분: 목록을 내려도 제목·날짜·보기 탭·합계·미입금이 계속 보인다 */}
-          <div className="sticky top-0 z-20 -mx-4 bg-background px-4 pt-6 md:-mx-6 md:px-6 md:pt-6">
+          <StickyHead className="z-20 -mx-4 px-4 pt-6 md:-mx-6 md:px-6 md:pt-6">
             {/* 가계부 앱처럼: 왼쪽 검색 · 가운데 제목 */}
             <header className="grid grid-cols-[2.5rem_1fr_2.5rem] items-center">
               <SearchButton />
@@ -219,7 +220,7 @@ export default async function LedgerPage({
             <Suspense fallback={<SummaryFallback />}>
               <SummarySlot {...slot} />
             </Suspense>
-          </div>
+          </StickyHead>
 
           <Suspense fallback={<ContentFallback />}>
             <ContentSlot {...slot} />

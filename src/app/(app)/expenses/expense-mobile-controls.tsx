@@ -100,31 +100,30 @@ export function ExpenseMobileControls({
           ]}
           size="lg"
         />
+        {/* 대분류 칩 줄 대신 "전체 35건 + [분류 ▾]" (칩 줄을 밀면 화면 전체가 밀리던 문제) */}
+        <ListPickerRow
+          placeholder="분류"
+          value={categoryMajor}
+          options={chips.map((chip) => ({
+            ...chip,
+            href: hrefWith({ category_major: chip.value, category_minor: "" }),
+          }))}
+          trailing={
+            <button
+              type="button"
+              aria-expanded={isFilterOpen}
+              aria-label={`자세한 필터${activeFilterCount > 0 ? ` ${activeFilterCount}개 사용 중` : ""}`}
+              onClick={() => setIsFilterOpen((open) => !open)}
+              className={cn(
+                "relative flex size-9 items-center justify-center rounded-full",
+                activeFilterCount > 0 ? "bg-foreground text-background" : "bg-muted text-foreground"
+              )}
+            >
+              <SlidersHorizontal className="size-4" />
+            </button>
+          }
+        />
       </div>
-
-      {/* 대분류 칩 줄 대신 "전체 35건 + [분류 ▾]" (칩 줄을 밀면 화면 전체가 밀리던 문제) */}
-      <ListPickerRow
-        placeholder="분류"
-        value={categoryMajor}
-        options={chips.map((chip) => ({
-          ...chip,
-          href: hrefWith({ category_major: chip.value, category_minor: "" }),
-        }))}
-        trailing={
-          <button
-            type="button"
-            aria-expanded={isFilterOpen}
-            aria-label={`자세한 필터${activeFilterCount > 0 ? ` ${activeFilterCount}개 사용 중` : ""}`}
-            onClick={() => setIsFilterOpen((open) => !open)}
-            className={cn(
-              "relative flex size-9 items-center justify-center rounded-full",
-              activeFilterCount > 0 ? "bg-foreground text-background" : "bg-muted text-foreground"
-            )}
-          >
-            <SlidersHorizontal className="size-4" />
-          </button>
-        }
-      />
 
       {isFilterOpen ? (
         <div className="flex flex-col gap-3 rounded-xl border p-3">

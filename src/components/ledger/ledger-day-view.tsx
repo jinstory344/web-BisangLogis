@@ -27,10 +27,8 @@ export function LedgerDayView({
   initialKind: LedgerKindFilter
 }) {
   const [kind, setKind] = useState(initialKind)
-  const buckets = useMemo(
-    () => buildDayBuckets(filterLedgerEntries(entries, kind)),
-    [entries, kind]
-  )
+  const filtered = useMemo(() => filterLedgerEntries(entries, kind), [entries, kind])
+  const buckets = useMemo(() => buildDayBuckets(filtered), [filtered])
 
   function choose(next: LedgerKindFilter) {
     setKind(next)
@@ -40,7 +38,7 @@ export function LedgerDayView({
 
   return (
     <>
-      <LedgerKindChips value={kind} onChange={choose} />
+      <LedgerKindChips value={kind} onChange={choose} count={filtered.length} />
       <LedgerDayList buckets={buckets} />
     </>
   )
