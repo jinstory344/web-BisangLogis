@@ -205,11 +205,7 @@ export default async function LedgerPage({
             {/* 가계부 앱처럼: 왼쪽 검색 · 가운데 제목 */}
             <header className="grid grid-cols-[2.5rem_1fr_2.5rem] items-center">
               <SearchButton />
-              <PageTitle
-                title={<HomeTitle />}
-                barClassName="bg-red-400 animate-[title-bar-breathe_3.2s_ease-in-out_infinite] motion-reduce:animate-none"
-                fullBar
-              />
+              <PageTitle title={<HomeTitle />} barClassName="bg-red-400" />
               {/* 오른쪽 끝 달력 아이콘: 누르면 달(월별 보기는 해) 고르기. 이전·다음은 좌우로 쓸어 넘긴다. 연별은 전체라 없음 */}
               {view === "year" ? (
                 <span aria-hidden />
@@ -223,10 +219,7 @@ export default async function LedgerPage({
                 />
               )}
             </header>
-            {/* 시계와 보기 탭 사이를 넉넉히 */}
-            <div className="mt-4">
-              <LedgerViewTabs view={view} anchor={anchor} />
-            </div>
+            <LedgerViewTabs view={view} anchor={anchor} />
             <Suspense fallback={<SummaryFallback />}>
               <SummarySlot {...slot} />
             </Suspense>
