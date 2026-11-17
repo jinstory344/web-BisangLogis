@@ -94,9 +94,7 @@ export function DispatchMobileList({
         <p className="flex min-h-9 items-center text-xs text-muted-foreground tabular-nums">
           운임 {formatKRW(filteredTotals.freightAmount)} · 수수료 {formatKRW(filteredTotals.feeAmount)}
         </p>
-      ) : (
-        <div aria-hidden className="h-1" />
-      )}
+      ) : null}
 
       {groups.map((group) => (
         <section key={group.date} className="-mx-4 -mt-3 border-b">

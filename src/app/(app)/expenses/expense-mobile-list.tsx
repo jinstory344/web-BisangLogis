@@ -68,8 +68,7 @@ export function ExpenseMobileList({
 
   return (
     <div className="flex flex-col gap-3">
-      {/* 분류 합계는 위 고정 줄의 "전체 N건" 오른쪽에 보인다 */}
-      <div aria-hidden className="h-1" />
+      {/* 분류 합계는 위 고정 줄의 "전체 N건" 오른쪽에 보인다. 첫 날짜 줄은 고정 줄 바로 밑에 붙는다 */}
 
       {groups.map((group) => (
         <section key={group.date} className="-mx-4 -mt-3 border-b">
