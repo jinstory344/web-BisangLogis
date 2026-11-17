@@ -35,7 +35,7 @@ export function TotalsRow({
           {/* 이름이 빈 칸이면 금액만 (예: 지출 화면) */}
           <dt
             className={cn(
-              "text-muted-foreground",
+              "text-foreground",
               large ? "text-sm leading-5" : "text-[11px] leading-4",
               !item.label && "sr-only"
             )}
