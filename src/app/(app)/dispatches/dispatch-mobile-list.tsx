@@ -177,7 +177,6 @@ export function DispatchMobileList({
         target={messageDispatch ? message!.target : null}
         dispatch={messageDispatch}
         clientName={messageDispatch ? clientNameOf(messageDispatch, clientNameMap) : ""}
-        clientNames={clientNameMap}
         onOpenChange={(open) => {
           if (!open) setMessage(null)
         }}

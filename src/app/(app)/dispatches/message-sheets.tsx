@@ -1,11 +1,11 @@
 "use client"
 
-import { Copy, MessageSquare, Plus, Save, Share, X } from "lucide-react"
+import { ChevronLeft, ChevronRight, Copy, MessageSquare, Share, X } from "lucide-react"
+import Link from "next/link"
 import { useEffect, useState } from "react"
 import { toast } from "sonner"
 
 import { listMemosAction, type MemoItem } from "@/app/(app)/memos/actions"
-import { MemoEditor, type MemoDraft } from "@/components/memos/memo-editor"
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet"
 import { buildDispatchInfo, matchRouteMemo, smsHref, sortMemos } from "@/lib/memos"
 import type { DispatchRow } from "@/lib/supabase/database.types"
@@ -29,8 +29,8 @@ async function copyText(text: string) {
 
 /**
  * 배차 한 건의 문자 판.
- * - driver: 차주에게 배차내용 — 그 거래처 메모 + 공통 배차메모를 칩으로, 경로가 맞는 메모를 미리 골라 둔다.
- *   [메모로 저장]으로 고친 내용을 메모로 남긴다. [문자]는 그 배차의 차주 번호로 문자 앱을 연다.
+ * - driver: 차주에게 배차내용 — 먼저 그 거래처 메모 + 공통 배차메모 목록이 뜨고(경로가 맞는 메모가 맨 위),
+ *   하나를 고르면 그 내용이 칸에 들어간다. 고칠 곳만 고쳐서 [문자](차주 번호로 문자 앱) 또는 [복사].
  * - client: 거래처에게 배차정보 — 배차에 저장된 값으로 자동 작성. [카톡]은 공유 창, [문자]는 담당자 번호(있으면).
  * 둘 다 칸에서 바로 고칠 수 있다.
  */
@@ -38,23 +38,19 @@ export function DispatchMessageSheet({
   target,
   dispatch,
   clientName,
-  clientNames,
   onOpenChange,
 }: {
   target: MessageTarget | null
   dispatch: DispatchRow | null
   clientName: string
-  clientNames: Record<string, string>
   onOpenChange: (open: boolean) => void
 }) {
   const open = target !== null && dispatch !== null
   const [memos, setMemos] = useState<MemoItem[] | null>(null)
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [text, setText] = useState("")
-  const [editor, setEditor] = useState<{ open: boolean; draft: MemoDraft }>({
-    open: false,
-    draft: { kind: "DISPATCH", client_id: null, title: "", body: "", pinned: false },
-  })
+  /** 경로가 맞는 메모 (목록 맨 위에 "추천") */
+  const [matchedId, setMatchedId] = useState<string | null>(null)
 
   // 판을 열 때마다 문구를 새로 만든다
   useEffect(() => {
@@ -65,19 +61,17 @@ export function DispatchMessageSheet({
     }
     setMemos(null)
     setSelectedId(null)
-    setText(`${dispatch.origin} - ${dispatch.destination}`)
+    setText("")
+    setMatchedId(null)
     let alive = true
     listMemosAction("DISPATCH")
       .then((rows) => {
         if (!alive) return
         const mine = sortMemos(rows.filter((m) => m.client_id === null || m.client_id === dispatch.client_id))
-        setMemos(mine)
         const matched = matchRouteMemo(mine, dispatch.origin, dispatch.destination)
-        const memo = mine.find((m) => m.id === matched)
-        if (memo) {
-          setSelectedId(memo.id)
-          setText(memo.body || memo.title)
-        }
+        setMatchedId(matched)
+        // 경로가 맞는 메모를 맨 위로
+        setMemos(matched ? [...mine.filter((m) => m.id === matched), ...mine.filter((m) => m.id !== matched)] : mine)
       })
       .catch(() => alive && setMemos([]))
     return () => {
@@ -99,24 +93,6 @@ export function DispatchMessageSheet({
     setText(memo.body || memo.title)
   }
 
-  /** asNew: 지금 칸의 내용으로 새 메모. 아니면 고른 메모가 있을 때 그 메모를 지금 내용으로 고친다. */
-  function openEditor(asNew: boolean) {
-    const selected = memos?.find((m) => m.id === selectedId)
-    setEditor({
-      open: true,
-      draft:
-        selected && !asNew
-          ? { ...selected, body: text }
-          : {
-              kind: "DISPATCH",
-              client_id: dispatch!.client_id,
-              title: `${dispatch!.origin} - ${dispatch!.destination}`,
-              body: text,
-              pinned: false,
-            },
-    })
-  }
-
   async function share() {
     if (navigator.share) {
       try {
@@ -129,27 +105,37 @@ export function DispatchMessageSheet({
     await copyText(text)
   }
 
-  const clientMemos = memos?.filter((m) => m.client_id) ?? []
-  const commonMemos = memos?.filter((m) => !m.client_id) ?? []
-  const chip = (memo: MemoItem) => (
+  const isPicking = target === "driver" && selectedId === null
+  const selectedMemo = memos?.find((m) => m.id === selectedId)
+  const memoRow = (memo: MemoItem) => (
     <button
       key={memo.id}
       type="button"
-      aria-pressed={memo.id === selectedId}
       onClick={() => pick(memo)}
-      className={cn(
-        "h-9 max-w-full truncate rounded-full px-3.5 text-sm",
-        memo.id === selectedId ? "bg-foreground font-semibold text-background" : "bg-muted text-foreground"
-      )}
+      className="flex min-h-14 w-full items-center gap-2 border-b py-2.5 text-left active:bg-muted/60"
     >
-      {memo.title}
+      <span className="min-w-0 flex-1">
+        <span className="flex items-center gap-1.5">
+          <span className="truncate text-[15px] font-semibold">{memo.title}</span>
+          {memo.id === matchedId ? (
+            <span className="shrink-0 rounded-full bg-[#34507d] px-2 py-0.5 text-[11px] font-semibold text-[#e3ecfb]">
+              경로 맞음
+            </span>
+          ) : null}
+        </span>
+        {memo.body ? (
+          <span className="mt-0.5 block truncate text-[13px] text-muted-foreground">{memo.body.replace(/\s+/g, " ")}</span>
+        ) : null}
+      </span>
+      <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
     </button>
   )
+  const clientMemos = memos?.filter((m) => m.client_id) ?? []
+  const commonMemos = memos?.filter((m) => !m.client_id) ?? []
 
   const buttonClass = "flex h-12 items-center justify-center gap-1.5 rounded-xl text-[15px] font-semibold"
 
   return (
-    <>
       <Sheet open={open} onOpenChange={onOpenChange}>
         <SheetContent side="bottom" showCloseButton={false} className="max-h-[92svh] gap-0 p-0">
           <div className="flex items-center justify-between bg-muted px-4 py-1.5">
@@ -166,34 +152,48 @@ export function DispatchMessageSheet({
           </div>
 
           <div className="flex min-h-0 flex-col gap-2 overflow-y-auto px-4 pt-3">
-            {target === "driver" ? (
+            {isPicking ? (
               memos === null ? (
-                <p className="text-sm text-muted-foreground">메모 불러오는 중…</p>
+                <p className="py-6 text-center text-sm text-muted-foreground">메모 불러오는 중…</p>
+              ) : memos.length === 0 ? (
+                <div className="py-8 text-center text-sm text-muted-foreground">
+                  아직 {clientName} 배차메모가 없어요.
+                  <Link
+                    href={`/memos?tab=dispatch${dispatch.client_id ? `&client=${dispatch.client_id}` : ""}`}
+                    className="mx-auto mt-3 flex h-10 w-fit items-center gap-1 rounded-full bg-muted px-4 text-foreground"
+                  >
+                    메모 페이지에서 만들기 <ChevronRight className="size-4" />
+                  </Link>
+                </div>
               ) : (
-                <>
+                <div className="pb-4">
+                  <p className="text-sm text-muted-foreground">보낼 배차메모를 고르세요</p>
                   {clientMemos.length > 0 ? (
-                    <div>
-                      <p className="mb-1.5 text-xs text-muted-foreground">{clientName} 메모</p>
-                      <div className="flex flex-wrap gap-1.5">{clientMemos.map(chip)}</div>
-                    </div>
+                    <>
+                      <p className="mt-3 text-xs text-muted-foreground">{clientName} 메모</p>
+                      {clientMemos.map(memoRow)}
+                    </>
                   ) : null}
-                  <div>
-                    <p className="mb-1.5 text-xs text-muted-foreground">공통 메모</p>
-                    <div className="flex flex-wrap gap-1.5">
-                      {commonMemos.map(chip)}
-                      <button
-                        type="button"
-                        onClick={() => openEditor(true)}
-                        className="inline-flex h-9 items-center gap-1 rounded-full border border-dashed px-3.5 text-sm text-muted-foreground"
-                      >
-                        <Plus className="size-4" /> 새 메모
-                      </button>
-                    </div>
-                  </div>
-                </>
+                  {commonMemos.length > 0 ? (
+                    <>
+                      <p className="mt-3 text-xs text-muted-foreground">공통 메모</p>
+                      {commonMemos.map(memoRow)}
+                    </>
+                  ) : null}
+                </div>
               )
+            ) : (
+              <>
+            {target === "driver" ? (
+              <button
+                type="button"
+                onClick={() => setSelectedId(null)}
+                className="-ml-1 flex h-9 w-fit items-center gap-0.5 text-sm text-muted-foreground"
+              >
+                <ChevronLeft className="size-4" /> 메모 다시 고르기
+                {selectedMemo ? <span className="ml-1 font-semibold text-foreground">· {selectedMemo.title}</span> : null}
+              </button>
             ) : null}
-
             <textarea
               value={text}
               onChange={(e) => setText(e.target.value)}
@@ -203,19 +203,17 @@ export function DispatchMessageSheet({
             <p className="text-xs text-muted-foreground">
               받는 번호: {phone || (target === "driver" ? "차주 번호 없음 — 문자 앱에서 골라요" : "담당자 번호 없음 — 카톡으로 보내거나 문자 앱에서 골라요")}
             </p>
+              </>
+            )}
           </div>
 
+          {isPicking ? null : (
           <div
             className={cn(
               "grid gap-2 px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]",
-              target === "driver" ? "grid-cols-[auto_auto_1fr]" : "grid-cols-3"
+              target === "driver" ? "grid-cols-[1fr_2fr]" : "grid-cols-3"
             )}
           >
-            {target === "driver" ? (
-              <button type="button" onClick={() => openEditor(false)} className={cn(buttonClass, "bg-muted px-3")}>
-                <Save className="size-4" /> 메모로 저장
-              </button>
-            ) : null}
             <button type="button" onClick={() => copyText(text)} className={cn(buttonClass, "bg-muted px-3")}>
               <Copy className="size-4" /> 복사
             </button>
@@ -231,25 +229,8 @@ export function DispatchMessageSheet({
               <MessageSquare className="size-4" /> 문자
             </a>
           </div>
+          )}
         </SheetContent>
       </Sheet>
-
-      <MemoEditor
-        open={editor.open}
-        onOpenChange={(o) => setEditor((prev) => ({ ...prev, open: o }))}
-        draft={editor.draft}
-        clientNames={clientNames}
-        onSaved={(memo) => {
-          setMemos((prev) =>
-            prev ? sortMemos([memo, ...prev.filter((m) => m.id !== memo.id)]) : prev
-          )
-          if (memo.kind === "DISPATCH") {
-            setSelectedId(memo.id)
-            setText(memo.body || memo.title)
-          }
-        }}
-        onDeleted={(id) => setMemos((prev) => prev?.filter((m) => m.id !== id) ?? prev)}
-      />
-    </>
   )
 }
