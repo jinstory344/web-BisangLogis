@@ -17,8 +17,13 @@ export function StickyHead({ children, className }: { children: ReactNode; class
   useLayoutEffect(() => {
     const el = ref.current
     if (!el) return
+    // 실제 높이는 177.5px처럼 소수라, 반올림한 offsetHeight(178)를 쓰면 0.5px 틈으로 아래 목록이 비친다.
+    // 내림한 뒤 1px 더 빼서 아래 줄이 머리 밑으로 살짝 겹치게 한다(머리가 위에 그려져 겹친 부분은 안 보임).
     const set = () =>
-      document.documentElement.style.setProperty("--sticky-head-h", `${el.offsetHeight}px`)
+      document.documentElement.style.setProperty(
+        "--sticky-head-h",
+        `${Math.max(0, Math.floor(el.getBoundingClientRect().height) - 1)}px`
+      )
     set()
     const observer = new ResizeObserver(set)
     observer.observe(el)
