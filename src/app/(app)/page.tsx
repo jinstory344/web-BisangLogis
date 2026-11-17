@@ -8,7 +8,7 @@ import { LedgerCalendar } from "@/components/ledger/ledger-calendar"
 import { LedgerDayView } from "@/components/ledger/ledger-day-view"
 import { LedgerNav } from "@/components/ledger/ledger-nav"
 import { LedgerRangeList } from "@/components/ledger/ledger-range-list"
-import { LedgerSummary, UnpaidLine } from "@/components/ledger/ledger-summary"
+import { LedgerSummary } from "@/components/ledger/ledger-summary"
 import { LedgerViewTabs } from "@/components/ledger/ledger-view-tabs"
 import { SwipePager } from "@/components/ledger/swipe-pager"
 import { TotalsRow } from "@/components/list/totals-row"
@@ -123,18 +123,12 @@ type SlotProps = {
   today: string
 }
 
-/** 위에 고정되는 합계 줄 + 미입금 줄 */
+/** 위에 고정되는 합계 줄 (미입금은 아래 [미입금] 칩으로 본다) */
 async function SummarySlot(props: SlotProps) {
   const result = await loadLedger(props.view, props.anchor, props.kind, props.today)
   if (!result.ok) return null
   return (
-    <>
-      <LedgerSummary totals={result.totals} />
-      <UnpaidLine
-        unpaid={result.unpaid}
-        range={getLedgerRange(props.view, props.anchor)}
-      />
-    </>
+    <LedgerSummary totals={result.totals} />
   )
 }
 
