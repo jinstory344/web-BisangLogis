@@ -4,8 +4,8 @@ import type { ReactNode } from "react"
 import { ChartNoAxesColumn } from "lucide-react"
 import Link from "next/link"
 
+import { PageTitle } from "@/components/layout/page-title"
 import { SearchButton } from "@/components/layout/search-button"
-import { cn } from "@/lib/utils"
 
 /**
  * 모바일에서 첫째 고정 줄(ListPageHead) 바로 아래에 붙는 둘째 고정 영역의 top.
@@ -30,7 +30,7 @@ export function ListPageHead({
   desktopAction,
   statsHref,
   monthNav,
-  titleClassName,
+  titleBarClassName,
 }: {
   title: string
   desktopTitle: string
@@ -39,14 +39,14 @@ export function ListPageHead({
   statsHref: string
   /** 제목과 탭 사이의 ‹ 2026년 11월 › (모바일만, HOME과 같은 자리) */
   monthNav?: ReactNode
-  /** 제목 글자 색 (메뉴별 색, 예: 배차 노랑) */
-  titleClassName?: string
+  /** 제목 밑 짧은 색 줄 (메뉴별 색, 예: 배차 노랑) */
+  titleBarClassName?: string
 }) {
   return (
     <div className="sticky top-0 z-30 -mx-4 bg-background px-4 pt-6 md:static md:mx-0 md:px-0 md:pt-0">
       <header className="grid h-10 grid-cols-[2.5rem_1fr_2.5rem] items-center md:hidden">
         <SearchButton />
-        <h1 className={cn("text-center text-xl font-bold tracking-tight", titleClassName)}>{title}</h1>
+        <PageTitle title={title} barClassName={titleBarClassName} />
         <Link
           href={statsHref}
           aria-label={`${title} 통계`}

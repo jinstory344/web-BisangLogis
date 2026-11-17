@@ -1,5 +1,6 @@
 import { cache, Suspense } from "react"
 
+import { PageTitle } from "@/components/layout/page-title"
 import { SearchButton } from "@/components/layout/search-button"
 import { LedgerCalendar } from "@/components/ledger/ledger-calendar"
 import { LedgerDayView } from "@/components/ledger/ledger-day-view"
@@ -208,7 +209,7 @@ export default async function LedgerPage({
             {/* 가계부 앱처럼: 왼쪽 검색 · 가운데 제목 */}
             <header className="grid grid-cols-[2.5rem_1fr_2.5rem] items-center">
               <SearchButton />
-              <h1 className="text-center text-xl font-bold tracking-wide">HOME</h1>
+              <PageTitle title="HOME" barClassName="bg-red-400" />
               <span aria-hidden />
             </header>
 

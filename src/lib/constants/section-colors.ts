@@ -7,33 +7,33 @@ export const SECTION_COLORS = {
   dispatch: {
     /** 아래 탭에서 고른 메뉴 아이콘·글씨 */
     tab: "data-[active=true]:text-[#d6a84a]",
-    /** 페이지 제목 글자 */
-    title: "text-[#d6a84a]",
+    /** 페이지 제목 밑 짧은 색 줄 */
+    titleBar: "bg-[#d6a84a]",
     /** 고른 칩 */
     chip: "bg-[#5e4a22] font-semibold text-[#f2dfaa]",
     /** ＋·★ 같은 포인트 */
     accent: "text-[#d6a84a]",
     star: "fill-[#d6a84a] text-[#d6a84a]",
-    /** 고정 줄 바탕 */
-    pinnedRow: "bg-[#d6a84a]/[0.07]",
+    /** 고정 줄 바탕 — 메뉴 색 대신 살짝 어두운 회색(★만 메뉴 색) */
+    pinnedRow: "bg-black/20",
   },
   vehicle: {
     tab: "data-[active=true]:text-[#6f93cf]",
-    /** 페이지 제목 글자 */
-    title: "text-[#6f93cf]",
+    /** 페이지 제목 밑 짧은 색 줄 */
+    titleBar: "bg-[#6f93cf]",
     chip: "bg-[#34507d] font-semibold text-[#d3e1f7]",
     accent: "text-[#6f93cf]",
     star: "fill-[#6f93cf] text-[#6f93cf]",
-    pinnedRow: "bg-[#5b7fb8]/[0.09]",
+    pinnedRow: "bg-black/20",
   },
   client: {
     tab: "data-[active=true]:text-[#6aad83]",
-    /** 페이지 제목 글자 */
-    title: "text-[#6aad83]",
+    /** 페이지 제목 밑 짧은 색 줄 */
+    titleBar: "bg-[#6aad83]",
     chip: "bg-[#355a43] font-semibold text-[#d0eedb]",
     accent: "text-[#6aad83]",
     star: "fill-[#6aad83] text-[#6aad83]",
-    pinnedRow: "bg-[#5a9a72]/[0.09]",
+    pinnedRow: "bg-black/20",
   },
 } as const
 

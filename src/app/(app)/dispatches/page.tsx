@@ -46,7 +46,7 @@ export default async function DispatchesPage({
       <div className="flex flex-col md:gap-2">
         <ListPageHead
           title="배차"
-          titleClassName={SECTION_COLORS.dispatch.title}
+          titleBarClassName={SECTION_COLORS.dispatch.titleBar}
           desktopTitle="배차 관리"
           desktopAction={
             <Button asChild size="sm">

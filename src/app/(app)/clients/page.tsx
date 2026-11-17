@@ -2,6 +2,7 @@ import Link from "next/link"
 import { Plus } from "lucide-react"
 
 import { SearchBox } from "@/components/common/search-box"
+import { PageTitle } from "@/components/layout/page-title"
 import { SearchButton } from "@/components/layout/search-button"
 import { createClient } from "@/lib/supabase/server"
 import type { ClientRow } from "@/lib/supabase/database.types"
@@ -40,7 +41,8 @@ export default async function ClientsPage({
         <span className="md:hidden">
           <SearchButton />
         </span>
-        <h1 className={cn("text-center text-xl font-bold tracking-tight md:text-left md:text-2xl md:tracking-normal", SECTION_COLORS.client.title)}>거래처</h1>
+        <PageTitle title="거래처" barClassName={SECTION_COLORS.client.titleBar} className="md:hidden" />
+        <h1 className="hidden text-2xl font-semibold md:block">거래처</h1>
         <Link
           href="/clients/new"
           prefetch

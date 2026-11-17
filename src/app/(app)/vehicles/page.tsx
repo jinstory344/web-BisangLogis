@@ -2,6 +2,7 @@ import Link from "next/link"
 import { Plus } from "lucide-react"
 
 import { SearchBox } from "@/components/common/search-box"
+import { PageTitle } from "@/components/layout/page-title"
 import { SearchButton } from "@/components/layout/search-button"
 import { createClient } from "@/lib/supabase/server"
 import type { VehicleRow } from "@/lib/supabase/database.types"
@@ -94,7 +95,8 @@ export default async function VehiclesPage({
         <span className="md:hidden">
           <SearchButton />
         </span>
-        <h1 className={cn("text-center text-xl font-bold tracking-tight md:text-left md:text-2xl md:tracking-normal", SECTION_COLORS.vehicle.title)}>차량 정보</h1>
+        <PageTitle title="차량 정보" barClassName={SECTION_COLORS.vehicle.titleBar} className="md:hidden" />
+        <h1 className="hidden text-2xl font-semibold md:block">차량 정보</h1>
         <Link
           href="/vehicles/new"
           prefetch
