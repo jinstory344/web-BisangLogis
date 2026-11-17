@@ -66,6 +66,8 @@ export function SalesMobileControls({
 
   // 전체 기간(HOME 미입금 줄에서 들어옴)은 직접 지정한 기간 필터로 세지 않는다
   const isMonth = isFullMonthRange({ from, to }) || isAllPeriod({ from, to })
+  // 보고 있는 달 ("11월") — "11월 전체 28건"처럼 거르기 줄 왼쪽에 붙인다(한 달이 아닐 때는 없음)
+  const monthPrefix = isFullMonthRange({ from, to }) ? `${Number(from.slice(5, 7))}월` : undefined
   // 기간 직접 지정, 출처, 지불방법 중 하나라도 걸려 있으면 필터 버튼에 표시한다.
   const activeFilterCount =
     (isMonth ? 0 : 1) + (sourceMajor ? 1 : 0) + (sourceSub ? 1 : 0) + (paymentMethod ? 1 : 0)
@@ -111,6 +113,7 @@ export function SalesMobileControls({
         />
         {/* 입금 상태 칩 줄 대신 "전체 28건 + [입금 상태 ▾]" (칩 줄을 밀면 화면 전체가 밀리던 문제) */}
         <ListPickerRow
+          prefix={monthPrefix}
           placeholder="입금 상태"
           value={paymentStatus}
           options={STATUS_CHIPS.map((chip) => ({

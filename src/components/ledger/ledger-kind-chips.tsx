@@ -1,46 +1,84 @@
 "use client"
 
-import { chipVariants } from "@/components/form/choice-chips"
+import { Check, ChevronDown } from "lucide-react"
+import { useState } from "react"
+
 import { UNDER_STICKY_HEAD } from "@/components/layout/sticky-head"
-import { LIST_CHIP_CLASS } from "@/components/list/list-page-head"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { LEDGER_KIND_FILTERS, type LedgerKindFilter } from "@/lib/ledger"
 import { cn } from "@/lib/utils"
 
 /**
- * 일일 장부 거르기 칩: 전체 · 매출 · 지출 · 미입금.
+ * 일일 장부 거르기 한 줄 (배차 목록과 같은 모양): 왼쪽 "11월 전체 84건", 오른쪽 [전체 ▾] 펼침 목록.
  * 이미 받아 둔 그 달 내역을 화면에서 바로 거르므로 서버를 다시 부르지 않는다.
+ * 위 고정 머리 바로 밑에 붙어 함께 고정된다. 날짜 줄(z-10)이 밀려 올라올 때 이 줄 아래로 들어가게 한 층 위(z-20).
  */
 export function LedgerKindChips({
   value,
   onChange,
-  count,
+  counts,
+  monthLabel,
 }: {
   value: LedgerKindFilter
   onChange: (next: LedgerKindFilter) => void
-  /** 지금 고른 거르기의 건수 (칩 줄 오른쪽 끝에 "12건") */
-  count: number
+  /** 거르기마다 건수 */
+  counts: Record<LedgerKindFilter, number>
+  /** 보고 있는 달 (예: "11월") */
+  monthLabel: string
 }) {
+  const [open, setOpen] = useState(false)
+  const selected = LEDGER_KIND_FILTERS.find((f) => f.value === value) ?? LEDGER_KIND_FILTERS[0]
+  const isFiltered = value !== "all"
+
   return (
-    // 위 고정 머리 바로 밑에 붙어 함께 고정된다. 날짜 줄(z-10)이 밀려 올라올 때 이 줄 아래로 들어가게 한 층 위(z-20)
     <nav
       aria-label="보기 거르기"
-      className={cn("sticky z-20 -mx-4 flex items-center gap-1.5 bg-background px-4 py-2 md:-mx-6 md:px-6", UNDER_STICKY_HEAD)}
+      className={cn(
+        "sticky z-20 -mx-4 flex min-h-[52px] items-center justify-between gap-2 bg-background px-4 py-2 text-sm text-muted-foreground md:-mx-6 md:px-6",
+        UNDER_STICKY_HEAD
+      )}
     >
-      {LEDGER_KIND_FILTERS.map((filter) => (
-        <button
-          key={filter.value}
-          type="button"
-          onClick={() => onChange(filter.value)}
-          aria-pressed={value === filter.value}
-          className={cn(
-            chipVariants({ selected: value === filter.value }),
-            LIST_CHIP_CLASS
-          )}
-        >
-          {filter.label}
-        </button>
-      ))}
-      <span className="ml-auto text-sm text-muted-foreground tabular-nums">{count}건</span>
+      <span className="truncate">
+        <span className="font-semibold text-foreground">
+          {monthLabel} {selected.label}
+        </span>{" "}
+        {counts[value]}건
+      </span>
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <button
+            type="button"
+            className={cn(
+              "inline-flex h-9 shrink-0 items-center gap-1 rounded-full px-3.5 text-[13px]",
+              isFiltered ? "bg-foreground font-semibold text-background" : "bg-muted text-foreground"
+            )}
+          >
+            {selected.label}
+            <ChevronDown className="size-4 shrink-0" />
+          </button>
+        </PopoverTrigger>
+        <PopoverContent align="end" className="w-48 p-1">
+          {LEDGER_KIND_FILTERS.map((filter) => (
+            <button
+              key={filter.value}
+              type="button"
+              aria-pressed={filter.value === value}
+              onClick={() => {
+                onChange(filter.value)
+                setOpen(false)
+              }}
+              className={cn(
+                "flex h-9 w-full items-center gap-2 rounded-md px-3 text-left text-[15px] active:bg-muted",
+                filter.value === value && "font-semibold"
+              )}
+            >
+              <Check className={cn("size-4 shrink-0", filter.value === value ? "opacity-100" : "opacity-0")} />
+              <span className="min-w-0 flex-1">{filter.label}</span>
+              <span className="text-sm text-muted-foreground tabular-nums">{counts[filter.value]}</span>
+            </button>
+          ))}
+        </PopoverContent>
+      </Popover>
     </nav>
   )
 }

@@ -45,6 +45,8 @@ export function DispatchMobileControls({
 
   // 전체 기간(HOME 미입금 줄에서 들어옴)은 직접 지정한 기간 필터로 세지 않는다
   const isMonth = isFullMonthRange({ from, to }) || isAllPeriod({ from, to })
+  // 보고 있는 달 ("11월") — "11월 전체 28건"처럼 거르기 줄 왼쪽에 붙인다(한 달이 아닐 때는 없음)
+  const monthPrefix = isFullMonthRange({ from, to }) ? `${Number(from.slice(5, 7))}월` : undefined
   const activeFilterCount = isMonth ? 0 : 1
   const [isFilterOpen, setIsFilterOpen] = useState(activeFilterCount > 0)
   const [isClientSheetOpen, setIsClientSheetOpen] = useState(false)
@@ -81,7 +83,7 @@ export function DispatchMobileControls({
 
       <div className="flex min-h-[52px] items-center justify-between gap-2 py-2 text-sm text-muted-foreground">
         <span className="min-w-0 truncate">
-          <span className="font-semibold text-foreground">{clientId ? nameOf(clientId) : "전체"}</span>{" "}
+          <span className="font-semibold text-foreground">{monthPrefix ? `${monthPrefix} ` : ""}{clientId ? nameOf(clientId) : "전체"}</span>{" "}
           {clientId ? (counts[clientId] ?? 0) : summary.count}건
         </span>
         <div className="flex shrink-0 items-center gap-2">

@@ -14,7 +14,7 @@ import { isNavItemActive, NavLink } from "./nav-link"
 
 /** 지금 열린 탭은 배경 대신 아이콘·글자를 빨간색으로 (가계부 앱 방식). 배차·차량·거래처는 메뉴별 색(TAB_ACTIVE_COLOR). */
 const TAB_CLASS_NAME =
-  "flex flex-1 flex-col items-center justify-center gap-0.5 text-[11px] leading-4 data-[active=true]:bg-transparent data-[active=true]:text-red-400"
+  "flex flex-1 flex-col items-center justify-center gap-0.5 text-[12px] leading-4 data-[active=true]:bg-transparent data-[active=true]:text-red-400"
 
 /**
  * 모바일 하단 탭: [오늘 날짜(비상)] [배차] [차량] [거래처] [메뉴] (가계부 앱 방식). 통계는 메뉴 안.
