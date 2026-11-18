@@ -258,22 +258,24 @@ export function ClientList({
         </button>
         {isReordering && index !== null && pinnedMember ? (
           moveButtons(index, pinnedMember.id)
-        ) : !isReordering ? (
-          <Button
-            type="button"
-            variant="secondary"
-            size="icon"
-            className="size-10 shrink-0"
-            aria-label={isPinned ? `${name} 묶음 고정 풀기` : `${name} 묶음 위에 고정`}
-            aria-pressed={isPinned}
-            disabled={isPending}
-            onClick={() => handleTogglePin(items.map((c) => c.id))}
-          >
-            <Star className={cn(isPinned && SECTION_COLORS.client.star, isPinned && "fill-current")} />
-          </Button>
         ) : null}
       </li>,
       ...(isOpen && !isReordering ? items.map((c) => row(c, null, true)) : []),
+      ...(isOpen && !isReordering
+        ? [
+            <li key={`group-pin-${name}`} className={cn("border-b", SECTION_COLORS.client.pinnedRow)}>
+              <button
+                type="button"
+                disabled={isPending}
+                onClick={() => handleTogglePin(items.map((c) => c.id))}
+                className="flex h-11 w-full items-center gap-1.5 pl-9 text-left text-[13px] text-muted-foreground active:bg-muted/60"
+              >
+                <Star className={cn("size-3.5", isPinned && SECTION_COLORS.client.star, isPinned && "fill-current")} />
+                {isPinned ? `${name} 묶음 고정 풀기` : `${name} 묶음 위에 고정`}
+              </button>
+            </li>,
+          ]
+        : []),
     ]
   }
 
