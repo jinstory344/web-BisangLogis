@@ -13,6 +13,7 @@ import {
   type RecentContact,
   type RecentRoute,
 } from "@/lib/quick-entry"
+import { recordAuditLog } from "@/lib/audit/log"
 import { softDelete } from "@/lib/soft-delete/soft-delete"
 import { safeReturnPath } from "@/lib/return-to"
 import { createClient } from "@/lib/supabase/server"
@@ -20,6 +21,42 @@ import {
   coerceDispatchFormData,
   dispatchFormSchema,
 } from "@/lib/validations/dispatch"
+import { vehicleSpecFromDispatch } from "@/lib/vehicle-list"
+
+/**
+ * 배차에서 고른 차종·파렛을 연결된 차량 정보에도 넣는다(사용자 요청: 봇으로 올린 배차를 고치며 차종을 고르면 차량에 반영).
+ * 실패해도 배차 저장은 이미 끝났으니 막지 않는다.
+ */
+async function syncVehicleSpec(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  vehicleId: string | undefined,
+  dispatch: Parameters<typeof vehicleSpecFromDispatch>[0]
+): Promise<void> {
+  if (!vehicleId) return
+  try {
+    const { data: vehicle } = await supabase
+      .from("vehicles")
+      .select("vehicle_type, pallet_count")
+      .eq("id", vehicleId)
+      .is("deleted_at", null)
+      .maybeSingle()
+    if (!vehicle) return
+    const patch = vehicleSpecFromDispatch(dispatch, vehicle)
+    if (!patch) return
+    const { error } = await supabase.from("vehicles").update(patch).eq("id", vehicleId)
+    if (error) throw error
+    await recordAuditLog(supabase, {
+      tableName: "vehicles",
+      recordId: vehicleId,
+      action: "UPDATE",
+      beforeData: vehicle,
+      afterData: patch,
+    })
+    revalidatePath("/vehicles")
+  } catch (err) {
+    console.error("vehicle spec sync failed", err)
+  }
+}
 
 /** 7.3 상차지 최근 입력값 자동완성 */
 export async function searchOriginSuggestionsAction(): Promise<string[]> {
@@ -230,6 +267,7 @@ export async function createDispatchAction(
     return { error: `저장 실패: ${error.message}` }
   }
 
+  await syncVehicleSpec(supabase, values.vehicle_id, values)
   revalidatePath("/dispatches")
   redirect("/dispatches")
 }
@@ -293,6 +331,7 @@ export async function updateDispatchAction(
     return { error: `저장 실패: ${error.message}` }
   }
 
+  await syncVehicleSpec(supabase, values.vehicle_id, values)
   revalidatePath("/dispatches")
   revalidatePath(`/dispatches/${id}`)
   // 저장하면 수정을 시작한 화면으로 돌아간다. 모르면 상세 화면으로.

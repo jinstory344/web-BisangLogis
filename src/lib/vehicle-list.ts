@@ -1,4 +1,5 @@
-import type { VehicleRow } from "@/lib/supabase/database.types"
+import { CARGO_BOX_TYPE_LABELS } from "@/lib/constants/cargo-box-type"
+import type { CargoBoxType, VehicleRow } from "@/lib/supabase/database.types"
 
 /** 차량 정보 상단 고정 최대 대수 */
 export const MAX_PINNED_VEHICLES = 10
@@ -140,4 +141,24 @@ export function groupRecentDispatchesByVehicle(
     }
   }
   return result
+}
+
+/**
+ * 배차에서 고른 차종·파렛 → 연결된 차량 정보에 넣을 값. 바뀔 게 없으면 null.
+ * 배차에 적은 것만 넣고(빈 칸은 차량 정보를 지우지 않는다), "기타"는 차량 차종에 없어 넣지 않는다.
+ */
+export function vehicleSpecFromDispatch(
+  dispatch: { cargo_box_type: CargoBoxType | "" | null; pallet_count: number | null },
+  current: { vehicle_type: string | null; pallet_count: number | null }
+): { vehicle_type?: string; pallet_count?: number } | null {
+  const patch: { vehicle_type?: string; pallet_count?: number } = {}
+  const type =
+    dispatch.cargo_box_type && dispatch.cargo_box_type !== "OTHER"
+      ? CARGO_BOX_TYPE_LABELS[dispatch.cargo_box_type]
+      : null
+  if (type && type !== current.vehicle_type) patch.vehicle_type = type
+  const pallets = dispatch.pallet_count
+  // 차량 정보의 파렛수는 1~99만 받는다
+  if (pallets !== null && pallets >= 1 && pallets <= 99 && pallets !== current.pallet_count) patch.pallet_count = pallets
+  return Object.keys(patch).length > 0 ? patch : null
 }

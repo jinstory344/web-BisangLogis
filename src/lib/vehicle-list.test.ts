@@ -7,6 +7,7 @@ import {
   sortVehicles,
   togglePinned,
   vehicleCopyText,
+  vehicleSpecFromDispatch,
 } from "@/lib/vehicle-list"
 
 const v = (id: string, plate_no: string, driver_name: string, created_at: string) => ({
@@ -94,5 +95,25 @@ describe("groupRecentDispatchesByVehicle", () => {
       ["d2", null],
     ])
     expect(result.v2.items.map((i) => i.id)).toEqual(["d4"])
+  })
+})
+
+describe("vehicleSpecFromDispatch (배차 차종·파렛 → 차량 정보)", () => {
+  const empty = { vehicle_type: null, pallet_count: null }
+  it("고른 차종·파렛을 넣는다", () => {
+    expect(vehicleSpecFromDispatch({ cargo_box_type: "REFRIGERATED", pallet_count: 14 }, empty)).toEqual({
+      vehicle_type: "냉동탑",
+      pallet_count: 14,
+    })
+  })
+  it("빈 칸·기타·같은 값은 건드리지 않는다", () => {
+    expect(vehicleSpecFromDispatch({ cargo_box_type: "", pallet_count: null }, empty)).toBeNull()
+    expect(vehicleSpecFromDispatch({ cargo_box_type: "OTHER", pallet_count: 0 }, empty)).toBeNull()
+    expect(
+      vehicleSpecFromDispatch({ cargo_box_type: "WING", pallet_count: 10 }, { vehicle_type: "냉장윙", pallet_count: 10 })
+    ).toBeNull()
+    expect(
+      vehicleSpecFromDispatch({ cargo_box_type: null, pallet_count: 8 }, { vehicle_type: "카고", pallet_count: 6 })
+    ).toEqual({ pallet_count: 8 })
   })
 })
