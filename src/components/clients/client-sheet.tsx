@@ -17,6 +17,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet"
 import { formatBizNo } from "@/lib/biz-no"
+import { groupClientsByFirstWord } from "@/lib/client-groups"
 import type { ClientCategory } from "@/lib/supabase/database.types"
 import { cn } from "@/lib/utils"
 
@@ -47,6 +48,8 @@ export function ClientSheet({
   allCount,
   countLabels = ["이 기간에 배차 있음", "배차 없음"],
   unit = "건",
+  onPickGroup,
+  selectedGroup,
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -61,6 +64,10 @@ export function ClientSheet({
   countLabels?: [string, string]
   /** 건수 뒤 단위 ("건", "개") */
   unit?: string
+  /** 있으면 맨 위에 "묶음"(이름 첫 단어가 같은 거래처들, 예: 조은푸드 2곳)을 보여 주고, 누르면 그 묶음을 고른다 */
+  onPickGroup?: (group: { name: string; ids: string[] }) => void
+  /** 지금 고른 묶음 이름 */
+  selectedGroup?: string
 }) {
   const [clients, setClients] = useState<ListedClient[]>([])
   const [query, setQuery] = useState("")
@@ -167,12 +174,51 @@ export function ClientSheet({
               onClick={() => pick(null)}
               className={rowClass}
             >
-              <span className={cn("text-base", selectedId === "" && "font-semibold text-red-400")}>
+              <span className={cn("text-base", selectedId === "" && !selectedGroup && "font-semibold text-red-400")}>
                 전체
               </span>
               <span className="text-xs text-muted-foreground tabular-nums">{allCount ?? 0}{unit}</span>
             </button>
           ) : null}
+
+          {onPickGroup && !q
+            ? (() => {
+                const groups = groupClientsByFirstWord(clients)
+                if (groups.length === 0) return null
+                return (
+                  <div>
+                    <p className="pt-3 pb-0.5 text-xs text-muted-foreground">묶음</p>
+                    {groups.map((group) => {
+                      const isSelected = selectedGroup === group.name
+                      const total = counts ? group.ids.reduce((sum, id) => sum + (counts[id] ?? 0), 0) : null
+                      return (
+                        <button
+                          key={group.name}
+                          type="button"
+                          aria-pressed={isSelected}
+                          onClick={() => {
+                            onPickGroup(group)
+                            onOpenChange(false)
+                          }}
+                          className={rowClass}
+                        >
+                          <span className={cn("min-w-0 text-base", isSelected && "font-semibold text-red-400")}>
+                            {group.name}
+                            <span className="ml-1.5 text-xs text-muted-foreground">{group.ids.length}곳</span>
+                          </span>
+                          {total !== null ? (
+                            <span className="shrink-0 text-xs text-muted-foreground tabular-nums">
+                              {total}
+                              {unit}
+                            </span>
+                          ) : null}
+                        </button>
+                      )
+                    })}
+                  </div>
+                )
+              })()
+            : null}
 
           {sections.map((section) =>
             section.clients.length === 0 ? null : (

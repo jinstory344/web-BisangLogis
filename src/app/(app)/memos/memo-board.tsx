@@ -78,6 +78,8 @@ export function MemoBoard({
   const [memos, setMemos] = useState(initialMemos)
   const [kind, setKind] = useState<Tab>(initialKind)
   const [clientId, setClientId] = useState(initialClientId)
+  // 거래처 묶음(이름 첫 단어가 같은 곳들, 예: 조은푸드 육대장·이화수)을 고르면 그 거래처들 메모를 함께 본다
+  const [group, setGroup] = useState<{ name: string; ids: string[] } | null>(null)
   const [query, setQuery] = useState("")
   const [isClientOpen, setIsClientOpen] = useState(false)
   // 순서 바꾸기: 보이는 목록(전체 또는 고른 거래처)에서 한 칸씩 위·아래로 옮긴다
@@ -114,7 +116,9 @@ export function MemoBoard({
   const shown = sortMemos(
     ofKind.filter(
       (m) =>
-        (!clientId || m.client_id === clientId || m.client_id === null) &&
+        (group
+          ? m.client_id === null || group.ids.includes(m.client_id)
+          : !clientId || m.client_id === clientId || m.client_id === null) &&
         (!q || normalize(m.title).includes(q) || normalize(m.body).includes(q))
     )
   )
@@ -238,7 +242,7 @@ export function MemoBoard({
 
         <div className="mt-2 flex min-h-10 items-center justify-between gap-2 text-sm text-muted-foreground">
           <span className="min-w-0 truncate">
-            <span className="font-semibold text-foreground">{clientId ? clientNames[clientId] ?? "거래처" : "전체"}</span>{" "}
+            <span className="font-semibold text-foreground">{group ? group.name : clientId ? clientNames[clientId] ?? "거래처" : "전체"}</span>{" "}
             메모 {shown.length}개
           </span>
           <span className="flex shrink-0 items-center gap-1.5">
@@ -271,10 +275,10 @@ export function MemoBoard({
             onClick={() => setIsClientOpen(true)}
             className={cn(
               "inline-flex h-9 max-w-44 shrink-0 items-center gap-1 rounded-full px-3.5 text-sm",
-              clientId ? "bg-foreground font-semibold text-background" : "bg-muted text-foreground"
+              clientId || group ? "bg-foreground font-semibold text-background" : "bg-muted text-foreground"
             )}
           >
-            <span className="truncate">{clientId ? clientNames[clientId] ?? "거래처" : "거래처"}</span>
+            <span className="truncate">{group ? group.name : clientId ? clientNames[clientId] ?? "거래처" : "거래처"}</span>
             <ChevronDown className="size-4 shrink-0" />
           </button>
           </span>
@@ -423,7 +427,15 @@ export function MemoBoard({
         allCount={ofKind.length}
         countLabels={["메모 있음", "메모 없음"]}
         unit="개"
-        onPick={(client) => setClientId(client?.id ?? "")}
+        onPick={(client) => {
+          setGroup(null)
+          setClientId(client?.id ?? "")
+        }}
+        onPickGroup={(picked) => {
+          setGroup(picked)
+          setClientId("")
+        }}
+        selectedGroup={group?.name}
       />
 
       <MemoEditor
