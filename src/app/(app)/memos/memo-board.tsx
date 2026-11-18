@@ -17,23 +17,23 @@ import { swapMemoOrderAction, type MemoItem } from "./actions"
 const normalize = (text: string) => text.replace(/\s/g, "").toLowerCase()
 
 type Tab = "ALL" | MemoKind
-/** 종류별 색: 업무 초록 · 배차 파랑 (왼쪽 띠 + 은은한 바탕) · 오더 노랑 (위쪽 띠, 바탕 없음) */
+/** 종류별 색: 업무 초록 · 배차 파랑 · 오더 노랑 — 카드는 모두 같은 회색, 왼쪽 띠로만 구분 */
 const KIND_STYLE: Record<MemoKind, { tab: string; row: string; tag: string; short: string }> = {
   WORK: {
     tab: "bg-[#355a43] font-semibold text-[#e0f4e7]",
-    row: "border-l-4 border-l-[#5a9a72] bg-[#25352c]",
+    row: "border-l-4 border-l-[#5a9a72]",
     tag: "bg-[#355a43] text-[#d0eedb]",
     short: "업무",
   },
   DISPATCH: {
     tab: "bg-[#34507d] font-semibold text-[#e3ecfb]",
-    row: "border-l-4 border-l-[#5b7fb8] bg-[#252f40]",
+    row: "border-l-4 border-l-[#5b7fb8]",
     tag: "bg-[#34507d] text-[#d3e1f7]",
     short: "배차",
   },
   ORDER: {
     tab: "bg-[#5e4a22] font-semibold text-[#f2dfaa]",
-    row: "border-t-4 border-t-[#d6a84a] bg-muted/60",
+    row: "border-l-4 border-l-[#d6a84a]",
     tag: "bg-[#5e4a22] text-[#f2dfaa]",
     short: "오더",
   },
@@ -222,10 +222,10 @@ export function MemoBoard({
       </StickyHead>
 
       {kind === "ORDER" && shown.length > 0 ? (
-        // 오더메모: 한 줄에 카드 2개 — 위 노란 줄, 꼬리표 · 제목 · 내용 2줄 · 거래처와 복사
+        // 오더메모: 한 줄에 카드 2개 — 왼쪽 노란 줄, 꼬리표 · 제목 · 내용 2줄 · 거래처와 복사
         <div className="mt-1 grid grid-cols-2 gap-2 md:mt-3">
           {shown.map((memo) => (
-            <div key={memo.id} className="flex min-h-32 flex-col rounded-xl border-t-4 border-t-[#d6a84a] bg-muted/60 p-2.5">
+            <div key={memo.id} className={cn("flex min-h-32 flex-col rounded-xl bg-muted/60 p-2.5", KIND_STYLE.ORDER.row)}>
               <button
                 type="button"
                 disabled={isReordering}
@@ -274,7 +274,7 @@ export function MemoBoard({
           <div
             key={memo.id}
             className={cn(
-              "flex items-center gap-2 rounded-xl py-2 pr-2 pl-3",
+              "flex items-center gap-2 rounded-xl bg-muted/60 py-2 pr-2 pl-3",
               KIND_STYLE[memo.kind].row
             )}
           >
