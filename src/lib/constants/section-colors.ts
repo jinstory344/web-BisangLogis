@@ -50,4 +50,6 @@ export const TAB_ACTIVE_COLOR: Record<string, string> = {
   "/dispatches": SECTION_COLORS.dispatch.tab,
   "/vehicles": SECTION_COLORS.vehicle.tab,
   "/clients": SECTION_COLORS.client.tab,
+  // 메모는 따로 색을 두지 않고 흰 회색 (메모 카드의 업무·배차·오더 색과 겹치지 않게)
+  "/memos": "data-[active=true]:text-[#d4d4d8]",
 }

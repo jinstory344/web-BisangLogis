@@ -21,7 +21,7 @@ export interface NavItem {
 }
 
 /**
- * 모바일 하단 탭: [오늘 날짜(비상)] [배차] [차량] [거래처] [☰ 메뉴] (가계부 앱 방식).
+ * 모바일 하단 탭: [오늘 날짜(비상)] [배차] [차량] [거래처] [메모] [☰ 메뉴] (가계부 앱 방식).
  * 등록은 하단 탭 대신 화면 오른쪽 아래 떠 있는 ＋ 버튼(FloatingActions)으로 한다.
  * (데스크톱 사이드바는 아래 sidebarNavGroups를 따로 쓴다.)
  */
@@ -30,6 +30,7 @@ export const primaryNavItems: NavItem[] = [
   { label: "배차", href: "/dispatches", icon: Truck },
   { label: "차량", href: "/vehicles", icon: Car },
   { label: "거래처", href: "/clients", icon: Users },
+  { label: "메모", href: "/memos", icon: NotebookPen },
 ]
 
 /** 모바일 하단 "메뉴"(☰)를 누르면 위로 펼쳐지는 목록. 휴지통·엑셀 가져오기·로그아웃은 설정 화면 안에 있다. */
@@ -37,7 +38,6 @@ export const secondaryNavItems: NavItem[] = [
   { label: "매출 목록", href: "/sales", icon: TrendingUp },
   { label: "지출 목록", href: "/expenses", icon: Wallet },
   { label: "통계", href: "/stats", icon: BarChart3 },
-  { label: "메모", href: "/memos", icon: NotebookPen },
   { label: "계산서", href: "/tax-invoices", icon: Receipt, soon: true },
   { label: "설정", href: "/settings", icon: Settings },
 ]

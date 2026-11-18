@@ -205,7 +205,7 @@ export function MemoBoard({
               aria-pressed={kind === value}
               onClick={() => setKind(value)}
               className={cn(
-                "inline-flex h-11 min-w-0 items-center justify-center gap-1 rounded-full text-[15px] whitespace-nowrap",
+                "inline-flex h-10 min-w-0 items-center justify-center gap-1 rounded-full text-[14px] whitespace-nowrap",
                 kind !== value
                   ? "bg-muted text-muted-foreground"
                   : value === "ALL"
