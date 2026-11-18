@@ -170,10 +170,10 @@ export function VehicleList({
                 onClick={() => setIsReordering((v) => !v)}
                 className={cn(
                   "flex size-8 items-center justify-center rounded-full",
-                  isReordering ? "bg-[#c65a55] text-white" : "bg-muted text-foreground"
+                  isReordering ? "text-[#e06a64]" : "text-foreground/80"
                 )}
               >
-                {isReordering ? <Check className="size-4" /> : <ArrowUpDown className="size-4" />}
+                {isReordering ? <Check className="size-5" strokeWidth={2.5} /> : <ArrowUpDown className="size-[18px]" />}
               </button>
             ) : null}
           </div>
