@@ -64,8 +64,8 @@ export function MobileTabBar() {
             data-active={pendingHref ? false : isMoreActive || moreOpen}
             className={`${TAB_CLASS_NAME} text-muted-foreground`}
           >
-            <Menu className="size-5" />
-            <span>메뉴</span>
+            {/* 메뉴는 이름 없이 아이콘만 (aria-label로 읽힌다) */}
+            <Menu className="size-6" />
           </button>
         </PopoverTrigger>
         {/* 메뉴 탭 바로 위에 세로 목록으로 펼친다 (엄지가 닿는 오른쪽 아래). 바깥을 누르면 닫힌다. */}
