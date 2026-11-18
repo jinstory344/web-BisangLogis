@@ -1,6 +1,6 @@
 "use client"
 
-import { ChevronDown, ChevronUp, LayoutGrid, List, Plus, Search, Star } from "lucide-react"
+import { ArrowUpDown, Check, ChevronDown, ChevronUp, LayoutGrid, List, Plus, Search, Star } from "lucide-react"
 import { useEffect, useState } from "react"
 import { toast } from "sonner"
 
@@ -210,13 +210,14 @@ export function MemoBoard({
             <button
               type="button"
               aria-pressed={isReordering}
+              aria-label={isReordering ? "순서 바꾸기 끝내기" : "순서 바꾸기"}
               onClick={() => setIsReordering((v) => !v)}
               className={cn(
-                "h-9 rounded-full px-3 text-sm",
-                isReordering ? "bg-red-400/90 font-semibold text-white" : "text-muted-foreground underline underline-offset-4"
+                "flex size-9 shrink-0 items-center justify-center rounded-full",
+                isReordering ? "bg-[#c65a55] text-white" : "bg-muted text-foreground"
               )}
             >
-              {isReordering ? "완료" : "순서 바꾸기"}
+              {isReordering ? <Check className="size-4" /> : <ArrowUpDown className="size-4" />}
             </button>
           ) : null}
           <button
