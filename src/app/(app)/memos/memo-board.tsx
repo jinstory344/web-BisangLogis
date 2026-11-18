@@ -227,15 +227,6 @@ export function MemoBoard({
             메모 {shown.length}개
           </span>
           <span className="flex shrink-0 items-center gap-1.5">
-          {/* 버튼 순서(왼→오): 2칸↔1줄 보기 · 순서 바꾸기 · 거래처 */}
-          <button
-            type="button"
-            aria-label={view === "grid" ? "한 줄 보기로" : "두 칸 보기로"}
-            onClick={toggleView}
-            className="flex size-9 shrink-0 items-center justify-center rounded-full bg-muted text-foreground"
-          >
-            {view === "grid" ? <List className="size-4" /> : <LayoutGrid className="size-4" />}
-          </button>
           {shown.length > 1 ? (
             <button
               type="button"
@@ -250,6 +241,15 @@ export function MemoBoard({
               {isReordering ? <Check className="size-4" /> : <ArrowUpDown className="size-4" />}
             </button>
           ) : null}
+          {/* 버튼 순서(왼→오): 순서 바꾸기 · 2칸↔1줄 보기 · 거래처 */}
+          <button
+            type="button"
+            aria-label={view === "grid" ? "한 줄 보기로" : "두 칸 보기로"}
+            onClick={toggleView}
+            className="flex size-9 shrink-0 items-center justify-center rounded-full bg-muted text-foreground"
+          >
+            {view === "grid" ? <List className="size-4" /> : <LayoutGrid className="size-4" />}
+          </button>
           <button
             type="button"
             aria-haspopup="dialog"
