@@ -1,3 +1,4 @@
+import { MessageSquare } from "lucide-react"
 import type { ReactNode } from "react"
 
 import { CallButton } from "@/components/common/call-button"
@@ -14,7 +15,10 @@ export function ContactRow({
   extra,
   phone,
   labelWidthClassName = "w-14",
+  sms = false,
 }: {
+  /** 전화 버튼 왼쪽에 빈 문자창 바로 열기 버튼도 둘지 */
+  sms?: boolean
   /** 왼쪽 제목 (예: "담당자", "차량"). 없으면 제목 칸 없이 */
   label?: string
   name: ReactNode
@@ -31,6 +35,15 @@ export function ContactRow({
         {extra ? <span> · {extra}</span> : null}
         {phone ? <span className="ml-1.5 text-muted-foreground tabular-nums">{formatPhoneNumber(phone)}</span> : null}
       </span>
+      {phone && sms ? (
+        <a
+          href={`sms:${phone.replace(/[^\d+]/g, "")}`}
+          aria-label={`${typeof name === "string" ? name : ""}에게 문자`}
+          className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg bg-blue-500/15 text-blue-300 active:bg-blue-500/25"
+        >
+          <MessageSquare className="size-4" aria-hidden />
+        </a>
+      ) : null}
       {phone ? <CallButton phone={phone} label={`${typeof name === "string" ? name : ""}에게 전화`} /> : null}
     </div>
   )

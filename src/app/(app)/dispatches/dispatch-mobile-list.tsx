@@ -245,7 +245,7 @@ export function DispatchActionSheetBody({
             <ContactRow label="담당자" name={contactName || "-"} phone={contactPhone} />
           ) : null}
           {plate || driverName || driverPhone ? (
-            <ContactRow label="차량" name={driverName || "-"} extra={plate || undefined} phone={driverPhone} />
+            <ContactRow label="차량" name={driverName || "-"} extra={plate || undefined} phone={driverPhone} sms />
           ) : null}
           {details.map((detail) => (
             <div key={detail.label} className="flex min-h-11 items-center gap-3 border-b py-1.5 text-sm last:border-b-0">
