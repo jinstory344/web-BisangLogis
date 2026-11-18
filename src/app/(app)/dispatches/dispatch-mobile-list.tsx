@@ -91,8 +91,9 @@ export function DispatchMobileList({
     <div className="flex flex-col gap-3">
       {/* 건수는 위 거래처 줄에 있다. 거래처로 걸렀을 때만 그 거래처의 운임·수수료를 보여 준다 */}
       {filteredTotals ? (
-        <p className="flex min-h-9 items-center text-xs text-muted-foreground tabular-nums">
-          운임 {formatKRW(filteredTotals.freightAmount)} · 수수료 {formatKRW(filteredTotals.feeAmount)}
+        <p className="flex min-h-9 items-center gap-1 text-sm text-muted-foreground tabular-nums">
+          Freight <span className="text-foreground">{formatKRW(filteredTotals.freightAmount)}</span> · Fee{" "}
+          <span className="text-foreground">{formatKRW(filteredTotals.feeAmount)}</span>
         </p>
       ) : null}
 
