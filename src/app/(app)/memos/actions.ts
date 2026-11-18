@@ -38,7 +38,7 @@ export async function saveMemoAction(input: {
   if (!title) return { ok: false, error: "제목을 입력하세요" }
   if (title.length > 100) return { ok: false, error: "제목은 100자까지예요" }
   if (input.body.length > 5000) return { ok: false, error: "내용은 5000자까지예요" }
-  if (input.kind !== "DISPATCH" && input.kind !== "WORK") return { ok: false, error: "메모 종류가 잘못됐어요" }
+  if (!["DISPATCH", "WORK", "ORDER"].includes(input.kind)) return { ok: false, error: "메모 종류가 잘못됐어요" }
 
   const values = {
     kind: input.kind,

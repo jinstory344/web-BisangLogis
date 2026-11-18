@@ -19,7 +19,7 @@ export interface MemoDraft {
   pinned: boolean
 }
 
-const KIND_LABEL: Record<MemoKind, string> = { DISPATCH: "배차메모", WORK: "업무메모" }
+const KIND_LABEL: Record<MemoKind, string> = { WORK: "업무메모", DISPATCH: "배차메모", ORDER: "오더메모" }
 
 /**
  * 메모 쓰기·고치기 판 (아래에서 거의 화면 가득 올라온다).
@@ -144,8 +144,8 @@ export function MemoEditor({
 
               {showSettings ? (
                 <div className="flex flex-col gap-2">
-                  <div className="grid grid-cols-2 gap-1.5">
-                    {(["DISPATCH", "WORK"] as const).map((kind) => (
+                  <div className="grid grid-cols-3 gap-1.5">
+                    {(["WORK", "DISPATCH", "ORDER"] as const).map((kind) => (
                       <button key={kind} type="button" className={segClass(value.kind === kind)} onClick={() => set("kind", kind)}>
                         {KIND_LABEL[kind]}
                       </button>

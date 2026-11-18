@@ -22,7 +22,9 @@ export default async function MemosPage({
     <MemoBoard
       initialMemos={memos}
       clientNames={Object.fromEntries((clientsRes.data ?? []).map((c) => [c.id, c.name]))}
-      initialKind={params.tab === "work" ? "WORK" : params.tab === "dispatch" ? "DISPATCH" : "ALL"}
+      initialKind={
+        params.tab === "work" ? "WORK" : params.tab === "dispatch" ? "DISPATCH" : params.tab === "order" ? "ORDER" : "ALL"
+      }
       initialClientId={params.client ?? ""}
     />
   )

@@ -17,10 +17,33 @@ import { swapMemoOrderAction, type MemoItem } from "./actions"
 const normalize = (text: string) => text.replace(/\s/g, "").toLowerCase()
 
 type Tab = "ALL" | MemoKind
+/** 종류별 색: 업무 초록 · 배차 파랑 (왼쪽 띠 + 은은한 바탕) · 오더 노랑 (위쪽 띠, 바탕 없음) */
+const KIND_STYLE: Record<MemoKind, { tab: string; row: string; tag: string; short: string }> = {
+  WORK: {
+    tab: "bg-[#355a43] font-semibold text-[#e0f4e7]",
+    row: "border-l-4 border-l-[#5a9a72] bg-[#25352c]",
+    tag: "bg-[#355a43] text-[#d0eedb]",
+    short: "업무",
+  },
+  DISPATCH: {
+    tab: "bg-[#34507d] font-semibold text-[#e3ecfb]",
+    row: "border-l-4 border-l-[#5b7fb8] bg-[#252f40]",
+    tag: "bg-[#34507d] text-[#d3e1f7]",
+    short: "배차",
+  },
+  ORDER: {
+    tab: "bg-[#5e4a22] font-semibold text-[#f2dfaa]",
+    row: "border-t-4 border-t-[#d6a84a] bg-muted/60",
+    tag: "bg-[#5e4a22] text-[#f2dfaa]",
+    short: "오더",
+  },
+}
+
 const TABS: [Tab, string][] = [
   ["ALL", "전체"],
-  ["DISPATCH", "배차메모"],
   ["WORK", "업무메모"],
+  ["DISPATCH", "배차메모"],
+  ["ORDER", "오더메모"],
 ]
 
 /**
@@ -128,7 +151,7 @@ export function MemoBoard({
           </button>
         </div>
 
-        <nav className="mt-3 grid grid-cols-3 gap-1.5">
+        <nav className="mt-3 grid grid-cols-4 gap-1.5">
           {TABS.map(([value, label]) => (
             <button
               key={value}
@@ -136,14 +159,12 @@ export function MemoBoard({
               aria-pressed={kind === value}
               onClick={() => setKind(value)}
               className={cn(
-                "inline-flex h-9 items-center justify-center gap-1 rounded-full text-sm",
+                "inline-flex h-9 min-w-0 items-center justify-center gap-1 rounded-full text-[13px] whitespace-nowrap",
                 kind !== value
                   ? "bg-muted text-muted-foreground"
-                  : value === "DISPATCH"
-                    ? "bg-[#34507d] font-semibold text-[#e3ecfb]"
-                    : value === "WORK"
-                      ? "bg-[#355a43] font-semibold text-[#e0f4e7]"
-                      : "bg-foreground font-semibold text-background"
+                  : value === "ALL"
+                    ? "bg-foreground font-semibold text-background"
+                    : KIND_STYLE[value].tab
               )}
             >
               {label}
@@ -200,14 +221,61 @@ export function MemoBoard({
         </label>
       </StickyHead>
 
+      {kind === "ORDER" && shown.length > 0 ? (
+        // 오더메모: 한 줄에 카드 2개 — 위 노란 줄, 꼬리표 · 제목 · 내용 2줄 · 거래처와 복사
+        <div className="mt-1 grid grid-cols-2 gap-2 md:mt-3">
+          {shown.map((memo) => (
+            <div key={memo.id} className="flex min-h-32 flex-col rounded-xl border-t-4 border-t-[#d6a84a] bg-muted/60 p-2.5">
+              <button
+                type="button"
+                disabled={isReordering}
+                onClick={() => openEditor(memo)}
+                className="flex min-w-0 flex-1 flex-col items-start gap-1 text-left"
+              >
+                <span className="flex items-center gap-1">
+                  <span className="rounded-full bg-[#d6a84a] px-2 py-px text-[10px] font-bold text-[#241c0c]">오더</span>
+                  {memo.pinned ? <Star className="size-3 shrink-0 fill-amber-400 text-amber-400" /> : null}
+                </span>
+                <span className="line-clamp-1 text-sm font-bold">{memo.title}</span>
+                {memo.body ? (
+                  <span className="line-clamp-2 text-xs leading-snug whitespace-pre-line text-muted-foreground">{memo.body}</span>
+                ) : null}
+              </button>
+              <div className="mt-2 flex items-center justify-between gap-1">
+                <span className="min-w-0 truncate rounded-full bg-background/60 px-2 py-0.5 text-[11px] text-foreground/90">
+                  {memo.client_id ? clientNames[memo.client_id] ?? "거래처" : "공통"}
+                </span>
+                {isReordering ? (
+                  <span className="flex shrink-0 gap-0.5">
+                    {([-1, 1] as const).map((dir) => (
+                      <button
+                        key={dir}
+                        type="button"
+                        aria-label={dir < 0 ? "앞으로" : "뒤로"}
+                        disabled={memoSwapNeighbor(shown, memo.id, dir) === null || movingId !== null}
+                        onClick={() => move(memo, dir)}
+                        className="flex size-8 items-center justify-center rounded-full bg-background/60 disabled:opacity-30"
+                      >
+                        {dir < 0 ? <ChevronUp className="size-4" /> : <ChevronDown className="size-4" />}
+                      </button>
+                    ))}
+                  </span>
+                ) : (
+                  <CopyMemoButton memo={memo} />
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : null}
+
       <div className="mt-1 flex flex-col gap-2 md:mt-3">
-        {shown.map((memo) => (
+        {(kind === "ORDER" ? [] : shown).map((memo) => (
           <div
             key={memo.id}
             className={cn(
-              "flex items-center gap-2 rounded-xl border-l-4 py-2 pr-2 pl-3",
-              // 배차 = 파랑, 업무 = 초록 — 카드 바탕까지 은은하게 (눈이 덜 피로한 어두운 톤)
-              memo.kind === "DISPATCH" ? "border-l-[#5b7fb8] bg-[#252f40]" : "border-l-[#5a9a72] bg-[#25352c]"
+              "flex items-center gap-2 rounded-xl py-2 pr-2 pl-3",
+              KIND_STYLE[memo.kind].row
             )}
           >
           <button
@@ -225,10 +293,10 @@ export function MemoBoard({
                 <span
                   className={cn(
                     "shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold",
-                    memo.kind === "DISPATCH" ? "bg-[#34507d] text-[#d3e1f7]" : "bg-[#355a43] text-[#d0eedb]"
+                    KIND_STYLE[memo.kind].tag
                   )}
                 >
-                  {memo.kind === "DISPATCH" ? "배차" : "업무"}
+                  {KIND_STYLE[memo.kind].short}
                 </span>
               ) : null}
               <span

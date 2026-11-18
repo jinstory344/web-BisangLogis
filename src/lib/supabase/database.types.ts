@@ -233,9 +233,9 @@ export type SettingsRow = BaseColumns & {
   popbill_is_test: boolean
 }
 
-export type MemoKind = "DISPATCH" | "WORK"
+export type MemoKind = "DISPATCH" | "WORK" | "ORDER"
 
-/** 메모 — DISPATCH 배차메모(차주에게 보내는 문구) / WORK 업무메모. client_id 없으면 공통. */
+/** 메모 — DISPATCH 배차메모(차주에게 보내는 문구) / WORK 업무메모 / ORDER 오더메모. client_id 없으면 공통. */
 export type MemoRow = BaseColumns & {
   kind: MemoKind
   client_id: string | null
