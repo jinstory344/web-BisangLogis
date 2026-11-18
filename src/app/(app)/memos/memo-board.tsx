@@ -1,6 +1,6 @@
 "use client"
 
-import { ArrowUpDown, Check, ChevronDown, ChevronUp, LayoutGrid, List, Plus, Search, Star } from "lucide-react"
+import { ArrowUpDown, Check, ChevronDown, ChevronUp, LayoutGrid, List, Plus, Search, Star, X } from "lucide-react"
 import { useEffect, useState } from "react"
 import { toast } from "sonner"
 
@@ -186,15 +186,30 @@ export function MemoBoard({
           </button>
         </div>
 
-        <label className="mt-3 flex h-11 items-center gap-2 rounded-xl bg-muted px-3">
-          <Search className="size-4 shrink-0 text-muted-foreground" />
+        {/* 차량·거래처 검색창과 같은 모양 (테두리·그림자·지우기 버튼) */}
+        <label className="mt-3 flex h-13 items-center gap-2.5 rounded-2xl border border-white/15 bg-card px-3.5 shadow-md shadow-black/25 focus-within:border-white/30">
+          <Search className="size-5 shrink-0 text-muted-foreground" />
           <input
+            type="search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="제목·내용으로 찾기"
+            aria-label="제목·내용으로 찾기"
             enterKeyHint="search"
-            className="min-w-0 flex-1 bg-transparent text-base outline-none placeholder:text-muted-foreground"
+            className="h-full min-w-0 flex-1 bg-transparent text-base outline-none placeholder:text-muted-foreground [&::-webkit-search-cancel-button]:hidden"
           />
+          {query ? (
+            <button
+              type="button"
+              aria-label="검색어 지우기"
+              onClick={() => setQuery("")}
+              className="-mr-1.5 flex size-9 shrink-0 items-center justify-center"
+            >
+              <span className="flex size-5 items-center justify-center rounded-full bg-muted-foreground/60 text-card">
+                <X className="size-3.5" strokeWidth={3} />
+              </span>
+            </button>
+          ) : null}
         </label>
 
         <nav className="mt-2.5 grid grid-cols-4 gap-1.5">
