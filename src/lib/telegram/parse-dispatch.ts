@@ -96,9 +96,50 @@ export function findVehicle(vehicles: VehicleOption[], plateNo: string): Vehicle
 const PLATE = /^((?:[가-힣]{2})?\d{2,3}[가-힣]\d{4})\s*(.*)$/
 const PHONE = /(01\d[-\s]?\d{3,4}[-\s]?\d{4})/
 
+/**
+ * 거래처 줄의 단어들로 거래처를 고른다. 몇 단어를 거래처 이름으로 썼는지도 돌려준다(나머지는 담당자).
+ * 묶음(이름 첫 단어가 같은 곳, 예: 조은푸드 육대장·조은푸드 이화수)은
+ * "조은푸드 육대장" · "육대장" · "조은푸드"(그중 가장 최근에 배차한 곳) 모두 된다.
+ */
+export function pickClient(
+  clients: ClientOption[],
+  words: string[],
+  recentClientIds: string[] = []
+): { client: ClientOption; used: number } | "ambiguous" | null {
+  const [head, next] = words
+  if (!head) return null
+  const found = findByPrefix(clients, (c) => c.name, head)
+  if (found && found !== "ambiguous") return { client: found, used: 1 }
+
+  if (found === "ambiguous") {
+    const q = squash(head)
+    const candidates = clients.filter((c) => squash(c.name).startsWith(q))
+    // "조은푸드 육대장": 두 단어를 붙여서 다시 찾기
+    if (next) {
+      const two = findByPrefix(candidates, (c) => c.name, head + next)
+      if (two && two !== "ambiguous") return { client: two, used: 2 }
+    }
+    // "조은푸드": 모두 첫 단어가 같은 묶음이면 가장 최근에 배차한 곳
+    const firstWords = new Set(candidates.map((c) => squash(c.name.trim().split(/\s+/)[0])))
+    if (firstWords.size === 1 && firstWords.has(q)) {
+      const recent = recentClientIds.map((id) => candidates.find((c) => c.id === id)).find(Boolean)
+      if (recent) return { client: recent, used: 1 }
+    }
+    return "ambiguous"
+  }
+
+  // "육대장": 여러 단어 이름의 뒷부분과 똑같으면
+  const q = squash(head)
+  const byTail = clients.filter((c) => {
+    const parts = c.name.trim().split(/\s+/)
+    return parts.length >= 2 && squash(parts.slice(1).join("")) === q
+  })
+  return byTail.length === 1 ? { client: byTail[0], used: 1 } : null
+}
+
 export function parseDispatchLines(
   lines: string[],
-  ctx: { today: string; clients: ClientOption[]; vehicles: VehicleOption[] }
+  ctx: { today: string; clients: ClientOption[]; vehicles: VehicleOption[]; recentClientIds?: string[] }
 ): ParseResult<ParsedDispatch> {
   let date: string | null = null
   let dropoff: DropoffType | null = null
@@ -173,20 +214,22 @@ export function parseDispatchLines(
       continue
     }
 
-    if (client === null) {
-      const phone: string | null = line.match(PHONE)?.[1] ?? null
-      const [head, ...contact] = line.replace(PHONE, " ").split(/[\s,，]+/).filter(Boolean)
-      const found = findByPrefix(ctx.clients, (c) => c.name, head)
-      if (found === "ambiguous") {
-        return { ok: false, error: `"${head}"(으)로 시작하는 거래처가 여러 곳이에요. 이름을 조금 더 써 주세요.` }
-      }
-      if (found) {
-        client = { id: found.id, name: found.name, contact: contact.join(" ") || null, phone }
-        continue
-      }
-    }
-
     places.push(line)
+  }
+
+  // 거래처 줄: 맨 뒤에서부터 거래처로 읽히는 첫 줄 (상차지에 "조은푸드"처럼 거래처 이름이 들어가도 끝 줄이 거래처)
+  for (let i = places.length - 1; i >= 0; i--) {
+    const phone: string | null = places[i].match(PHONE)?.[1] ?? null
+    const words = places[i].replace(PHONE, " ").split(/[\s,，]+/).filter(Boolean)
+    const found = pickClient(ctx.clients, words, ctx.recentClientIds)
+    if (found === null) continue
+    if (found === "ambiguous") {
+      return { ok: false, error: `"${words[0]}"(으)로 시작하는 거래처가 여러 곳이에요. 이름을 조금 더 써 주세요.` }
+    }
+    const contact = words.slice(found.used)
+    client = { id: found.client.id, name: found.client.name, contact: contact.join(" ") || null, phone }
+    places.splice(i, 1)
+    break
   }
 
   if (!client) {

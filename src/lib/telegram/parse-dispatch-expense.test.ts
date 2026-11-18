@@ -223,3 +223,51 @@ describe("parseExpenseLines", () => {
     expect(parseExpenseLines(["1만", "모르는거"], { today, categories }).ok).toBe(false)
   })
 })
+
+describe("배차 거래처: 묶음(조은푸드 육대장·이화수)", () => {
+  const cs = [
+    { id: "c-yuk", name: "조은푸드 육대장" },
+    { id: "c-ihwa", name: "조은푸드 이화수" },
+    { id: "c-mul", name: "조은물류" },
+  ]
+  const run = (clientLine: string, recentClientIds: string[] = []) =>
+    parseDispatchLines(["인천남동 조은푸드", "광주 삼진냉장", "18만", clientLine], {
+      today,
+      clients: cs,
+      vehicles,
+      recentClientIds,
+    })
+  const pick = (r: ReturnType<typeof run>) => (r.ok ? [r.value.client_id, r.value.contact_name, r.value.origin] : r.error)
+
+  it("'육대장'·'이화수'만 써도 된다", () => {
+    expect(pick(run("육대장"))).toEqual(["c-yuk", null, "인천남동 조은푸드"])
+    expect(pick(run("이화수 김부장"))).toEqual(["c-ihwa", "김부장", "인천남동 조은푸드"])
+  })
+
+  it("'조은푸드 육대장'은 두 단어로 고르고 나머지는 담당자", () => {
+    expect(pick(run("조은푸드 육대장 김부장"))).toEqual(["c-yuk", "김부장", "인천남동 조은푸드"])
+  })
+
+  it("'조은푸드'만 쓰면 묶음 중 가장 최근에 배차한 곳", () => {
+    expect(pick(run("조은푸드", ["c-mul", "c-ihwa", "c-yuk"]))).toEqual(["c-ihwa", null, "인천남동 조은푸드"])
+  })
+
+  it("최근 배차가 없거나 묶음이 아닌 여러 곳('조은')이면 다시 묻는다", () => {
+    expect(run("조은푸드").ok).toBe(false)
+    expect(run("조은", ["c-yuk"]).ok).toBe(false)
+  })
+
+  it("상차지가 '조은푸드'여도 끝 줄의 거래처를 쓴다", () => {
+    const r = parseDispatchLines(["조은푸드", "광주 삼진냉장", "18만", "육대장"], {
+      today,
+      clients: cs,
+      vehicles,
+      recentClientIds: ["c-ihwa"],
+    })
+    expect(r.ok && [r.value.client_id, r.value.origin, r.value.destination]).toEqual([
+      "c-yuk",
+      "조은푸드",
+      "광주 삼진냉장",
+    ])
+  })
+})

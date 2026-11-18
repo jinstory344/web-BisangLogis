@@ -231,9 +231,16 @@ async function handleExpense(chatId: number, lines: string[]) {
 
 async function handleDispatch(chatId: number, lines: string[]) {
   const supabase = createAdminClient()
-  const [clientsRes, vehiclesRes] = await Promise.all([
+  const [clientsRes, vehiclesRes, recentRes] = await Promise.all([
     supabase.from("clients").select("id, name").is("deleted_at", null),
     supabase.from("vehicles").select("id, plate_no, driver_name, driver_phone").is("deleted_at", null),
+    // "조은푸드"만 쓰면 묶음 중 가장 최근에 배차한 곳으로
+    supabase
+      .from("dispatches")
+      .select("client_id")
+      .is("deleted_at", null)
+      .order("created_at", { ascending: false })
+      .limit(300),
   ])
   if (clientsRes.error || vehiclesRes.error) throw new Error("거래처·차량 목록을 못 읽었습니다")
 
@@ -241,6 +248,7 @@ async function handleDispatch(chatId: number, lines: string[]) {
     today: getTodayInSeoul(),
     clients: clientsRes.data,
     vehicles: vehiclesRes.data,
+    recentClientIds: (recentRes.data ?? []).map((r) => r.client_id).filter((id): id is string => !!id),
   })
   if (!parsed.ok) return askAgain(chatId, parsed.error)
   const d = parsed.value
