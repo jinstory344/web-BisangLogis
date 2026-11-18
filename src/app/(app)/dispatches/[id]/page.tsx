@@ -71,6 +71,7 @@ export default async function DispatchDetailPage({
           }
         />
         <Field label="파렛 수량" value={String(dispatch.pallet_count ?? "-")} />
+        <Field label="물량" value={dispatch.cargo_note ?? "-"} />
         <Field
           label="중량"
           value={dispatch.weight_ton != null ? `${dispatch.weight_ton}톤` : "-"}

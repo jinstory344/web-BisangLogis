@@ -299,6 +299,7 @@ async function handleDispatch(chatId: number, lines: string[]) {
     p_contact_phone: d.contact_phone,
     p_memo: d.memo,
     p_cargo_box_type: d.cargo_box_type,
+    p_cargo_note: d.cargo_note,
     p_freight_amount: d.freight_amount,
     p_fee_amount: d.fee_amount,
   })
@@ -308,11 +309,11 @@ async function handleDispatch(chatId: number, lines: string[]) {
   }
   refreshApp("dispatches")
 
-  const cargo = [
+  const carSpec = [
     d.cargo_box_type ? CARGO_BOX_TYPE_LABELS[d.cargo_box_type] : null,
     d.pallet_count !== null ? `${d.pallet_count}파레트` : null,
-    d.weight_ton !== null ? `${d.weight_ton}톤` : null,
   ].filter(Boolean)
+  const cargo = [d.cargo_note, d.weight_ton !== null ? `${d.weight_ton}톤` : null].filter(Boolean)
   const vehicle = [d.plate_no_snapshot, d.driver_name_snapshot, d.driver_phone_snapshot].filter(Boolean)
   const text = [
     `✅ 배차 등록 (${shortDate(d.dispatch_date)} · ${DROPOFF_TYPE_LABELS[d.dropoff_type]})`,
@@ -322,7 +323,8 @@ async function handleDispatch(chatId: number, lines: string[]) {
     vehicle.length > 0
       ? `차량: ${vehicle.join(" ")}${addedVehicle ? " (차량 정보에 새로 추가)" : d.vehicle_id ? "" : " (차량 정보에는 없음)"}`
       : null,
-    cargo.length > 0 ? `차종: ${cargo.join(" · ")}` : null,
+    carSpec.length > 0 ? `차종: ${carSpec.join(" · ")}` : null,
+    cargo.length > 0 ? `물량: ${cargo.join(" · ")}` : null,
     d.memo ? `비고: ${d.memo}` : null,
   ]
     .filter((line) => line !== null)

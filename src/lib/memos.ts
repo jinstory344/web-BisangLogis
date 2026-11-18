@@ -11,13 +11,14 @@ export function formatManwon(amount: number): string {
   return `${man.toLocaleString("ko-KR")}만${cheon ? `${cheon}천` : ""}원`
 }
 
-/** "냉동3p" — 차종(냉동탑은 "냉동"으로 줄임) + 파렛 수 + 톤 */
+/** "냉동3p" — 물량(+톤). 물량을 따로 적기 전의 예전 배차는 차종(냉동탑은 "냉동"으로 줄임) + 파렛 수 + 톤 */
 function cargoLine(dispatch: DispatchRow): string {
+  const ton = dispatch.weight_ton ? ` ${dispatch.weight_ton}톤` : ""
+  if (dispatch.cargo_note) return `${dispatch.cargo_note}${ton}`.trim()
   const box = dispatch.cargo_box_type
     ? CARGO_BOX_TYPE_LABELS[dispatch.cargo_box_type].replace(/탑$/, "") || "탑"
     : ""
   const pallet = dispatch.pallet_count ? `${dispatch.pallet_count}p` : ""
-  const ton = dispatch.weight_ton ? ` ${dispatch.weight_ton}톤` : ""
   return `${box}${pallet}${ton}`.trim()
 }
 

@@ -113,12 +113,13 @@ export function DispatchForm({
   const recentContacts = useRecentDispatchContacts(clientId)
   const feeAmount = form.watch("fee_amount")
   const moreSectionId = useId()
-  // "＋"에 접어 둔 칸(차종·파렛·중량·수수료·비고) 중 값이 있으면(수정·복사) 펼친 채로 연다.
+  // "＋"에 접어 둔 칸(차종·파렛·물량·중량·수수료·비고) 중 값이 있으면(수정·복사) 펼친 채로 연다.
   const [isMoreOpen, setIsMoreOpen] = useState(
     () =>
       defaultValues.cargo_box_type !== "" ||
       defaultValues.pallet_count !== null ||
       defaultValues.weight_ton !== null ||
+      defaultValues.cargo_note.trim() !== "" ||
       defaultValues.fee_amount > 0 ||
       defaultValues.memo.trim() !== ""
   )
@@ -423,7 +424,7 @@ export function DispatchForm({
           onClick={() => setIsMoreOpen((open) => !open)}
           className="flex min-h-11 items-center justify-between gap-2 text-left text-sm text-muted-foreground md:hidden"
         >
-          <span className="truncate">＋ 화물(차종·파렛·톤) · 수수료 · 비고</span>
+          <span className="truncate">＋ 차량(차종·파렛) · 물량 · 수수료 · 비고</span>
           <ChevronDown
             aria-hidden
             className={cn("size-4 shrink-0 transition-transform", isMoreOpen && "rotate-180")}
@@ -434,27 +435,28 @@ export function DispatchForm({
           id={moreSectionId}
           className={cn("flex-col gap-4 md:flex", isMoreOpen ? "flex" : "hidden")}
         >
-          <FormField
-            control={form.control}
-            name="cargo_box_type"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>차종</FormLabel>
-                {/* 선택 해제 = "선택 안 함". 폼 상태의 미선택은 기존 규칙대로 ""이고,
-                    서버 액션이 `|| null`로 정규화해 RPC에 넘긴다. */}
-                <SheetChoice
-                  title="차종"
-                  allowDeselect
-                  options={CARGO_BOX_TYPE_OPTIONS}
-                  value={field.value}
-                  onChange={field.onChange}
-                />
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <div className="grid gap-0 md:grid-cols-2 md:gap-4">
+          {/* 차량(차종·파렛) = 이 배차에 쓰는 차의 종류. 물량(화물) = 싣는 것 — 봇의 "냉동3"은 물량이다. */}
+          <fieldset className="grid gap-0 rounded-xl border px-3 pb-1 md:grid-cols-2 md:gap-4 md:p-3">
+            <legend className="px-1 text-xs text-muted-foreground">차량 (차종·파렛)</legend>
+            <FormField
+              control={form.control}
+              name="cargo_box_type"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>차종</FormLabel>
+                  {/* 선택 해제 = "선택 안 함". 폼 상태의 미선택은 기존 규칙대로 ""이고,
+                      서버 액션이 `|| null`로 정규화해 RPC에 넘긴다. */}
+                  <SheetChoice
+                    title="차종"
+                    allowDeselect
+                    options={CARGO_BOX_TYPE_OPTIONS}
+                    value={field.value}
+                    onChange={field.onChange}
+                  />
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
             <FormField
               control={form.control}
               name="pallet_count"
@@ -475,6 +477,23 @@ export function DispatchForm({
                         )
                       }}
                     />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </fieldset>
+
+          <fieldset className="grid gap-0 rounded-xl border px-3 pb-1 md:grid-cols-2 md:gap-4 md:p-3">
+            <legend className="px-1 text-xs text-muted-foreground">물량 (화물)</legend>
+            <FormField
+              control={form.control}
+              name="cargo_note"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>물량</FormLabel>
+                  <FormControl>
+                    <Input {...field} placeholder="예: 냉동3p" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -506,7 +525,7 @@ export function DispatchForm({
                 </FormItem>
               )}
             />
-          </div>
+          </fieldset>
 
           <div className="md:hidden">{feeField("mobile")}</div>
 

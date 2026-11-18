@@ -48,6 +48,8 @@ export const dispatchFormSchema = z.object({
    */
   pallet_count: z.number().int().min(0).max(9999).nullable(),
   weight_ton: z.number().min(0).max(9999.99).nullable(),
+  /** 물량(화물) — 예: "냉동 3p". 선택 입력 */
+  cargo_note: z.string().trim().max(100),
   vehicle_id: z.string().optional(),
   plate_no_snapshot: z.string().trim(),
   driver_name_snapshot: z.string().trim(),
@@ -76,6 +78,7 @@ export const dispatchFormDefaults: DispatchFormValues = {
   cargo_box_type: "",
   pallet_count: null,
   weight_ton: null,
+  cargo_note: "",
   vehicle_id: "",
   plate_no_snapshot: "",
   driver_name_snapshot: "",
@@ -108,6 +111,7 @@ export function dispatchRowToFormValues(
     cargo_box_type: row.cargo_box_type ?? "",
     pallet_count: row.pallet_count,
     weight_ton: row.weight_ton,
+    cargo_note: row.cargo_note ?? "",
     vehicle_id: row.vehicle_id ?? "",
     plate_no_snapshot: row.plate_no_snapshot ?? "",
     driver_name_snapshot: row.driver_name_snapshot ?? "",
@@ -167,6 +171,7 @@ export function coerceDispatchFormData(
     // 선택 필드가 아예 전송되지 않은 경우(구버전 클라이언트 등)도 "미선택"으로 취급한다.
     cargo_box_type: raw.cargo_box_type ?? "",
     contact_phone: raw.contact_phone ?? "",
+    cargo_note: raw.cargo_note ?? "",
     // 미입력(빈 문자열이거나 아예 전송되지 않음)은 null로 정규화한다.
     // 폼의 buildFormData가 null/undefined 필드를 아예 전송하지 않으므로
     // 두 경우 모두 여기서 null이 된다.

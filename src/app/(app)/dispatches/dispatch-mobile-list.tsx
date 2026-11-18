@@ -204,17 +204,21 @@ export function DispatchActionSheetBody({
   const driverPhone = dispatch.driver_phone_snapshot?.trim() ?? ""
   const plate = dispatch.plate_no_snapshot?.trim() ?? ""
 
-  const cargo = [
+  // 차종(차량 쪽: 차종·파렛)과 물량(화물: 물량·톤)을 따로 보여 준다
+  const carSpec = [
     dispatch.cargo_box_type ? CARGO_BOX_TYPE_LABELS[dispatch.cargo_box_type] : "",
     dispatch.pallet_count != null ? `파렛 ${dispatch.pallet_count}` : "",
-    dispatch.weight_ton != null ? `${dispatch.weight_ton}톤` : "",
   ]
+    .filter(Boolean)
+    .join(" · ")
+  const cargo = [dispatch.cargo_note?.trim() ?? "", dispatch.weight_ton != null ? `${dispatch.weight_ton}톤` : ""]
     .filter(Boolean)
     .join(" · ")
 
   const details: { label: string; value: ReactNode }[] = [
     { label: "하차일", value: DROPOFF_TYPE_LABELS[dispatch.dropoff_type] },
-    { label: "화물", value: cargo },
+    { label: "차종", value: carSpec },
+    { label: "물량", value: cargo },
     {
       label: "운임",
       value:

@@ -38,6 +38,11 @@ describe("memos", () => {
     )
   })
 
+  it("물량이 있으면 차종·파렛 대신 물량(+톤)", () => {
+    const withNote = { ...dispatch, cargo_box_type: "WING", pallet_count: 16, cargo_note: "냉동3p", weight_ton: 1.3 } as DispatchRow
+    expect(buildDispatchInfo(withNote).split("\n")[2]).toBe("냉동3p 1.3톤")
+  })
+
   it("빈 칸은 줄째로 뺀다", () => {
     const bare = {
       ...dispatch,

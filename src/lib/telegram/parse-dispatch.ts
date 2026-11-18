@@ -35,6 +35,8 @@ export type ParsedDispatch = {
   pallet_count: number | null
   weight_ton: number | null
   cargo_box_type: CargoBoxType | null
+  /** 물량(화물). 예: "냉동3p" */
+  cargo_note: string | null
   vehicle_id: string | null
   plate_no_snapshot: string | null
   driver_name_snapshot: string | null
@@ -46,17 +48,27 @@ export type ParsedDispatch = {
 
 const DROPOFF_WORDS: Record<string, DropoffType> = { 당착: "SAME_DAY", 익착: "NEXT_DAY" }
 
+/** 차 종류를 뜻하는 말 → 차종. ("냉동"·"냉장"만 쓰면 차종이 아니라 물량이다 — parseLoadLine) */
 const CARGO_WORDS: Record<string, CargoBoxType> = {
-  냉동: "REFRIGERATED",
   냉동탑: "REFRIGERATED",
-  냉장: "WING",
   냉장윙: "WING",
   윙: "WING",
   탑: "BOX",
   카고: "CARGO",
 }
 
-/** "냉동3", "냉동탑 3", "윙" → 차종(+파레트 수) */
+/** "냉동탑 3", "윙", "카고" → 차종(+파레트 수) */
+const LOAD = /^(냉동|냉장|상온|실온)\s*(\d+)?\s*(?:파레트|파렛|plt|p)?\s*(?:[,，\s]\s*(\d+(?:\.\d+)?)\s*(?:톤|t)?)?$/i
+
+/** "냉동3", "냉동 3, 1.3", "냉장 2p 1.5톤" → 물량("냉동3p") + 중량(톤). 이 배차의 화물이지 차종이 아니다. */
+export function parseLoadLine(line: string): { note: string; weight: number | null } | null {
+  const m = line.trim().match(LOAD)
+  if (!m) return null
+  const weight = m[3] ? Number(m[3]) : null
+  if (weight !== null && !(weight > 0 && weight < 100)) return null
+  return { note: `${m[1]}${m[2] ? `${m[2]}p` : ""}`, weight }
+}
+
 export function parseCargoLine(line: string): { type: CargoBoxType; pallets: number | null } | null {
   const m = line.replace(/\s/g, "").match(/^([가-힣]+?)(\d+)?(?:파레트|plt|p)?$/i)
   if (!m) return null
@@ -151,6 +163,7 @@ export function parseDispatchLines(
     "vehicle_id" | "plate_no_snapshot" | "driver_name_snapshot" | "driver_phone_snapshot"
   > | null = null
   let cargo: { type: CargoBoxType; pallets: number | null } | null = null
+  let load: string | null = null
   let weight: number | null = null
   const places: string[] = []
 
@@ -189,6 +202,15 @@ export function parseDispatchLines(
       if (freight !== null) return { ok: false, error: "운임이 두 줄에 있어요. 수수료면 앞에 '수'를 붙여 주세요. 예: 수2만" }
       freight = amount
       continue
+    }
+
+    if (load === null) {
+      const l = parseLoadLine(line)
+      if (l) {
+        load = l.note
+        if (l.weight !== null && weight === null) weight = l.weight
+        continue
+      }
     }
 
     if (cargo === null) {
@@ -256,6 +278,7 @@ export function parseDispatchLines(
       pallet_count: cargo?.pallets ?? null,
       weight_ton: weight,
       cargo_box_type: cargo?.type ?? null,
+      cargo_note: load,
       vehicle_id: vehicle?.vehicle_id ?? null,
       plate_no_snapshot: vehicle?.plate_no_snapshot ?? null,
       driver_name_snapshot: vehicle?.driver_name_snapshot ?? null,

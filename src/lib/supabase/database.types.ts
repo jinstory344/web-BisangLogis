@@ -91,6 +91,8 @@ export type DispatchRow = BaseColumns & {
   pallet_count: number | null
   weight_ton: number | null
   cargo_box_type: CargoBoxType | null
+  /** 물량(화물): 이 배차에 싣는 것. 예: "냉동 3p". 차종·파렛(차량 쪽)과 다르다. */
+  cargo_note: string | null
   vehicle_id: string | null
   plate_no_snapshot: string | null
   driver_name_snapshot: string | null
@@ -314,6 +316,7 @@ export type Database = {
           p_contact_name: string | null
           p_memo?: string | null
           p_cargo_box_type?: CargoBoxType | null
+          p_cargo_note?: string | null
           p_freight_amount?: number | null
           /** null을 넘겨도 RPC 내부에서 coalesce(...,0) 처리된다. */
           p_fee_amount?: number | null
@@ -338,6 +341,7 @@ export type Database = {
           p_contact_name: string | null
           p_memo?: string | null
           p_cargo_box_type?: CargoBoxType | null
+          p_cargo_note?: string | null
           p_freight_amount?: number | null
           /** null을 넘겨도 RPC 내부에서 coalesce(...,0) 처리된다. */
           p_fee_amount?: number | null

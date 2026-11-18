@@ -220,6 +220,7 @@ export async function createDispatchAction(
     p_memo: values.memo || null,
     // 미선택("")은 DB가 빈 문자열을 허용하지 않으므로 null로 정규화한다.
     p_cargo_box_type: values.cargo_box_type || null,
+    p_cargo_note: values.cargo_note || null,
     // 미입력(undefined)은 null로 넘겨 "값 없음"으로 저장한다.
     p_freight_amount: values.freight_amount ?? null,
     p_fee_amount: values.fee_amount,
@@ -282,6 +283,7 @@ export async function updateDispatchAction(
     p_memo: values.memo || null,
     // 미선택("")은 DB가 빈 문자열을 허용하지 않으므로 null로 정규화한다.
     p_cargo_box_type: values.cargo_box_type || null,
+    p_cargo_note: values.cargo_note || null,
     // 미입력(undefined)은 null로 넘겨 "값 없음"으로 저장한다.
     p_freight_amount: values.freight_amount ?? null,
     p_fee_amount: values.fee_amount,

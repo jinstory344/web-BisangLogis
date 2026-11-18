@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest"
 import {
   findVehicle,
   parseCargoLine,
+  parseLoadLine,
   parseDispatchLines,
   parseWeightLine,
 } from "@/lib/telegram/parse-dispatch"
@@ -34,9 +35,10 @@ describe("parseDispatchLines", () => {
         origin: "부산2곳",
         destination: "현대그린",
         dropoff_type: "NEXT_DAY",
-        pallet_count: 3,
+        pallet_count: null,
         weight_ton: 1.6,
-        cargo_box_type: "REFRIGERATED",
+        cargo_box_type: null,
+        cargo_note: "냉동3p",
         vehicle_id: "v-1",
         plate_no_snapshot: "서울86바7754",
         driver_name_snapshot: "김진승",
@@ -98,10 +100,27 @@ describe("findVehicle", () => {
   })
 })
 
+describe("parseLoadLine (물량)", () => {
+  it("냉동·냉장 + 파레트 수(+톤)는 물량", () => {
+    expect(parseLoadLine("냉동3")).toEqual({ note: "냉동3p", weight: null })
+    expect(parseLoadLine("냉동 3, 1.3")).toEqual({ note: "냉동3p", weight: 1.3 })
+    expect(parseLoadLine("냉장 2p 1.5톤")).toEqual({ note: "냉장2p", weight: 1.5 })
+    expect(parseLoadLine("냉장")).toEqual({ note: "냉장", weight: null })
+    expect(parseLoadLine("냉동탑")).toBeNull()
+    expect(parseLoadLine("냉동창고")).toBeNull()
+  })
+
+  it("봇 메시지의 '냉동 3, 1.3'은 차종이 아니라 물량·중량", () => {
+    const r = parseDispatchLines(["a", "b", "아토무역", "냉동 3, 1.3"], { today, clients, vehicles })
+    expect(r.ok && r.value).toMatchObject({ cargo_note: "냉동3p", weight_ton: 1.3, cargo_box_type: null, pallet_count: null })
+  })
+})
+
 describe("parseCargoLine / parseWeightLine", () => {
   it("차종 줄임말과 파레트 수", () => {
-    expect(parseCargoLine("냉동3")).toEqual({ type: "REFRIGERATED", pallets: 3 })
-    expect(parseCargoLine("냉장")).toEqual({ type: "WING", pallets: null })
+    expect(parseCargoLine("냉동탑3")).toEqual({ type: "REFRIGERATED", pallets: 3 })
+    expect(parseCargoLine("냉장윙")).toEqual({ type: "WING", pallets: null })
+    expect(parseCargoLine("냉동3")).toBeNull()
     expect(parseCargoLine("탑 10")).toEqual({ type: "BOX", pallets: 10 })
     expect(parseCargoLine("카고")).toEqual({ type: "CARGO", pallets: null })
     expect(parseCargoLine("현대그린")).toBeNull()
