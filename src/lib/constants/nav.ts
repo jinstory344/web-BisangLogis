@@ -1,14 +1,14 @@
 import type { LucideIcon } from "lucide-react"
 import {
   BarChart3,
-  BookOpen,
-  Car,
-  NotebookPen,
+  Building2,
   Receipt,
+  Route,
+  Send,
   Settings,
+  StickyNote,
   TrendingUp,
   Truck,
-  Users,
   Wallet,
 } from "lucide-react"
 
@@ -26,11 +26,11 @@ export interface NavItem {
  * (데스크톱 사이드바는 아래 sidebarNavGroups를 따로 쓴다.)
  */
 export const primaryNavItems: NavItem[] = [
-  { label: "HOME", href: "/", icon: BookOpen },
-  { label: "배차", href: "/dispatches", icon: Truck },
-  { label: "차량", href: "/vehicles", icon: Car },
-  { label: "거래처", href: "/clients", icon: Users },
-  { label: "메모", href: "/memos", icon: NotebookPen },
+  { label: "HOME", href: "/", icon: Send },
+  { label: "배차", href: "/dispatches", icon: Route },
+  { label: "차량", href: "/vehicles", icon: Truck },
+  { label: "거래처", href: "/clients", icon: Building2 },
+  { label: "메모", href: "/memos", icon: StickyNote },
 ]
 
 /** 모바일 하단 "메뉴"(☰)를 누르면 위로 펼쳐지는 목록. 휴지통·엑셀 가져오기·로그아웃은 설정 화면 안에 있다. */
@@ -46,13 +46,13 @@ export const secondaryNavItems: NavItem[] = [
 export const quickCreateNavItems: NavItem[] = [
   { label: "매출 등록", href: "/new?type=sale", icon: TrendingUp },
   { label: "지출 등록", href: "/new?type=expense", icon: Wallet },
-  { label: "배차 등록", href: "/new?type=dispatch", icon: Truck },
+  { label: "배차 등록", href: "/new?type=dispatch", icon: Route },
 ]
 
 /** 데스크톱 사이드바 전용 — 구분선으로 나뉘는 메뉴 그룹 */
 export const sidebarNavGroups: NavItem[][] = [
   [
-    { label: "HOME", href: "/", icon: BookOpen },
+    { label: "HOME", href: "/", icon: Send },
     { label: "통계", href: "/stats", icon: BarChart3 },
   ],
   [
@@ -60,10 +60,10 @@ export const sidebarNavGroups: NavItem[][] = [
     { label: "지출", href: "/expenses", icon: Wallet },
   ],
   [
-    { label: "배차", href: "/dispatches", icon: Truck },
-    { label: "거래처", href: "/clients", icon: Users },
-    { label: "차량 정보", href: "/vehicles", icon: Car },
-    { label: "메모", href: "/memos", icon: NotebookPen },
+    { label: "배차", href: "/dispatches", icon: Route },
+    { label: "거래처", href: "/clients", icon: Building2 },
+    { label: "차량 정보", href: "/vehicles", icon: Truck },
+    { label: "메모", href: "/memos", icon: StickyNote },
   ],
   [
     { label: "계산서", href: "/tax-invoices", icon: Receipt, soon: true },
