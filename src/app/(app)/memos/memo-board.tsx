@@ -1,7 +1,7 @@
 "use client"
 
-import { ChevronDown, ChevronUp, Plus, Search, Star } from "lucide-react"
-import { useState } from "react"
+import { ChevronDown, ChevronUp, LayoutGrid, List, Plus, Search, Star } from "lucide-react"
+import { useEffect, useState } from "react"
 import { toast } from "sonner"
 
 import { ClientSheet } from "@/components/clients/client-sheet"
@@ -17,23 +17,30 @@ import { swapMemoOrderAction, type MemoItem } from "./actions"
 const normalize = (text: string) => text.replace(/\s/g, "").toLowerCase()
 
 type Tab = "ALL" | MemoKind
-/** 종류별 색: 업무 초록 · 배차 파랑 · 오더 노랑 — 카드는 모두 같은 회색, 왼쪽 띠로만 구분 */
-const KIND_STYLE: Record<MemoKind, { tab: string; row: string; tag: string; short: string }> = {
+/** 종류별 색: 업무 초록 · 배차 파랑 · 오더 노랑 — 카드는 모두 같은 회색, 2칸 보기는 위쪽 띠·1줄 보기는 왼쪽 띠로 구분 */
+
+/** 보기: grid = 한 줄에 카드 2개(기본), list = 한 줄에 하나 */
+type MemoView = "grid" | "list"
+const VIEW_KEY = "bisang-memo-view"
+const KIND_STYLE: Record<MemoKind, { tab: string; row: string; card: string; tag: string; short: string }> = {
   WORK: {
     tab: "bg-[#355a43] font-semibold text-[#e0f4e7]",
     row: "border-l-4 border-l-[#5a9a72]",
+    card: "border-t-4 border-t-[#5a9a72]",
     tag: "bg-[#355a43] text-[#d0eedb]",
     short: "업무",
   },
   DISPATCH: {
     tab: "bg-[#34507d] font-semibold text-[#e3ecfb]",
     row: "border-l-4 border-l-[#5b7fb8]",
+    card: "border-t-4 border-t-[#5b7fb8]",
     tag: "bg-[#34507d] text-[#d3e1f7]",
     short: "배차",
   },
   ORDER: {
     tab: "bg-[#5e4a22] font-semibold text-[#f2dfaa]",
     row: "border-l-4 border-l-[#d6a84a]",
+    card: "border-t-4 border-t-[#d6a84a]",
     tag: "bg-[#5e4a22] text-[#f2dfaa]",
     short: "오더",
   },
@@ -69,6 +76,24 @@ export function MemoBoard({
   const [query, setQuery] = useState("")
   const [isClientOpen, setIsClientOpen] = useState(false)
   // 순서 바꾸기: 보이는 목록(전체 또는 고른 거래처)에서 한 칸씩 위·아래로 옮긴다
+  // 2칸/1줄 보기 — 폰에 기억해 둔다(못 읽으면 기본 2칸)
+  const [view, setView] = useState<MemoView>("grid")
+  useEffect(() => {
+    try {
+      if (localStorage.getItem(VIEW_KEY) === "list") setView("list")
+    } catch {
+      // 저장소를 못 쓰면 기본 보기
+    }
+  }, [])
+  function toggleView() {
+    const next: MemoView = view === "grid" ? "list" : "grid"
+    setView(next)
+    try {
+      localStorage.setItem(VIEW_KEY, next)
+    } catch {
+      // 기억 못 해도 이번 화면에서는 바뀐다
+    }
+  }
   const [isReordering, setIsReordering] = useState(false)
   const [movingId, setMovingId] = useState<string | null>(null)
   const [editor, setEditor] = useState<{ open: boolean; draft: MemoDraft }>({
@@ -196,6 +221,14 @@ export function MemoBoard({
           ) : null}
           <button
             type="button"
+            aria-label={view === "grid" ? "한 줄 보기로" : "두 칸 보기로"}
+            onClick={toggleView}
+            className="flex size-9 shrink-0 items-center justify-center rounded-full bg-muted text-foreground"
+          >
+            {view === "grid" ? <List className="size-4" /> : <LayoutGrid className="size-4" />}
+          </button>
+          <button
+            type="button"
             aria-haspopup="dialog"
             onClick={() => setIsClientOpen(true)}
             className={cn(
@@ -221,29 +254,35 @@ export function MemoBoard({
         </label>
       </StickyHead>
 
-      {kind === "ORDER" && shown.length > 0 ? (
-        // 오더메모: 한 줄에 카드 2개 — 왼쪽 노란 줄, 꼬리표 · 제목 · 내용 2줄 · 거래처와 복사
+      {view === "grid" && shown.length > 0 ? (
+        // 2칸 보기(기본): 한 줄에 카드 2개 — 위쪽 색 줄, (전체 탭이면 종류 꼬리표) · 제목 · 내용 2줄 · 거래처와 복사
         <div className="mt-1 grid grid-cols-2 gap-2 md:mt-3">
           {shown.map((memo) => (
-            <div key={memo.id} className={cn("flex min-h-32 flex-col rounded-xl bg-muted/60 p-2.5", KIND_STYLE.ORDER.row)}>
+            <div key={memo.id} className={cn("flex min-h-32 flex-col rounded-xl bg-muted/60 p-2.5", KIND_STYLE[memo.kind].card)}>
               <button
                 type="button"
                 disabled={isReordering}
                 onClick={() => openEditor(memo)}
                 className="flex min-w-0 flex-1 flex-col items-start gap-1 text-left"
               >
-                <span className="flex items-center gap-1">
-                  <span className="rounded-full bg-[#d6a84a] px-2 py-px text-[10px] font-bold text-[#241c0c]">오더</span>
+                <span className="flex w-full min-w-0 items-center gap-1">
                   {memo.pinned ? <Star className="size-3 shrink-0 fill-amber-400 text-amber-400" /> : null}
+                  <span className="line-clamp-1 text-sm font-bold">{memo.title}</span>
                 </span>
-                <span className="line-clamp-1 text-sm font-bold">{memo.title}</span>
                 {memo.body ? (
                   <span className="line-clamp-2 text-xs leading-snug whitespace-pre-line text-muted-foreground">{memo.body}</span>
                 ) : null}
               </button>
               <div className="mt-2 flex items-center justify-between gap-1">
-                <span className="min-w-0 truncate rounded-full bg-background/60 px-2 py-0.5 text-[11px] text-foreground/90">
-                  {memo.client_id ? clientNames[memo.client_id] ?? "거래처" : "공통"}
+                <span className="flex min-w-0 items-center gap-1">
+                  {kind === "ALL" ? (
+                    <span className={cn("shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold", KIND_STYLE[memo.kind].tag)}>
+                      {KIND_STYLE[memo.kind].short}
+                    </span>
+                  ) : null}
+                  <span className="min-w-0 truncate rounded-full bg-background/60 px-2 py-0.5 text-[11px] text-foreground/90">
+                    {memo.client_id ? clientNames[memo.client_id] ?? "거래처" : "공통"}
+                  </span>
                 </span>
                 {isReordering ? (
                   <span className="flex shrink-0 gap-0.5">
@@ -270,7 +309,7 @@ export function MemoBoard({
       ) : null}
 
       <div className="mt-1 flex flex-col gap-2 md:mt-3">
-        {(kind === "ORDER" ? [] : shown).map((memo) => (
+        {(view === "grid" ? [] : shown).map((memo) => (
           <div
             key={memo.id}
             className={cn(
