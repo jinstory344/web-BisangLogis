@@ -1,6 +1,6 @@
 "use client"
 
-import { ChevronDown, ChevronUp, Copy, Ellipsis, Star, Trash2 } from "lucide-react"
+import { ArrowUpDown, Check, ChevronDown, ChevronUp, Copy, Ellipsis, Star, Trash2 } from "lucide-react"
 import Link from "next/link"
 import { useState, useTransition } from "react"
 import { toast } from "sonner"
@@ -217,10 +217,15 @@ export function ClientList({
             {pinned.length > 1 ? (
               <button
                 type="button"
-                className="text-sm underline underline-offset-4"
+                aria-pressed={isReordering}
+                aria-label={isReordering ? "순서 바꾸기 끝내기" : "순서 바꾸기"}
                 onClick={() => setIsReordering((v) => !v)}
+                className={cn(
+                  "flex size-8 items-center justify-center rounded-full",
+                  isReordering ? "bg-[#c65a55] text-white" : "bg-muted text-foreground"
+                )}
               >
-                {isReordering ? "완료" : "순서 바꾸기"}
+                {isReordering ? <Check className="size-4" /> : <ArrowUpDown className="size-4" />}
               </button>
             ) : null}
           </div>
