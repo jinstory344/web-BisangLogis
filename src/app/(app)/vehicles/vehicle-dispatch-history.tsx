@@ -42,7 +42,7 @@ export function VehicleDispatchHistory({
         <span className="font-semibold text-foreground">최근 배차</span>
         {total > 0 ? `${total}건` : null}
         {total > 0 ? (
-          <span className="ml-auto tabular-nums">
+          <span className="ml-auto text-[13px] tabular-nums">
             합계 <span className="text-foreground">{formatKRW(freightSum)}</span>
           </span>
         ) : null}
