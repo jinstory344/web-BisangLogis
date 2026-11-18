@@ -221,14 +221,6 @@ export function MemoBoard({
           ) : null}
           <button
             type="button"
-            aria-label={view === "grid" ? "한 줄 보기로" : "두 칸 보기로"}
-            onClick={toggleView}
-            className="flex size-9 shrink-0 items-center justify-center rounded-full bg-muted text-foreground"
-          >
-            {view === "grid" ? <List className="size-4" /> : <LayoutGrid className="size-4" />}
-          </button>
-          <button
-            type="button"
             aria-haspopup="dialog"
             onClick={() => setIsClientOpen(true)}
             className={cn(
@@ -238,6 +230,15 @@ export function MemoBoard({
           >
             <span className="truncate">{clientId ? clientNames[clientId] ?? "거래처" : "거래처"}</span>
             <ChevronDown className="size-4 shrink-0" />
+          </button>
+          {/* 맨 오른쪽: 2칸 ↔ 1줄 보기 */}
+          <button
+            type="button"
+            aria-label={view === "grid" ? "한 줄 보기로" : "두 칸 보기로"}
+            onClick={toggleView}
+            className="flex size-9 shrink-0 items-center justify-center rounded-full bg-muted text-foreground"
+          >
+            {view === "grid" ? <List className="size-4" /> : <LayoutGrid className="size-4" />}
           </button>
           </span>
         </div>
