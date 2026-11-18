@@ -18,7 +18,8 @@ import { softDelete } from "@/lib/soft-delete/soft-delete"
 import { createClient } from "@/lib/supabase/server"
 import type { ClientCategory } from "@/lib/supabase/database.types"
 import { cleanContacts, clientFormSchema } from "@/lib/validations/client"
-import { MAX_PINNED_VEHICLES, movePinned, togglePinned } from "@/lib/vehicle-list"
+import { clientGroupMap, movePinnedUnit, togglePinnedMany } from "@/lib/client-groups"
+import { MAX_PINNED_VEHICLES } from "@/lib/vehicle-list"
 
 export interface ClientSearchResult {
   id: string
@@ -390,11 +391,11 @@ async function saveClientPinOrder(
   revalidatePath("/clients")
 }
 
-/** 거래처 상단 고정 켜기·끄기 (최대 10곳) */
-export async function toggleClientPinAction(id: string): Promise<{ error: string | null }> {
+/** 거래처 상단 고정 켜기·끄기 (최대 10곳). 묶음이면 여러 id를 한꺼번에 */
+export async function toggleClientPinAction(ids: string[]): Promise<{ error: string | null }> {
   const supabase = await createClient()
   const before = await getPinnedClientIds(supabase)
-  const after = togglePinned(before, id)
+  const after = togglePinnedMany(before, ids, MAX_PINNED_VEHICLES)
   if (!after) return { error: `고정은 ${MAX_PINNED_VEHICLES}곳까지예요. 하나를 풀고 다시 눌러 주세요.` }
   await saveClientPinOrder(supabase, before, after)
   return { error: null }
@@ -403,6 +404,11 @@ export async function toggleClientPinAction(id: string): Promise<{ error: string
 /** 거래처 고정 순서 한 칸 위(-1)·아래(+1) */
 export async function moveClientPinAction(id: string, delta: -1 | 1): Promise<void> {
   const supabase = await createClient()
-  const before = await getPinnedClientIds(supabase)
-  await saveClientPinOrder(supabase, before, movePinned(before, id, delta))
+  const [before, { data: all, error }] = await Promise.all([
+    getPinnedClientIds(supabase),
+    supabase.from("clients").select("id, name").is("deleted_at", null),
+  ])
+  if (error) throw new Error(`거래처 조회 실패: ${error.message}`)
+  // 묶음(조은푸드 2곳 등)은 통째로 움직인다
+  await saveClientPinOrder(supabase, before, movePinnedUnit(before, clientGroupMap(all), id, delta))
 }

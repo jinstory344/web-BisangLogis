@@ -1,6 +1,6 @@
 "use client"
 
-import { ArrowUpDown, Check, ChevronDown, ChevronUp, Copy, Ellipsis, Star, Trash2 } from "lucide-react"
+import { ArrowUpDown, Check, ChevronDown, ChevronRight, ChevronUp, Copy, Ellipsis, Star, Trash2 } from "lucide-react"
 import Link from "next/link"
 import { useState, useTransition } from "react"
 import { toast } from "sonner"
@@ -31,6 +31,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet"
 import { formatBizNo } from "@/lib/biz-no"
+import { clientGroupMap, collapseByGroup, type ClientUnit } from "@/lib/client-groups"
 import { clientBizInfoText } from "@/lib/client-tax-info"
 import { formatPhoneNumber } from "@/lib/phone"
 import type { ClientRow } from "@/lib/supabase/database.types"
@@ -71,11 +72,23 @@ export function ClientList({
   const [isPending, startTransition] = useTransition()
   const [isReordering, setIsReordering] = useState(false)
 
+  const [openGroups, setOpenGroups] = useState<Set<string>>(new Set())
+
   // 고정한 거래처는 위에 고정 순서대로, 나머지는 이름순 그대로
   const pinned = clients
     .filter((c) => c.pin_order != null)
     .sort((a, b) => (a.pin_order ?? 0) - (b.pin_order ?? 0))
-  const others = clients.filter((c) => c.pin_order == null)
+
+  // 이름 첫 단어가 같은 거래처(조은푸드 육대장·이화수)는 "조은푸드" 한 줄로 묶는다.
+  // 묶음 안에 하나라도 고정돼 있으면 묶음 전체가 고정 칸에 보인다.
+  const groupOf = clientGroupMap(clients)
+  const membersOf = (name: string) => clients.filter((c) => groupOf.get(c.id) === name)
+  const pinnedGroups = new Set(pinned.map((c) => groupOf.get(c.id)).filter((n): n is string => !!n))
+  const withAllMembers = (units: ClientUnit<ClientRow>[]) =>
+    units.map((u) => (u.kind === "group" ? { ...u, items: membersOf(u.name) } : u))
+  const pinnedUnits = withAllMembers(collapseByGroup(pinned, groupOf))
+  const others = clients.filter((c) => c.pin_order == null && !pinnedGroups.has(groupOf.get(c.id) ?? ""))
+  const otherUnits = withAllMembers(collapseByGroup(others, groupOf))
 
   function handleCopy(client: ClientRow) {
     navigator.clipboard.writeText(clientBizInfoText(client)).then(
@@ -84,11 +97,11 @@ export function ClientList({
     )
   }
 
-  function handleTogglePin(client: ClientRow) {
+  function handleTogglePin(ids: string[]) {
     setSheetClient(null)
     startTransition(async () => {
       try {
-        const { error } = await toggleClientPinAction(client.id)
+        const { error } = await toggleClientPinAction(ids)
         if (error) toast.error(error)
       } catch (err) {
         toast.error(err instanceof Error ? err.message : "고정 실패")
@@ -130,7 +143,7 @@ export function ClientList({
     })
   }
 
-  const row = (client: ClientRow, index: number | null) => {
+  const row = (client: ClientRow, index: number | null, inGroup = false) => {
     const isPinned = index !== null
     const people = contactsOf(client)
     const contact = [
@@ -140,12 +153,15 @@ export function ClientList({
     return (
       <li
         key={client.id}
-        className={cn("relative flex items-center border-b pr-3", isPinned && SECTION_COLORS.client.pinnedRow)}
+        className={cn("relative flex items-center border-b pr-3", (isPinned || inGroup) && SECTION_COLORS.client.pinnedRow)}
       >
         <button
           type="button"
           onClick={() => setSheetClient(client)}
-          className="flex min-h-15 min-w-0 flex-1 flex-col justify-center px-4 py-2.5 text-left outline-none focus-visible:ring-3 focus-visible:ring-ring/50 active:bg-muted/60"
+          className={cn(
+            "flex min-h-15 min-w-0 flex-1 flex-col justify-center py-2.5 text-left outline-none focus-visible:ring-3 focus-visible:ring-ring/50 active:bg-muted/60",
+            inGroup ? "pr-4 pl-9" : "px-4"
+          )}
         >
           <span className="flex items-center gap-1 text-[15px] leading-snug font-semibold">
             {/* 거래처 고정 표시는 보라색 ★ (차량 정보의 노란 ★과 구별) */}
@@ -187,7 +203,7 @@ export function ClientList({
               size="icon"
               className="size-9"
               aria-label="아래로"
-              disabled={index === pinned.length - 1 || isPending}
+              disabled={index === pinnedUnits.length - 1 || isPending}
               onClick={() => handleMove(client, 1)}
             >
               <ChevronDown />
@@ -197,6 +213,74 @@ export function ClientList({
       </li>
     )
   }
+
+  const moveButtons = (index: number, id: string) => (
+    <div className="flex gap-1">
+      <Button type="button" variant="secondary" size="icon" className="size-9" aria-label="위로"
+        disabled={index === 0 || isPending} onClick={() => startTransition(() => moveClientPinAction(id, -1))}>
+        <ChevronUp />
+      </Button>
+      <Button type="button" variant="secondary" size="icon" className="size-9" aria-label="아래로"
+        disabled={index === pinnedUnits.length - 1 || isPending} onClick={() => startTransition(() => moveClientPinAction(id, 1))}>
+        <ChevronDown />
+      </Button>
+    </div>
+  )
+
+  /** 묶음 한 줄: 누르면 아래에 거래처들이 펼쳐지고, ★로 묶음 전체를 고정·해제 */
+  const groupRow = (name: string, items: ClientRow[], index: number | null) => {
+    const isPinned = index !== null
+    const isOpen = openGroups.has(name)
+    const pinnedMember = items.find((c) => c.pin_order != null)
+    return [
+      <li key={`group-${name}`} className={cn("relative flex items-center border-b pr-3", isPinned && SECTION_COLORS.client.pinnedRow)}>
+        <button
+          type="button"
+          aria-expanded={isOpen}
+          onClick={() =>
+            setOpenGroups((prev) => {
+              const next = new Set(prev)
+              if (next.has(name)) next.delete(name)
+              else next.add(name)
+              return next
+            })
+          }
+          className="flex min-h-15 min-w-0 flex-1 items-center gap-1.5 px-4 py-2.5 text-left outline-none focus-visible:ring-3 focus-visible:ring-ring/50 active:bg-muted/60"
+        >
+          {isPinned ? <Star aria-label="고정" className={cn("size-3 shrink-0", SECTION_COLORS.client.star)} /> : null}
+          <span className="truncate text-[15px] leading-snug font-semibold">{name}</span>
+          <span className="shrink-0 text-[13px] text-muted-foreground">{items.length}곳</span>
+          {isOpen ? (
+            <ChevronDown className="size-4 shrink-0 text-muted-foreground" />
+          ) : (
+            <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
+          )}
+        </button>
+        {isReordering && index !== null && pinnedMember ? (
+          moveButtons(index, pinnedMember.id)
+        ) : !isReordering ? (
+          <Button
+            type="button"
+            variant="secondary"
+            size="icon"
+            className="size-10 shrink-0"
+            aria-label={isPinned ? `${name} 묶음 고정 풀기` : `${name} 묶음 위에 고정`}
+            aria-pressed={isPinned}
+            disabled={isPending}
+            onClick={() => handleTogglePin(items.map((c) => c.id))}
+          >
+            <Star className={cn(isPinned && SECTION_COLORS.client.star, isPinned && "fill-current")} />
+          </Button>
+        ) : null}
+      </li>,
+      ...(isOpen && !isReordering ? items.map((c) => row(c, null, true)) : []),
+    ]
+  }
+
+  const unitRows = (units: ClientUnit<ClientRow>[], pinnedSection: boolean) =>
+    units.flatMap((u, i) =>
+      u.kind === "group" ? groupRow(u.name, u.items, pinnedSection ? i : null) : [row(u.item, pinnedSection ? i : null)]
+    )
 
   if (clients.length === 0) {
     return (
@@ -214,7 +298,7 @@ export function ClientList({
             <span>
               <span className="font-semibold text-foreground">고정</span> {pinned.length}/{MAX_PINNED_VEHICLES}
             </span>
-            {pinned.length > 1 ? (
+            {pinnedUnits.length > 1 ? (
               <button
                 type="button"
                 aria-pressed={isReordering}
@@ -229,7 +313,7 @@ export function ClientList({
               </button>
             ) : null}
           </div>
-          <ul>{pinned.map((c, i) => row(c, i))}</ul>
+          <ul>{unitRows(pinnedUnits, true)}</ul>
         </section>
       ) : null}
 
@@ -239,7 +323,7 @@ export function ClientList({
             <span className="font-semibold text-foreground">전체</span> {others.length}곳
           </span>
         </div>
-        <ul>{others.map((c) => row(c, null))}</ul>
+        <ul>{unitRows(otherUnits, false)}</ul>
       </section>
 
       <Sheet open={sheetClient !== null} onOpenChange={(open) => !open && setSheetClient(null)}>
@@ -262,7 +346,7 @@ export function ClientList({
                     <Copy />
                     사업자정보 복사
                   </DropdownMenuItem>
-                  <DropdownMenuItem className="h-10" disabled={isPending} onSelect={() => handleTogglePin(sheetClient)}>
+                  <DropdownMenuItem className="h-10" disabled={isPending} onSelect={() => handleTogglePin([sheetClient.id])}>
                     <Star className={cn(sheetClient.pin_order != null && SECTION_COLORS.client.star)} />
                     {sheetClient.pin_order != null ? "고정 풀기" : "위에 고정"}
                   </DropdownMenuItem>
