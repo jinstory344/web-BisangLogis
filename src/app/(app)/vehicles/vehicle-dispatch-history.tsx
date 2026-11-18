@@ -5,6 +5,7 @@ import Link from "next/link"
 import { useState } from "react"
 
 import { Button } from "@/components/ui/button"
+import { formatKRW } from "@/lib/money"
 import type { VehicleDispatchItem } from "@/lib/vehicle-list"
 
 const FIRST_PAGE = 5
@@ -22,10 +23,13 @@ export function VehicleDispatchHistory({
   plateNo,
   items,
   total,
+  freightSum,
 }: {
   plateNo: string
   items: VehicleDispatchItem[]
   total: number
+  /** "N건"과 같은 범위의 운임 합계 */
+  freightSum: number
 }) {
   const [shown, setShown] = useState(FIRST_PAGE)
   const visible = items.slice(0, shown)
@@ -37,6 +41,11 @@ export function VehicleDispatchHistory({
       <p className="flex h-8 items-center gap-1.5 border-t pt-1 text-sm text-muted-foreground">
         <span className="font-semibold text-foreground">최근 배차</span>
         {total > 0 ? `${total}건` : null}
+        {total > 0 ? (
+          <span className="ml-auto tabular-nums">
+            합계 <span className="text-foreground">{formatKRW(freightSum)}</span>
+          </span>
+        ) : null}
       </p>
 
       {items.length === 0 ? (

@@ -115,10 +115,10 @@ export function groupRecentDispatchesByVehicle(
     plate_no_snapshot: string | null
   }[],
   clientNames: ReadonlyMap<string, string>
-): Record<string, { items: VehicleDispatchItem[]; total: number }> {
+): Record<string, { items: VehicleDispatchItem[]; total: number; freightSum: number }> {
   const byPlate = new Map(vehicles.map((v) => [v.plate_no.replace(/\s/g, ""), v.id]))
   const known = new Set(vehicles.map((v) => v.id))
-  const result: Record<string, { items: VehicleDispatchItem[]; total: number }> = {}
+  const result: Record<string, { items: VehicleDispatchItem[]; total: number; freightSum: number }> = {}
   for (const d of dispatches) {
     const vehicleId =
       d.vehicle_id && known.has(d.vehicle_id)
@@ -127,8 +127,9 @@ export function groupRecentDispatchesByVehicle(
           ? byPlate.get(d.plate_no_snapshot.replace(/\s/g, ""))
           : undefined
     if (!vehicleId) continue
-    const bucket = (result[vehicleId] ??= { items: [], total: 0 })
+    const bucket = (result[vehicleId] ??= { items: [], total: 0, freightSum: 0 })
     bucket.total += 1
+    bucket.freightSum += d.freight_amount ?? 0
     if (bucket.items.length < RECENT_DISPATCHES_PER_VEHICLE) {
       bucket.items.push({
         id: d.id,

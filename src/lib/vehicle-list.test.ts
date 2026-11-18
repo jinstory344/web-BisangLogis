@@ -90,6 +90,7 @@ describe("groupRecentDispatchesByVehicle", () => {
       new Map([["c1", "우영로지스"]])
     )
     expect(result.v1.total).toBe(2)
+    expect(result.v1.freightSum).toBe(200)
     expect(result.v1.items.map((i) => [i.id, i.client_name])).toEqual([
       ["d1", "우영로지스"],
       ["d2", null],
