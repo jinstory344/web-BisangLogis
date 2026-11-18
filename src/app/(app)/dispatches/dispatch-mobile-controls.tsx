@@ -62,11 +62,16 @@ export function DispatchMobileControls({
     return `${pathname}?${params.toString()}`
   }
 
+  // 묶음(이름 첫 단어가 같은 거래처들)은 client_id에 "a,b"로, client_name에 묶음 이름으로 온다
+  const isGroup = clientId.includes(",")
+
   function nameOf(id: string): string {
+    if (isGroup) return clientName || "묶음"
     return clientNames[id] || (id === clientId ? clientName : "") || "거래처"
   }
 
   const counts = Object.fromEntries(summary.byClient.map((c) => [c.clientId, c.count]))
+  const selectedCount = clientId.split(",").reduce((sum, id) => sum + (counts[id] ?? 0), 0)
 
   return (
     // contents: 자식들이 목록 영역의 직접 자식처럼 놓여서 아래 고정 영역이 목록 끝까지 붙어 있을 수 있다
@@ -86,7 +91,7 @@ export function DispatchMobileControls({
         <span className="flex min-w-0 items-center truncate">
           {monthPrefix ? <MonthBadge label={monthPrefix} className={SECTION_COLORS.dispatch.badge} /> : null}
           <span className="font-semibold text-foreground">{clientId ? nameOf(clientId) : "전체"}</span>&nbsp;
-          {clientId ? (counts[clientId] ?? 0) : summary.count}건
+          {clientId ? selectedCount : summary.count}건
         </span>
         <div className="flex shrink-0 items-center gap-2">
           <button
@@ -121,7 +126,13 @@ export function DispatchMobileControls({
         open={isClientSheetOpen}
         onOpenChange={setIsClientSheetOpen}
         title="거래처로 보기"
-        selectedId={clientId}
+        selectedId={isGroup ? "" : clientId}
+        selectedGroup={isGroup ? clientName : undefined}
+        onPickGroup={(group) =>
+          router.push(hrefWith({ client_id: group.ids.join(","), client_name: group.name }), {
+            scroll: false,
+          })
+        }
         counts={counts}
         allCount={summary.count}
         onPick={(next) =>

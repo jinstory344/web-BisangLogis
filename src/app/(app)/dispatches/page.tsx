@@ -85,7 +85,7 @@ async function DispatchesBody({ params }: { params: DispatchSearchParams }) {
     .gte("dispatch_date", from)
     .lte("dispatch_date", to)
 
-  if (clientId) baseQuery = baseQuery.eq("client_id", clientId)
+  if (clientId) baseQuery = baseQuery.in("client_id", clientId.split(","))
 
   const rangeStart = (page - 1) * PAGE_SIZE
   const rangeEnd = rangeStart + PAGE_SIZE - 1

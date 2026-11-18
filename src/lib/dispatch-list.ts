@@ -64,7 +64,10 @@ export function filterDispatchesByClient<T extends { client_id: string | null }>
   rows: readonly T[],
   clientId: string
 ): T[] {
-  return clientId ? rows.filter((row) => row.client_id === clientId) : [...rows]
+  if (!clientId) return [...rows]
+  // 묶음(조은푸드 2곳 등)은 "a,b"처럼 쉼표로 이어 온다
+  const ids = new Set(clientId.split(","))
+  return rows.filter((row) => row.client_id !== null && ids.has(row.client_id))
 }
 
 /** 거래처 칩으로 보여 줄 최대 개수 (건수가 많은 앞쪽부터, 선택된 거래처는 따로 덧붙인다) */

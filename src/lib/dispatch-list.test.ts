@@ -80,6 +80,10 @@ describe("filterDispatchesByClient", () => {
     expect(filterDispatchesByClient(rows, "a")).toHaveLength(1)
     expect(filterDispatchesByClient(rows, "zzz")).toHaveLength(0)
   })
+
+  it("쉼표로 이은 묶음이면 그 거래처들을 모두 남긴다", () => {
+    expect(filterDispatchesByClient(rows, "a,b")).toHaveLength(2)
+  })
 })
 
 describe("pickClientChips", () => {
