@@ -5,6 +5,8 @@ import { useEffect, useState } from "react"
 import { toast } from "sonner"
 
 import { ClientSheet } from "@/components/clients/client-sheet"
+import { PageTitle } from "@/components/layout/page-title"
+import { SearchButton } from "@/components/layout/search-button"
 import { StickyHead } from "@/components/layout/sticky-head"
 import { CopyMemoButton } from "@/components/memos/copy-memo-button"
 import { MemoEditor, type MemoDraft } from "@/components/memos/memo-editor"
@@ -21,6 +23,9 @@ type Tab = "ALL" | MemoKind
 
 /** 보기: grid = 한 줄에 카드 2개(기본), list = 한 줄에 하나 */
 type MemoView = "grid" | "list"
+
+/** 메모 화면 제목 밑 짧은 줄 색 */
+const MEMO_TITLE_BAR = "bg-foreground/60"
 const VIEW_KEY = "bisang-memo-view"
 const KIND_STYLE: Record<MemoKind, { tab: string; row: string; card: string; tag: string; short: string }> = {
   WORK: {
@@ -48,9 +53,9 @@ const KIND_STYLE: Record<MemoKind, { tab: string; row: string; card: string; tag
 
 const TABS: [Tab, string][] = [
   ["ALL", "전체"],
-  ["WORK", "업무메모"],
-  ["DISPATCH", "배차메모"],
-  ["ORDER", "오더메모"],
+  ["WORK", "업무"],
+  ["DISPATCH", "배차"],
+  ["ORDER", "오더"],
 ]
 
 /**
@@ -164,19 +169,35 @@ export function MemoBoard({
     <div className="mx-auto max-w-2xl p-4 md:p-6">
       {/* 스크롤해도 제목·탭·거래처·찾기 칸까지 위에 고정 */}
       <StickyHead className="-mx-4 -mt-4 px-4 pt-4 pb-2 md:static md:mx-0 md:mt-0 md:px-0 md:pt-0">
-        <div className="flex items-center justify-between gap-4">
-          <h1 className="text-2xl font-semibold">메모</h1>
+        {/* 차량·거래처와 같은 머리: 왼쪽 통합검색 · 가운데 제목 · 오른쪽 새 메모 */}
+        <div className="mt-2 grid h-10 grid-cols-[2.5rem_1fr_2.5rem] items-center md:mt-0 md:flex md:h-auto md:justify-between md:gap-4">
+          <span className="md:hidden">
+            <SearchButton />
+          </span>
+          <PageTitle title="메모" barClassName={MEMO_TITLE_BAR} className="md:hidden" />
+          <h1 className="hidden text-2xl font-semibold md:block">메모</h1>
           <button
             type="button"
             aria-label="새 메모"
             onClick={() => openEditor()}
-            className="-mr-2 flex size-10 items-center justify-center rounded-full hover:bg-muted"
+            className="flex size-10 items-center justify-center justify-self-end rounded-full hover:bg-muted md:-mr-2"
           >
-            <Plus className="size-7" strokeWidth={1.75} />
+            <Plus className="size-6" strokeWidth={1.75} />
           </button>
         </div>
 
-        <nav className="mt-3 grid grid-cols-4 gap-1.5">
+        <label className="mt-3 flex h-11 items-center gap-2 rounded-xl bg-muted px-3">
+          <Search className="size-4 shrink-0 text-muted-foreground" />
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="제목·내용으로 찾기"
+            enterKeyHint="search"
+            className="min-w-0 flex-1 bg-transparent text-base outline-none placeholder:text-muted-foreground"
+          />
+        </label>
+
+        <nav className="mt-2.5 grid grid-cols-4 gap-1.5">
           {TABS.map(([value, label]) => (
             <button
               key={value}
@@ -184,7 +205,7 @@ export function MemoBoard({
               aria-pressed={kind === value}
               onClick={() => setKind(value)}
               className={cn(
-                "inline-flex h-9 min-w-0 items-center justify-center gap-1 rounded-full text-[13px] whitespace-nowrap",
+                "inline-flex h-11 min-w-0 items-center justify-center gap-1 rounded-full text-[15px] whitespace-nowrap",
                 kind !== value
                   ? "bg-muted text-muted-foreground"
                   : value === "ALL"
@@ -200,7 +221,7 @@ export function MemoBoard({
           ))}
         </nav>
 
-        <div className="mt-3 flex min-h-10 items-center justify-between gap-2 text-sm text-muted-foreground">
+        <div className="mt-2 flex min-h-10 items-center justify-between gap-2 text-sm text-muted-foreground">
           <span className="min-w-0 truncate">
             <span className="font-semibold text-foreground">{clientId ? clientNames[clientId] ?? "거래처" : "전체"}</span>{" "}
             메모 {shown.length}개
@@ -244,16 +265,6 @@ export function MemoBoard({
           </span>
         </div>
 
-        <label className="mt-1 flex h-11 items-center gap-2 rounded-xl bg-muted px-3">
-          <Search className="size-4 shrink-0 text-muted-foreground" />
-          <input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="제목·내용으로 찾기"
-            enterKeyHint="search"
-            className="min-w-0 flex-1 bg-transparent text-base outline-none placeholder:text-muted-foreground"
-          />
-        </label>
       </StickyHead>
 
       {view === "grid" && shown.length > 0 ? (
