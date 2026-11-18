@@ -113,13 +113,15 @@ export function DispatchForm({
   const recentContacts = useRecentDispatchContacts(clientId)
   const feeAmount = form.watch("fee_amount")
   const moreSectionId = useId()
-  // "＋"에 접어 둔 칸(차종·파렛·물량·중량·수수료·비고) 중 값이 있으면(수정·복사) 펼친 채로 연다.
+  // "＋"에 접어 둔 칸(차종·파렛·물량·중량·담당자·수수료·비고) 중 값이 있으면(수정·복사) 펼친 채로 연다.
   const [isMoreOpen, setIsMoreOpen] = useState(
     () =>
       defaultValues.cargo_box_type !== "" ||
       defaultValues.pallet_count !== null ||
       defaultValues.weight_ton !== null ||
       defaultValues.cargo_note.trim() !== "" ||
+      defaultValues.contact_name.trim() !== "" ||
+      defaultValues.contact_phone.trim() !== "" ||
       defaultValues.fee_amount > 0 ||
       defaultValues.memo.trim() !== ""
   )
@@ -382,39 +384,6 @@ export function DispatchForm({
           <div className="hidden md:block">{feeField("desktop")}</div>
         </div>
 
-        {/* 담당자는 거래처마다, 건마다 달라서 자동으로 채우지 않고 같은 거래처의 최근 담당자를
-            칩으로만 제안한다. 칩을 누르면 이름과 연락처를 함께 채운다. */}
-        <FormItem>
-          <FormLabel>담당자</FormLabel>
-          <FreeTextCombobox
-            value={contactName}
-            onChange={(v) => form.setValue("contact_name", v)}
-            fetchSuggestions={searchContactNameSuggestionsAction}
-            placeholder="담당자명"
-          />
-        </FormItem>
-
-        <FormField
-          control={form.control}
-          name="contact_phone"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>연락처</FormLabel>
-              <FormControl>
-                <Input {...field} type="tel" placeholder="010-0000-0000" />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <RecentContactChips
-          label="담당자"
-          contacts={recentContacts}
-          value={{ name: contactName, phone: contactPhone }}
-          onSelect={applyRecentContact}
-        />
-
         {/* 모바일 "＋" 줄: 자주 비워 두는 칸을 접는다. 값이 있으면(수정·복사) 펼친 채로 연다.
             데스크톱은 항상 펼쳐 둔다. */}
         <button
@@ -424,7 +393,7 @@ export function DispatchForm({
           onClick={() => setIsMoreOpen((open) => !open)}
           className="flex min-h-11 items-center justify-between gap-2 text-left text-sm text-muted-foreground md:hidden"
         >
-          <span className="truncate">＋ 차량(차종·파렛) · 물량 · 수수료 · 비고</span>
+          <span className="truncate">＋ 차량 · 물량 · 담당자 · 수수료 · 비고</span>
           <ChevronDown
             aria-hidden
             className={cn("size-4 shrink-0 transition-transform", isMoreOpen && "rotate-180")}
@@ -524,6 +493,42 @@ export function DispatchForm({
                   <FormMessage />
                 </FormItem>
               )}
+            />
+          </fieldset>
+
+          <fieldset className="grid gap-0 rounded-xl border px-3 pb-1 md:p-3">
+            <legend className="px-1 text-xs text-muted-foreground">담당자</legend>
+            {/* 담당자는 거래처마다, 건마다 달라서 자동으로 채우지 않고 같은 거래처의 최근 담당자를
+                칩으로만 제안한다. 칩을 누르면 이름과 연락처를 함께 채운다. */}
+            <FormItem>
+              <FormLabel>담당자</FormLabel>
+              <FreeTextCombobox
+                value={contactName}
+                onChange={(v) => form.setValue("contact_name", v)}
+                fetchSuggestions={searchContactNameSuggestionsAction}
+                placeholder="담당자명"
+              />
+            </FormItem>
+
+            <FormField
+              control={form.control}
+              name="contact_phone"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>연락처</FormLabel>
+                  <FormControl>
+                    <Input {...field} type="tel" placeholder="010-0000-0000" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <RecentContactChips
+              label="최근"
+              contacts={recentContacts}
+              value={{ name: contactName, phone: contactPhone }}
+              onSelect={applyRecentContact}
             />
           </fieldset>
 
