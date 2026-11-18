@@ -30,22 +30,22 @@ const VIEW_KEY = "bisang-memo-view"
 const KIND_STYLE: Record<MemoKind, { tab: string; row: string; card: string; tag: string; short: string }> = {
   WORK: {
     tab: "bg-[#355a43] font-semibold text-[#e0f4e7]",
-    row: "border-l-4 border-l-[#5a9a72]",
-    card: "border-t-[3px] border-t-[#5a9a72]",
+    row: "border-l-2 border-l-[#5a9a72]",
+    card: "border-t-2 border-t-[#5a9a72]",
     tag: "bg-[#355a43] text-[#d0eedb]",
     short: "업무",
   },
   DISPATCH: {
     tab: "bg-[#34507d] font-semibold text-[#e3ecfb]",
-    row: "border-l-4 border-l-[#5b7fb8]",
-    card: "border-t-[3px] border-t-[#5b7fb8]",
+    row: "border-l-2 border-l-[#5b7fb8]",
+    card: "border-t-2 border-t-[#5b7fb8]",
     tag: "bg-[#34507d] text-[#d3e1f7]",
     short: "배차",
   },
   ORDER: {
     tab: "bg-[#5e4a22] font-semibold text-[#f2dfaa]",
-    row: "border-l-4 border-l-[#d6a84a]",
-    card: "border-t-[3px] border-t-[#d6a84a]",
+    row: "border-l-2 border-l-[#d6a84a]",
+    card: "border-t-2 border-t-[#d6a84a]",
     tag: "bg-[#5e4a22] text-[#f2dfaa]",
     short: "오더",
   },
@@ -227,6 +227,15 @@ export function MemoBoard({
             메모 {shown.length}개
           </span>
           <span className="flex shrink-0 items-center gap-1.5">
+          {/* 버튼 순서(왼→오): 2칸↔1줄 보기 · 순서 바꾸기 · 거래처 */}
+          <button
+            type="button"
+            aria-label={view === "grid" ? "한 줄 보기로" : "두 칸 보기로"}
+            onClick={toggleView}
+            className="flex size-9 shrink-0 items-center justify-center rounded-full bg-muted text-foreground"
+          >
+            {view === "grid" ? <List className="size-4" /> : <LayoutGrid className="size-4" />}
+          </button>
           {shown.length > 1 ? (
             <button
               type="button"
@@ -252,15 +261,6 @@ export function MemoBoard({
           >
             <span className="truncate">{clientId ? clientNames[clientId] ?? "거래처" : "거래처"}</span>
             <ChevronDown className="size-4 shrink-0" />
-          </button>
-          {/* 맨 오른쪽: 2칸 ↔ 1줄 보기 */}
-          <button
-            type="button"
-            aria-label={view === "grid" ? "한 줄 보기로" : "두 칸 보기로"}
-            onClick={toggleView}
-            className="flex size-9 shrink-0 items-center justify-center rounded-full bg-muted text-foreground"
-          >
-            {view === "grid" ? <List className="size-4" /> : <LayoutGrid className="size-4" />}
           </button>
           </span>
         </div>
