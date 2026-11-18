@@ -92,7 +92,7 @@ export function DispatchMobileList({
       {/* 건수는 위 거래처 줄에 있다. 거래처로 걸렀을 때만 그 거래처의 운임·수수료를 보여 준다 */}
       {filteredTotals ? (
         <p className="flex min-h-9 items-center gap-1 text-sm text-muted-foreground tabular-nums">
-          Freight <span className="text-foreground">{formatKRW(filteredTotals.freightAmount)}</span> · Fee{" "}
+          합계 <span className="text-foreground">{formatKRW(filteredTotals.freightAmount)}</span> · 수수료{" "}
           <span className="text-foreground">{formatKRW(filteredTotals.feeAmount)}</span>
         </p>
       ) : null}
