@@ -197,3 +197,31 @@ describe("normalizeLeadingDate (첫 줄 숫자 날짜)", () => {
     expect(normalizeLeadingDate([])).toEqual([])
   })
 })
+
+describe("매출에 섞인 화물 줄(냉동3·1.0)", () => {
+  it("금액으로 읽지 않고 비고에 붙인다", () => {
+    const r = parseSaleLines(["11/23", "부산3곳", "남양주 케이푸드", "40만", "냉동3", "1.0", "우영"], ctx)
+    expect(r.ok && [r.value.supply_amount, r.value.origin, r.value.destination, r.value.memo]).toEqual([
+      400_000,
+      "부산3곳",
+      "남양주 케이푸드",
+      "냉동3 / 1.0",
+    ])
+  })
+})
+
+describe("매출: 띄어 쓴 거래처 줄(배차 모양)", () => {
+  it("'우영 김부장'은 거래처 우영로지스, 이름은 비고", () => {
+    const r = parseSaleLines(["부산3곳", "남양주 케이푸드", "40만", "냉동3", "우영 김부장"], ctx)
+    expect(r.ok && [r.value.client_id !== null, r.value.source_minor, r.value.destination, r.value.memo]).toEqual([
+      true,
+      "우영로지스",
+      "남양주 케이푸드",
+      "김부장 / 냉동3",
+    ])
+  })
+  it("장소가 두 줄뿐이면 장소를 거래처로 빼지 않는다", () => {
+    const r = parseSaleLines(["우영 창고", "부산대", "40만"], ctx)
+    expect(r.ok && [r.value.origin, r.value.client_id]).toEqual(["우영 창고", null])
+  })
+})

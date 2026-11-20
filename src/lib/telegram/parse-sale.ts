@@ -240,6 +240,19 @@ function resolveBilling(
 }
 
 /** 첫 줄(종류)을 뺀 나머지 줄로 매출 값을 만든다. */
+/**
+ * 배차 메시지를 그대로 매출로 보낼 때 섞이는 화물 줄: "냉동3", "냉동 3, 1.3"(물량), "1.0", "1.6톤"(무게).
+ * 매출에는 이런 칸이 없으니 금액·장소로 읽지 않고 비고에 붙인다("1.0"이 금액 1원으로 읽히던 문제).
+ */
+function isCargoLine(line: string): boolean {
+  const t = line.trim()
+  return (
+    /^(냉동|냉장|상온|실온)\s*\d*\s*(파레트|파렛|plt|p)?\s*([,，\s]\s*\d+(\.\d+)?\s*(톤|t)?)?$/i.test(t) ||
+    /^\d+\.\d+\s*(톤|t)?$/i.test(t) ||
+    /^\d+(\.\d+)?\s*(톤|t)$/i.test(t)
+  )
+}
+
 export function parseSaleLines(
   lines: string[],
   ctx: { today: string; sources: SaleSourceOption[]; clients: ClientOption[] }
@@ -250,10 +263,16 @@ export function parseSaleLines(
   let source: SourcePick | null = null
   let billing: string | null = null
   const places: string[] = []
+  const cargo: string[] = []
 
   for (const raw of lines) {
     const line = raw.trim()
     if (!line) continue
+
+    if (isCargoLine(line)) {
+      cargo.push(line)
+      continue
+    }
 
     const parsedDate: string | null = date === null ? parseDateLine(line, ctx.today) : null
     if (parsedDate) {
@@ -290,6 +309,22 @@ export function parseSaleLines(
     places.push(line)
   }
 
+  // "아토 이준호"처럼 띄어 쓴 거래처 줄(배차 메시지 모양): 끝 줄부터, 첫 단어가 거래처이고
+  // 그 줄을 빼도 상차지·하차지가 남을 때만 거래처로 본다. 뒤 이름은 비고에 남긴다.
+  const notes: string[] = []
+  if (source === null && places.length > 2) {
+    for (let i = places.length - 1; i >= 0; i--) {
+      const [first, ...more] = places[i].split(/\s+/)
+      if (more.length === 0) continue
+      const client = findByPrefix(ctx.clients, (c) => c.name, first)
+      if (!client || client === "ambiguous") continue
+      source = { source_major: "거래처", source_sub: null, source_minor: client.name, client_id: client.id }
+      notes.push(more.join(" "))
+      places.splice(i, 1)
+      break
+    }
+  }
+
   if (amount === null) return { ok: false, error: "금액을 못 찾았어요. 예: 75만" }
   if (amount <= 0 || amount > MAX_AMOUNT) return { ok: false, error: "금액이 너무 크거나 0원이에요." }
   if (places.length < 2) {
@@ -310,7 +345,7 @@ export function parseSaleLines(
       client_id: source?.client_id ?? null,
       // 앱 매출 폼처럼: 사업자 정보를 안 쓰면 거래처 이름으로, 쓴 이름이 거래처 앞글자면 전체 이름으로
       billing_entity_name: resolveBilling(billing, source, ctx.clients),
-      memo: places.length > 2 ? places.slice(2).join(" / ") : null,
+      memo: [...places.slice(2), ...notes, ...cargo].join(" / ") || null,
     },
   }
 }
