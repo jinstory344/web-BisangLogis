@@ -32,5 +32,11 @@ describe("expense-cards", () => {
     expect(matchCardName(["신한 RPM"], "신한rpm")).toBe("신한 RPM")
     expect(matchCardName(["신한복지"], "신한")).toBeNull()
     expect(matchCardName(["신한복지"], "")).toBeNull()
+    // 뒤에 "카드"를 붙여도 된다
+    const cards = ["신한", "신한복지", "현대", "국민"]
+    expect(matchCardName(cards, "신한")).toBe("신한")
+    expect(matchCardName(cards, "신한카드")).toBe("신한")
+    expect(matchCardName(cards, "신한복지 카드")).toBe("신한복지")
+    expect(matchCardName(cards, "카드")).toBeNull()
   })
 })

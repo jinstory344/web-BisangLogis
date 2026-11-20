@@ -46,11 +46,14 @@ export function moveCardName(
 
 /**
  * 텔레그램 지출 메시지의 한 단어가 카드 이름인지. 띄어쓰기·대소문자는 무시한다
- * ("신한 RPM", "신한rpm" → "신한RPM"). 같은 게 없으면 null.
+ * ("신한 RPM", "신한rpm" → "신한RPM"). 뒤에 "카드"를 붙여도 된다("신한카드" → "신한"). 같은 게 없으면 null.
  */
 export function matchCardName(names: readonly string[], token: string): string | null {
   const key = (value: string) => value.replace(/\s+/g, "").toLowerCase()
   const target = key(token)
   if (!target) return null
-  return names.find((name) => key(name) === target) ?? null
+  const exact = names.find((name) => key(name) === target)
+  if (exact) return exact
+  const short = target.replace(/카드$/, "")
+  return short && short !== target ? (names.find((name) => key(name) === short) ?? null) : null
 }
