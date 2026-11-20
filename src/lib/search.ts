@@ -37,6 +37,14 @@ export const SEARCH_TABS: { value: SearchTab; label: string }[] = [
   { value: "dispatch", label: "배차" },
 ]
 
+/** 고른 검색 탭 바탕 — 앱의 메뉴 색(매출 파랑·지출 빨강·배차 노랑, 눈부시지 않은 낮은 채도) */
+export const SEARCH_TAB_ACTIVE: Record<SearchTab, string> = {
+  all: "bg-foreground text-background",
+  sale: "bg-[#5b8fd9] text-white",
+  expense: "bg-[#c65a55] text-[#fff3f2]",
+  dispatch: "bg-[#d6a84a] text-[#241c0c]",
+}
+
 /** 주소의 tab 값 → 탭. 모르는 값이면 전체. (예전 주소의 dispatch·ledger도 받는다) */
 export function parseSearchTab(raw: string | string[] | undefined): SearchTab {
   const value = Array.isArray(raw) ? raw[0] : raw

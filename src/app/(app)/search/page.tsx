@@ -22,6 +22,7 @@ import {
   periodLabel,
   parseSearchPeriod,
   parseSearchTab,
+  SEARCH_TAB_ACTIVE,
   SEARCH_TABS,
   searchHref,
   type SearchTab,
@@ -121,26 +122,28 @@ export default async function SearchPage({
       />
     </div>
   )
-  // 매출·지출·배차·전체 탭 줄 (검색 전에는 건수 없이 — 누르면 그 종류 전체 기간 합계가 나온다)
+  // 매출·지출·배차 탭 줄 (검색 전에는 건수 없이 — 누르면 그 종류 전체 기간 합계가 나온다).
+  // "전체" 탭은 없앴다(사용자 요청): 아무 탭도 안 고르면 전체이고, 고른 탭을 다시 누르면 전체로 돌아간다.
   const tabNav = (counts?: Record<SearchTab, number>) => (
     <nav
       aria-label="검색 결과 종류"
-      className="grid grid-cols-4 gap-1.5 border-b pt-1 pb-2.5"
+      className="grid grid-cols-3 gap-1.5 border-b pt-1 pb-2.5"
     >
-      {SEARCH_TABS.map((item) => {
+      {SEARCH_TABS.filter((item) => item.value !== "all").map((item) => {
         const isActive = item.value === tab
+        const nextTab: SearchTab = isActive ? "all" : item.value
         return (
           <Link
             key={item.value}
-            href={searchHref(query, item.value, period, filtersForTab(item.value, filters))}
+            href={searchHref(query, nextTab, period, filtersForTab(nextTab, filters))}
             replace
             scroll={false}
             aria-current={isActive ? "page" : undefined}
             className={cn(
               // 네 칸이 한 줄을 똑같이 나눠 쓴다 (건수가 붙어도 줄이 바뀌지 않게)
               "inline-flex h-9 min-w-0 items-center justify-center gap-1 rounded-full px-2 text-sm whitespace-nowrap",
-              // 고른 탭만 흰 바탕·검은 글씨 (아래 회색 조건 칩과 구별)
-              isActive ? "bg-foreground font-semibold text-background" : "bg-muted text-muted-foreground"
+              // 고른 탭은 메뉴 색 바탕(매출 파랑·지출 빨강·배차 노랑), 나머지는 회색
+              isActive ? cn("font-semibold", SEARCH_TAB_ACTIVE[item.value]) : "bg-muted text-muted-foreground"
             )}
           >
             {item.label}
@@ -148,7 +151,7 @@ export default async function SearchPage({
               <span
                 className={cn(
                   "text-[11px] tabular-nums",
-                  isActive ? "text-background/70" : "text-muted-foreground"
+                  isActive ? "opacity-75" : "text-muted-foreground"
                 )}
               >
                 {counts[item.value]}
