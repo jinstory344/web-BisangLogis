@@ -7,7 +7,6 @@ import {
   Send,
   Settings,
   StickyNote,
-  Trash2,
   TrendingUp,
   Truck,
   Wallet,
@@ -40,7 +39,6 @@ export const secondaryNavItems: NavItem[] = [
   { label: "지출 목록", href: "/expenses", icon: Wallet },
   { label: "통계", href: "/stats", icon: BarChart3 },
   { label: "계산서", href: "/tax-invoices", icon: Receipt, soon: true },
-  { label: "휴지통", href: "/trash", icon: Trash2 },
   { label: "설정", href: "/settings", icon: Settings },
 ]
 
@@ -69,7 +67,6 @@ export const sidebarNavGroups: NavItem[][] = [
   ],
   [
     { label: "계산서", href: "/tax-invoices", icon: Receipt, soon: true },
-    { label: "휴지통", href: "/trash", icon: Trash2 },
-    { label: "설정", href: "/settings", icon: Settings },
+      { label: "설정", href: "/settings", icon: Settings },
   ],
 ]
