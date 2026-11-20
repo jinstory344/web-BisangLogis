@@ -51,22 +51,17 @@ export const quickCreateNavItems: NavItem[] = [
 
 /** 데스크톱 사이드바 전용 — 구분선으로 나뉘는 메뉴 그룹 */
 export const sidebarNavGroups: NavItem[][] = [
-  [
-    { label: "HOME", href: "/", icon: Send },
-    { label: "통계", href: "/stats", icon: BarChart3 },
-  ],
+  [{ label: "HOME", href: "/", icon: Send }],
   [
     { label: "매출", href: "/sales", icon: TrendingUp },
     { label: "지출", href: "/expenses", icon: Wallet },
+    { label: "통계", href: "/stats", icon: BarChart3 },
   ],
   [
     { label: "배차", href: "/dispatches", icon: Route },
-    { label: "거래처", href: "/clients", icon: Building2 },
     { label: "차량 정보", href: "/vehicles", icon: Truck },
+    { label: "거래처", href: "/clients", icon: Building2 },
     { label: "메모", href: "/memos", icon: StickyNote },
   ],
-  [
-    { label: "계산서", href: "/tax-invoices", icon: Receipt, soon: true },
-      { label: "설정", href: "/settings", icon: Settings },
-  ],
+  [{ label: "설정", href: "/settings", icon: Settings }],
 ]

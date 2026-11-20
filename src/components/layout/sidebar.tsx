@@ -13,7 +13,7 @@ import { NavLink } from "./nav-link"
 
 export function Sidebar({ userEmail }: { userEmail: string | null }) {
   return (
-    <aside className="hidden md:flex md:w-56 md:shrink-0 md:flex-col md:border-r md:bg-sidebar">
+    <aside className="hidden md:sticky md:top-0 md:flex md:h-svh md:w-56 md:shrink-0 md:flex-col md:overflow-y-auto md:border-r md:bg-sidebar">
       <div className="flex h-14 items-center px-4">
         <span className="text-lg font-semibold">비상로지스</span>
       </div>
