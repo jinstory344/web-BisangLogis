@@ -307,7 +307,8 @@ export function VehicleList({
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>
-              &quot;{deleteTarget?.vehicle.plate_no}&quot; 차량을 삭제할까요?
+              {/* 차주 이름까지 같이 보여 줘야 어느 차인지 바로 안다 */}
+              &quot;{[deleteTarget?.vehicle.driver_name, deleteTarget?.vehicle.plate_no].filter(Boolean).join(" · ")}&quot; 차량을 삭제할까요?
             </AlertDialogTitle>
             <AlertDialogDescription>
               {deleteTarget && deleteTarget.dispatchCount > 0
