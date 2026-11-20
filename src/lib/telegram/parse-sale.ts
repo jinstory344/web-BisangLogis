@@ -37,6 +37,10 @@ const KIND_WORDS: Record<string, EntryKind> = {
   지: "expense",
   배차: "dispatch",
   배: "dispatch",
+  // 초성만: ㅁㅊ·ㅈㅊ·ㅂㅊ
+  ㅁㅊ: "sale",
+  ㅈㅊ: "expense",
+  ㅂㅊ: "dispatch",
 }
 
 /** 첫 줄로 종류를 정한다. 모르는 말이면 null. */
