@@ -46,6 +46,7 @@ import {
   searchPeople,
 } from "./search-data"
 import { SearchResultList, type SearchItem } from "./search-result-list"
+import { TabPending } from "./tab-pending"
 import { TargetFilter } from "./target-filter"
 
 /**
@@ -122,30 +123,31 @@ export default async function SearchPage({
       />
     </div>
   )
-  // 매출·지출·배차 탭 줄 (검색 전에는 건수 없이 — 누르면 그 종류 전체 기간 합계가 나온다).
-  // "전체" 탭은 없앴다(사용자 요청): 아무 탭도 안 고르면 전체이고, 고른 탭을 다시 누르면 전체로 돌아간다.
+  // 전체·매출·지출·배차 탭 줄 (검색 전에는 건수 없이 — 누르면 그 종류 전체 기간 합계가 나온다).
+  // 다른 탭 결과는 화면이 보이는 동안 미리 받아 둬서(prefetch) 누르면 서버를 기다리지 않고 바로 바뀐다.
   const tabNav = (counts?: Record<SearchTab, number>) => (
     <nav
       aria-label="검색 결과 종류"
-      className="grid grid-cols-3 gap-1.5 border-b pt-1 pb-2.5"
+      className="grid grid-cols-4 gap-1.5 border-b pt-1 pb-2.5"
     >
-      {SEARCH_TABS.filter((item) => item.value !== "all").map((item) => {
+      {SEARCH_TABS.map((item) => {
         const isActive = item.value === tab
-        const nextTab: SearchTab = isActive ? "all" : item.value
         return (
           <Link
             key={item.value}
-            href={searchHref(query, nextTab, period, filtersForTab(nextTab, filters))}
+            href={searchHref(query, item.value, period, filtersForTab(item.value, filters))}
+            prefetch={!isActive}
             replace
             scroll={false}
             aria-current={isActive ? "page" : undefined}
             className={cn(
               // 네 칸이 한 줄을 똑같이 나눠 쓴다 (건수가 붙어도 줄이 바뀌지 않게)
-              "inline-flex h-9 min-w-0 items-center justify-center gap-1 rounded-full px-2 text-sm whitespace-nowrap",
-              // 고른 탭은 메뉴 색 바탕(매출 파랑·지출 빨강·배차 노랑), 나머지는 회색
+              "relative inline-flex h-9 min-w-0 items-center justify-center gap-1 rounded-full px-2 text-sm whitespace-nowrap",
+              // 고른 탭은 메뉴 색 바탕(전체 흰색·매출 파랑·지출 빨강·배차 노랑), 나머지는 회색
               isActive ? cn("font-semibold", SEARCH_TAB_ACTIVE[item.value]) : "bg-muted text-muted-foreground"
             )}
           >
+            <TabPending />
             {item.label}
             {counts ? (
               <span
