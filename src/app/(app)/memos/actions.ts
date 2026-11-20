@@ -89,6 +89,29 @@ export async function saveMemoAction(input: {
   return { ok: true, memo: data }
 }
 
+/** ★ 고정만 바로 켜고 끄기 (고치기 화면의 별표 — 저장을 누르지 않아도 된다) */
+export async function setMemoPinnedAction(id: string, pinned: boolean): Promise<MemoResult> {
+  const supabase = await createClient()
+  const { data: before } = await supabase.from("memos").select(COLUMNS).eq("id", id).single()
+  const { data, error } = await supabase
+    .from("memos")
+    .update({ pinned })
+    .eq("id", id)
+    .is("deleted_at", null)
+    .select(COLUMNS)
+    .single()
+  if (error) return { ok: false, error: `고정 실패: ${error.message}` }
+  await recordAuditLog(supabase, {
+    tableName: "memos",
+    recordId: id,
+    action: "UPDATE",
+    beforeData: before,
+    afterData: data,
+  })
+  revalidatePath("/memos")
+  return { ok: true, memo: data }
+}
+
 /** 메모 지우기 (소프트 삭제) */
 export async function deleteMemoAction(id: string): Promise<{ ok: boolean; error?: string }> {
   const supabase = await createClient()

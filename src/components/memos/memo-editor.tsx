@@ -4,7 +4,7 @@ import { ChevronDown, ChevronRight, Maximize2, Minimize2, Star, X } from "lucide
 import { useEffect, useState } from "react"
 import { toast } from "sonner"
 
-import { deleteMemoAction, saveMemoAction, type MemoItem } from "@/app/(app)/memos/actions"
+import { deleteMemoAction, saveMemoAction, setMemoPinnedAction, type MemoItem } from "@/app/(app)/memos/actions"
 import { ClientSheet } from "@/components/clients/client-sheet"
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet"
 import type { MemoKind } from "@/lib/supabase/database.types"
@@ -76,6 +76,21 @@ export function MemoEditor({
     onOpenChange(false)
   }
 
+  /** ★: 이미 저장된 메모면 누르는 즉시 고정·해제를 저장한다. 새 메모는 저장할 때 함께 */
+  async function togglePin() {
+    const next = !value.pinned
+    set("pinned", next)
+    if (!value.id) return
+    const result = await setMemoPinnedAction(value.id, next)
+    if (!result.ok) {
+      set("pinned", !next)
+      toast.error(result.error)
+      return
+    }
+    toast.success(next ? "맨 위에 고정했어요" : "고정을 풀었어요")
+    onSaved(result.memo)
+  }
+
   async function remove() {
     if (!value.id || !window.confirm(`'${value.title}' 메모를 지울까요?`)) return
     setIsBusy(true)
@@ -106,7 +121,7 @@ export function MemoEditor({
               type="button"
               aria-pressed={value.pinned}
               aria-label={value.pinned ? "고정 풀기" : "맨 위에 고정"}
-              onClick={() => set("pinned", !value.pinned)}
+              onClick={togglePin}
               className="flex h-10 items-center gap-1 rounded-full px-2 text-xs text-muted-foreground"
             >
               <Star className={cn("size-5", value.pinned ? "fill-amber-400 text-amber-400" : "")} />
