@@ -30,6 +30,8 @@ export type ParsedSale = {
   cargo_note: string | null
   /** 중량(톤) */
   weight_ton: number | null
+  /** 담당자 — "아토 이준호"의 이준호 */
+  contact_name: string | null
 }
 
 export type ParseResult<T> = { ok: true; value: T } | { ok: false; error: string }
@@ -369,7 +371,8 @@ export function parseSaleLines(
       client_id: source?.client_id ?? null,
       // 앱 매출 폼처럼: 사업자 정보를 안 쓰면 거래처 이름으로, 쓴 이름이 거래처 앞글자면 전체 이름으로
       billing_entity_name: resolveBilling(billing, source, ctx.clients),
-      memo: [...places.slice(2), ...notes].join(" / ") || null,
+      memo: places.slice(2).join(" / ") || null,
+      contact_name: notes.join(" ") || null,
       cargo_note: cargoNote,
       weight_ton: weight,
     },

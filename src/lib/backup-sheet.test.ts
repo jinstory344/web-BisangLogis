@@ -29,6 +29,7 @@ describe("salesToSheet", () => {
       memo: null,
       cargo_note: null,
       weight_ton: null,
+      contact_name: null,
     }
     const [header, row] = salesToSheet([sale])
     expect(row).toHaveLength(header.length)

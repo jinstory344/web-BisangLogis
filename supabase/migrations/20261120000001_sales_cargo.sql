@@ -1,9 +1,11 @@
 -- 매출 "물량"(냉동3p)·"중량"(톤) 칸. 배차의 물량(20261118000002)과 같은 뜻.
 -- 텔레그램 봇 매출에 "냉동 3, 1.0"을 쓰면 물량 냉동3p · 중량 1.0톤으로 들어간다.
 -- 매출은 늘 내 차로 하므로 차종 칸은 만들지 않는다(사용자 요청).
+-- 함께: 매출 "담당자"(contact_name) — 거래처 출처면 오더자 칸에 거래처 이름이 들어가서 담당자 이름 칸이 따로 필요.
+--   텔레그램 봇 "아토 이준호" → 거래처 아토무역 · 담당자 이준호.
 --
--- 1) sales.cargo_note, sales.weight_ton 추가 (기존 건은 null)
--- 2) create_sale / update_sale 끝에 p_cargo_note, p_weight_ton (default null) 추가
+-- 1) sales.cargo_note, sales.weight_ton, sales.contact_name 추가 (기존 건은 null)
+-- 2) create_sale / update_sale 끝에 p_cargo_note, p_weight_ton, p_contact_name (default null) 추가
 --    기존 함수를 지우고 다시 만든다. 금액(부가세) 계산·검증은 지금 DB에 있는 정의와 똑같다.
 --
 -- 전체가 한 트랜잭션이라 중간에 실패하면 아무것도 바뀌지 않는다.
@@ -12,6 +14,7 @@ begin;
 
 alter table public.sales
   add column cargo_note text,
+  add column contact_name text,
   add column weight_ton numeric(6, 2) check (weight_ton is null or (weight_ton >= 0 and weight_ton < 10000));
 
 do $$
@@ -46,7 +49,8 @@ create function public.create_sale(
   p_client_id uuid default null,
   p_source_sub text default null,
   p_cargo_note text default null,
-  p_weight_ton numeric default null
+  p_weight_ton numeric default null,
+  p_contact_name text default null
 )
 returns uuid
 language plpgsql
@@ -108,7 +112,7 @@ begin
     memo,
     billing_entity_name, order_contact_phone,
     client_id,
-    cargo_note, weight_ton
+    cargo_note, weight_ton, contact_name
   ) values (
     p_sale_date, p_origin, p_destination,
     p_supply_amount, v_vat_amount, v_total_amount, p_is_vat_exempt,
@@ -117,7 +121,7 @@ begin
     p_memo,
     p_billing_entity_name, p_order_contact_phone,
     p_client_id,
-    nullif(btrim(p_cargo_note), ''), p_weight_ton
+    nullif(btrim(p_cargo_note), ''), p_weight_ton, nullif(btrim(p_contact_name), '')
   )
   returning id into v_id;
 
@@ -145,7 +149,8 @@ begin
       'order_contact_phone', p_order_contact_phone,
       'client_id', p_client_id,
       'cargo_note', nullif(btrim(p_cargo_note), ''),
-      'weight_ton', p_weight_ton
+      'weight_ton', p_weight_ton,
+      'contact_name', nullif(btrim(p_contact_name), '')
     )
   );
 
@@ -170,7 +175,8 @@ create function public.update_sale(
   p_client_id uuid default null,
   p_source_sub text default null,
   p_cargo_note text default null,
-  p_weight_ton numeric default null
+  p_weight_ton numeric default null,
+  p_contact_name text default null
 )
 returns void
 language plpgsql
@@ -249,7 +255,8 @@ begin
     order_contact_phone = p_order_contact_phone,
     client_id = p_client_id,
     cargo_note = nullif(btrim(p_cargo_note), ''),
-    weight_ton = p_weight_ton
+    weight_ton = p_weight_ton,
+    contact_name = nullif(btrim(p_contact_name), '')
   where id = p_id;
 
   perform public.write_audit_log(

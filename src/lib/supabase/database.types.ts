@@ -139,6 +139,8 @@ export type SaleRow = BaseColumns & {
   cargo_note: string | null
   /** 중량(톤) */
   weight_ton: number | null
+  /** 담당자 이름 — 거래처 출처면 source_minor에 거래처 이름이 들어가서 따로 둔다 */
+  contact_name: string | null
 }
 
 export type ExpenseRow = BaseColumns & {
@@ -373,6 +375,7 @@ export type Database = {
           p_source_sub?: string | null
           p_cargo_note?: string | null
           p_weight_ton?: number | null
+          p_contact_name?: string | null
         }
         Returns: string
       }
@@ -395,6 +398,7 @@ export type Database = {
           p_source_sub?: string | null
           p_cargo_note?: string | null
           p_weight_ton?: number | null
+          p_contact_name?: string | null
         }
         Returns: undefined
       }

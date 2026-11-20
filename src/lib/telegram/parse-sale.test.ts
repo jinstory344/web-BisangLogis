@@ -102,6 +102,7 @@ describe("parseSaleLines", () => {
         memo: null,
         cargo_note: null,
         weight_ton: null,
+        contact_name: null,
       },
     })
   })
@@ -214,14 +215,11 @@ describe("매출 물량·중량(냉동3·1.0)", () => {
 })
 
 describe("매출: 띄어 쓴 거래처 줄(배차 모양)", () => {
-  it("'우영 김부장'은 거래처 우영로지스, 이름은 비고", () => {
+  it("'우영 김부장'은 거래처 우영로지스 · 담당자 김부장", () => {
     const r = parseSaleLines(["부산3곳", "남양주 케이푸드", "40만", "냉동3", "우영 김부장"], ctx)
-    expect(r.ok && [r.value.client_id !== null, r.value.source_minor, r.value.destination, r.value.memo]).toEqual([
-      true,
-      "우영로지스",
-      "남양주 케이푸드",
-      "김부장",
-    ])
+    expect(
+      r.ok && [r.value.client_id !== null, r.value.source_minor, r.value.destination, r.value.contact_name, r.value.memo]
+    ).toEqual([true, "우영로지스", "남양주 케이푸드", "김부장", null])
   })
   it("장소가 두 줄뿐이면 장소를 거래처로 빼지 않는다", () => {
     const r = parseSaleLines(["우영 창고", "부산대", "40만"], ctx)

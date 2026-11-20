@@ -106,7 +106,7 @@ function saleSummary(sale: ParsedSale, vat: number, duplicate: boolean): string 
   return [
     `✅ 매출 등록 (${shortDate(sale.sale_date)})`,
     `${sale.origin} → ${sale.destination}`,
-    source ? `출처: ${source}` : null,
+    source ? `출처: ${source}${sale.contact_name ? ` · 담당자 ${sale.contact_name}` : ""}` : null,
     sale.billing_entity_name ? `사업자 정보: ${sale.billing_entity_name}` : null,
     `공급가액 ${sale.supply_amount.toLocaleString("ko-KR")} + 세액 ${vat.toLocaleString("ko-KR")} = ${formatKRW(sale.supply_amount + vat)}`,
     `${PAYMENT_METHOD_LABELS[sale.payment_method]} · 미입금`,
@@ -162,6 +162,7 @@ async function handleSale(chatId: number, lines: string[]) {
     p_source_sub: sale.source_sub,
     p_cargo_note: sale.cargo_note,
     p_weight_ton: sale.weight_ton,
+    p_contact_name: sale.contact_name,
   })
   if (error || !id) {
     await sendText(chatId, `⚠️ 저장하지 못했어요: ${error?.message ?? "알 수 없는 오류"}`)

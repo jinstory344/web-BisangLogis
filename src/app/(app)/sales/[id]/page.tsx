@@ -72,6 +72,7 @@ export default async function SaleDetailPage({
         {sale.source_note ? (
           <Field label="출처 비고" value={sale.source_note} />
         ) : null}
+        <Field label="담당자" value={sale.contact_name ?? "-"} />
         <Field
           label="연락처"
           value={formatPhoneNumber(sale.order_contact_phone)}

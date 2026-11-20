@@ -56,6 +56,8 @@ export const saleFormSchema = z.object({
   cargo_note: z.string().trim().max(100),
   /** 중량(톤) — 선택 입력. 미입력은 null(undefined 금지 — 배차 폼과 같은 이유) */
   weight_ton: z.number().min(0).max(9999.99).nullable(),
+  /** 담당자 이름 (선택) */
+  contact_name: z.string().trim().max(50),
 })
 
 export type SaleFormValues = z.infer<typeof saleFormSchema>
@@ -77,6 +79,7 @@ export const saleFormDefaults: SaleFormValues = {
   memo: "",
   cargo_note: "",
   weight_ton: null,
+  contact_name: "",
 }
 
 /**
@@ -103,6 +106,7 @@ export function saleRowToFormValues(row: SaleRow): SaleFormValues {
     memo: row.memo ?? "",
     cargo_note: row.cargo_note ?? "",
     weight_ton: row.weight_ton,
+    contact_name: row.contact_name ?? "",
   }
 }
 
@@ -162,6 +166,7 @@ export function coerceSaleFormData(
     client_id: raw.client_id ?? "",
     source_sub: raw.source_sub ?? "",
     cargo_note: raw.cargo_note ?? "",
+    contact_name: raw.contact_name ?? "",
     weight_ton:
       raw.weight_ton === "" || raw.weight_ton === undefined ? null : Number(raw.weight_ton),
   }

@@ -41,6 +41,7 @@ const baseRow: SaleRow = {
   memo: "냉동",
   cargo_note: "냉동3p",
   weight_ton: 1.5,
+  contact_name: "이준호",
 }
 
 /**
@@ -101,6 +102,7 @@ describe("buildSaleCopyDefaults (이전 건 복사)", () => {
       memo: "냉동",
       cargo_note: "냉동3p",
       weight_ton: 1.5,
+      contact_name: "이준호",
     })
   })
 

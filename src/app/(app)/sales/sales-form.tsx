@@ -103,7 +103,7 @@ function hasMoreSectionValues(values: SaleFormValues): boolean {
     billing !== values.source_minor.trim()
   return (
     billingNeedsShowing ||
-    [values.order_contact_phone, values.source_note].some(
+    [values.contact_name, values.order_contact_phone, values.source_note].some(
       (value) => value.trim() !== ""
     )
   )
@@ -270,7 +270,7 @@ export function SalesForm({
     </FormItem>
   )
   const moreSummary = [
-    "연락처",
+    "담당자·연락처",
     billingShownAbove ? null : "사업자 정보",
     showSourceNote ? "출처 비고" : null,
   ]
@@ -544,6 +544,20 @@ export function SalesForm({
           id={moreSectionId}
           className={cn("flex-col gap-4 md:flex", isMoreOpen ? "flex" : "hidden")}
         >
+          {/* 담당자: 거래처 출처면 오더자 칸에 거래처 이름이 들어가서 담당자 이름을 따로 적는다(봇 "아토 이준호"). */}
+          <FormField
+            control={form.control}
+            name="contact_name"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>담당자</FormLabel>
+                <FormControl>
+                  <Input {...field} placeholder="담당자 이름" />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
           {/* 연락처: 같은 거래처라도 담당자가 건마다 달라, 자동으로 채우지 않고 최근 연락처를 칩으로만 제안한다. */}
           <FormField
             control={form.control}

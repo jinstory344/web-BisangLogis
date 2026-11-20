@@ -299,8 +299,13 @@ export function SaleActionSheetBody({
           </p>
         ) : null}
 
-        {phone ? (
-          <ContactRow label="오더자" name={sale.source_minor || "연락처"} phone={phone} />
+        {/* 담당자 이름이 있으면 "담당자", 없으면 예전처럼 오더자(소분류) 이름으로 */}
+        {phone || sale.contact_name ? (
+          <ContactRow
+            label={sale.contact_name ? "담당자" : "오더자"}
+            name={sale.contact_name || sale.source_minor || "연락처"}
+            phone={phone}
+          />
         ) : null}
 
         {sale.payment_status === "UNPAID" ? (
