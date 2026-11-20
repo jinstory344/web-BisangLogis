@@ -1,6 +1,6 @@
 "use client"
 
-import { ArrowUpDown, Check, ChevronDown, ChevronRight, ChevronUp, Copy, Ellipsis, Star, Trash2 } from "lucide-react"
+import { ArrowUpDown, Check, ChevronDown, ChevronRight, ChevronUp, Copy, Star } from "lucide-react"
 import Link from "next/link"
 import { useState, useTransition } from "react"
 import { toast } from "sonner"
@@ -17,12 +17,6 @@ import {
 } from "@/components/ui/alert-dialog"
 import { ContactRow } from "@/components/common/contact-row"
 import { Button } from "@/components/ui/button"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
 import {
   Sheet,
   SheetContent,
@@ -105,6 +99,38 @@ export function ClientList({
         if (error) toast.error(error)
       } catch (err) {
         toast.error(err instanceof Error ? err.message : "고정 실패")
+      }
+    })
+  }
+
+  // 판의 ★: 판을 닫지 않고 바로 고정·해제(누르자마자 별 모양이 바뀌고, 실패하면 되돌린다)
+  const [pinOverride, setPinOverride] = useState<Record<string, boolean>>({})
+  const sheetCurrent = sheetClient ? (clients.find((c) => c.id === sheetClient.id) ?? sheetClient) : null
+  const isSheetPinned = sheetCurrent
+    ? (pinOverride[sheetCurrent.id] ?? sheetCurrent.pin_order != null)
+    : false
+
+  function handleSheetPin(id: string) {
+    const next = !isSheetPinned
+    setPinOverride((prev) => ({ ...prev, [id]: next }))
+    startTransition(async () => {
+      try {
+        const { error } = await toggleClientPinAction([id])
+        if (error) {
+          toast.error(error)
+          setPinOverride((prev) => ({ ...prev, [id]: !next }))
+          return
+        }
+        toast.success(next ? "맨 위에 고정했어요" : "고정을 풀었어요")
+        // 서버 값이 새로 들어왔으니 임시 표시는 지운다
+        setPinOverride((prev) => {
+          const rest = { ...prev }
+          delete rest[id]
+          return rest
+        })
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : "고정 실패")
+        setPinOverride((prev) => ({ ...prev, [id]: !next }))
       }
     })
   }
@@ -332,33 +358,19 @@ export function ClientList({
         <SheetContent side="bottom" className="gap-0 pb-6">
           {sheetClient ? (
             <>
-              {/* ✕ 옆 ⋯ 메뉴: 가끔 쓰는 고정·삭제는 한 번 더 눌러야 나오게(차량 정보와 같은 방식) */}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <button
-                    type="button"
-                    aria-label="더보기"
-                    className="absolute top-3 right-12 flex size-8 items-center justify-center rounded-md bg-muted text-foreground/80"
-                  >
-                    <Ellipsis className="size-5" />
-                  </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-44">
-                  <DropdownMenuItem className="h-10" onSelect={() => handleCopy(sheetClient)}>
-                    <Copy />
-                    사업자정보 복사
-                  </DropdownMenuItem>
-                  <DropdownMenuItem className="h-10" disabled={isPending} onSelect={() => handleTogglePin([sheetClient.id])}>
-                    <Star className={cn(sheetClient.pin_order != null && SECTION_COLORS.client.star)} />
-                    {sheetClient.pin_order != null ? "고정 풀기" : "위에 고정"}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem className="h-10" variant="destructive" onSelect={() => handleDeleteClick(sheetClient)}>
-                    <Trash2 />
-                    삭제
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-              <SheetHeader className="pr-24">
+              {/* ✕ 옆 ★: 메모처럼 누르는 즉시 고정·해제 */}
+              <button
+                type="button"
+                aria-pressed={isSheetPinned}
+                aria-label={isSheetPinned ? "고정 풀기" : "맨 위에 고정"}
+                disabled={isPending}
+                onClick={() => handleSheetPin(sheetClient.id)}
+                className="absolute top-2.5 right-11 flex h-9 items-center gap-1 rounded-full px-2 text-xs text-muted-foreground"
+              >
+                <Star className={cn("size-5", isSheetPinned && cn(SECTION_COLORS.client.star, "fill-current"))} />
+                {isSheetPinned ? "고정됨" : "고정"}
+              </button>
+              <SheetHeader className="pr-28">
                 <SheetTitle>{sheetClient.name}</SheetTitle>
                 <SheetDescription>
                   거래처{sheetClient.biz_no ? ` · 사업자 ${formatBizNo(sheetClient.biz_no)}` : ""}
@@ -397,6 +409,15 @@ export function ClientList({
                 </dl>
                 <Button variant="outline" className="h-11" asChild>
                   <Link href={`/clients/${sheetClient.id}/edit`}>수정</Link>
+                </Button>
+                {/* 가끔 쓰는 삭제는 맨 아래 작게 (배차 판과 같은 자리) */}
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="h-10 text-destructive hover:text-destructive"
+                  onClick={() => handleDeleteClick(sheetClient)}
+                >
+                  삭제
                 </Button>
               </div>
             </>
