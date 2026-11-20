@@ -105,7 +105,7 @@ export function findVehicle(vehicles: VehicleOption[], plateNo: string): Vehicle
   return sameCore.length === 1 ? sameCore[0] : undefined
 }
 
-const PLATE = /^((?:[가-힣]{2})?\d{2,3}[가-힣]\d{4})\s*(.*)$/
+const PLATE_TOKEN = /^(?:[가-힣]{2})?\d{2,3}[가-힣]\d{4}$/
 const PHONE = /(01\d[-\s]?\d{3,4}[-\s]?\d{4})/
 
 /**
@@ -147,6 +147,20 @@ export function pickClient(
     return parts.length >= 2 && squash(parts.slice(1).join("")) === q
   })
   return byTail.length === 1 ? { client: byTail[0], used: 1 } : null
+}
+
+/**
+ * 차량 줄: 차량번호·차주 이름·연락처가 어떤 순서로 있어도 된다
+ * ("서울86바7754 김진승 010-…", "김진승 010-… 서울86바7754", "010-… 서울86바7754 김진승").
+ * 차량번호(띄어쓰기로 나뉜 한 덩어리)가 없으면 null.
+ */
+export function parseVehicleLine(line: string): { plateNo: string; name: string | null; phone: string | null } | null {
+  const phone: string | null = line.match(PHONE)?.[1] ?? null
+  const tokens = line.replace(PHONE, " ").split(/[\s,，]+/).filter(Boolean)
+  const index = tokens.findIndex((token) => PLATE_TOKEN.test(token))
+  if (index < 0) return null
+  const name = tokens.filter((_, i) => i !== index).join(" ").trim()
+  return { plateNo: tokens[index], name: name || null, phone }
 }
 
 export function parseDispatchLines(
@@ -221,11 +235,11 @@ export function parseDispatchLines(
       }
     }
 
-    const plate: RegExpMatchArray | null = vehicle === null ? line.match(PLATE) : null
+    const plate: ReturnType<typeof parseVehicleLine> = vehicle === null ? parseVehicleLine(line) : null
     if (plate) {
-      const plateNo: string = plate[1]
-      const phone: string | null = plate[2].match(PHONE)?.[1] ?? null
-      const name: string | null = plate[2].replace(PHONE, "").trim() || null
+      const plateNo: string = plate.plateNo
+      const name: string | null = plate.name
+      const phone: string | null = plate.phone
       const known: VehicleOption | undefined = findVehicle(ctx.vehicles, plateNo)
       vehicle = {
         vehicle_id: known?.id ?? null,

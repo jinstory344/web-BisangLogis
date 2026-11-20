@@ -4,6 +4,7 @@ import {
   findVehicle,
   parseCargoLine,
   parseLoadLine,
+  parseVehicleLine,
   parseDispatchLines,
   parseWeightLine,
 } from "@/lib/telegram/parse-dispatch"
@@ -288,5 +289,30 @@ describe("배차 거래처: 묶음(조은푸드 육대장·이화수)", () => {
       "조은푸드",
       "광주 삼진냉장",
     ])
+  })
+})
+
+describe("parseVehicleLine (차량번호·차주·연락처 순서 상관없이)", () => {
+  const want = { plateNo: "서울86바7754", name: "김진승", phone: "010-1111-2222" }
+  it.each([
+    "서울86바7754 김진승 010-1111-2222",
+    "김진승 010-1111-2222 서울86바7754",
+    "010-1111-2222 서울86바7754 김진승",
+    "김진승 서울86바7754 010-1111-2222",
+  ])("%s", (line) => {
+    expect(parseVehicleLine(line)).toEqual(want)
+  })
+  it("이름·연락처는 빼도 되고, 차량번호가 없으면 차량 줄이 아니다", () => {
+    expect(parseVehicleLine("86바7754")).toEqual({ plateNo: "86바7754", name: null, phone: null })
+    expect(parseVehicleLine("아토무역 이재근 010-1234-5678")).toBeNull()
+  })
+  it("배차에서도 순서와 상관없이 차량으로 들어간다", () => {
+    const r = parseDispatchLines(["a", "b", "아토무역", "김진승 01098765432 서울86바7754"], { today, clients, vehicles })
+    expect(r.ok && r.value).toMatchObject({
+      vehicle_id: "v-1",
+      plate_no_snapshot: "서울86바7754",
+      driver_name_snapshot: "김진승",
+      driver_phone_snapshot: "01098765432",
+    })
   })
 })
