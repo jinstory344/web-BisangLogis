@@ -14,26 +14,24 @@ import { SearchButton } from "@/components/layout/search-button"
 export const LIST_PAGE_HEAD_PX = 64
 
 export const LIST_SUB_STICKY_CLASS =
-  "sticky top-[4rem] z-20 -mx-4 bg-background px-4 md:static md:mx-0 md:px-0"
+  "sticky top-[4rem] z-20 -mx-4 bg-background px-4"
 
 /** 목록 위 거르기 칩을 조금 작게 (36px) — 비상 화면 칩과 같은 크기 */
-export const LIST_CHIP_CLASS = "min-h-9 px-3.5 text-[13px] md:min-h-8"
+export const LIST_CHIP_CLASS = "min-h-9 px-3.5 text-[13px]"
 
 /**
  * 매출·지출·배차 목록 화면의 머리.
  * 모바일: HOME 화면과 같은 모양(왼쪽 검색 · 가운데 제목 · 오른쪽 달력 아이콘), 위에 고정되어 스크롤해도 보인다.
  * 달은 아이콘으로 고르고, 이전·다음 달은 목록을 쓸어 넘긴다. 통계는 메뉴에서 간다.
- * 데스크톱: 왼쪽 큰 제목 + 오른쪽 등록 버튼(기존 모양), 고정하지 않는다.
+ * 컴퓨터 화면도 모바일과 같은 모양(사용자 요청 2026-11-20). desktopTitle·desktopAction은 예전 호출을 위해 남겨 둔 값이라 쓰지 않는다.
  */
 export function ListPageHead({
   title,
-  desktopTitle,
-  desktopAction,
   periodPicker,
   titleBarClassName,
 }: {
   title: string
-  desktopTitle: string
+  desktopTitle?: string
   desktopAction?: ReactNode
   /** 오른쪽 위 달력 아이콘(누르면 달 고르기). 이전·다음 달은 목록을 쓸어 넘긴다. */
   periodPicker?: ReactNode
@@ -41,18 +39,12 @@ export function ListPageHead({
   titleBarClassName?: string
 }) {
   return (
-    <div className="sticky top-0 z-30 -mx-4 bg-background px-4 pt-6 md:static md:mx-0 md:px-0 md:pt-0">
-      <header className="grid h-10 grid-cols-[2.5rem_1fr_2.5rem] items-center md:hidden">
+    <div className="sticky top-0 z-30 -mx-4 bg-background px-4 pt-6">
+      <header className="grid h-10 grid-cols-[2.5rem_1fr_2.5rem] items-center">
         <SearchButton />
         <PageTitle title={title} barClassName={titleBarClassName} />
         {periodPicker ?? <span aria-hidden />}
       </header>
-
-      <div className="hidden items-center justify-between gap-4 md:flex">
-        <h1 className="text-2xl font-semibold">{desktopTitle}</h1>
-        {desktopAction}
-      </div>
-
     </div>
   )
 }

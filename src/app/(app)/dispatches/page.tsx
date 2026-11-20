@@ -17,7 +17,6 @@ import {
   summarizeDispatches,
 } from "@/lib/dispatch-list"
 
-import { DispatchFilters } from "./dispatch-filters"
 import { DispatchList } from "./dispatch-list"
 import { DispatchMobileControls } from "./dispatch-mobile-controls"
 
@@ -42,7 +41,7 @@ export default async function DispatchesPage({
   const to = params.to || defaultRange.to
 
   return (
-    <div className="px-4 pb-4 md:p-6">
+    <div className="mx-auto max-w-3xl px-4 pb-4">
       <div className="flex flex-col md:gap-2">
         <ListPageHead
           title="배차"
@@ -127,16 +126,8 @@ async function DispatchesBody({ params }: { params: DispatchSearchParams }) {
 
   return (
     <MonthSwipe className="flex flex-col gap-3 md:gap-4">
-          <div className="hidden md:block">
-            <DispatchFilters
-              from={from}
-              to={to}
-              clientId={clientId}
-              clientName={clientName}
-            />
-          </div>
           {/* 모바일 조작부는 contents라서 안의 달 이동·합계가 목록 전체 높이에서 고정될 수 있다 */}
-          <div className="contents md:hidden">
+          <div className="contents">
             <DispatchMobileControls
               from={from}
               to={to}

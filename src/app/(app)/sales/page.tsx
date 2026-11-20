@@ -13,7 +13,6 @@ import type { PaymentMethod, PaymentStatus, SaleRow } from "@/lib/supabase/datab
 
 import { pickStatusTotals, summarizeByPaymentStatus } from "@/lib/sales-list"
 
-import { SalesFilters } from "./sales-filters"
 import { SalesList } from "./sales-list"
 import { SalesMobileControls } from "./sales-mobile-controls"
 import { getSaleSources } from "./sources"
@@ -41,7 +40,7 @@ export default async function SalesPage({
   const to = params.to || defaultRange.to
 
   return (
-    <div className="px-4 pb-4 md:p-6">
+    <div className="mx-auto max-w-3xl px-4 pb-4">
       <div className="flex flex-col md:gap-2">
         <ListPageHead
           title="매출"
@@ -150,17 +149,8 @@ async function SalesBody({ params }: { params: SalesSearchParams }) {
             </div>
           ) : null}
 
-          <div className="hidden md:block">
-            <SalesFilters
-              from={from}
-              to={to}
-              sourceMajor={sourceMajor}
-              paymentStatus={paymentStatus}
-              paymentMethod={paymentMethod}
-            />
-          </div>
           {/* 모바일 조작부는 contents라서 안의 달 이동·합계가 목록 전체 높이에서 고정될 수 있다 */}
-          <div className="contents md:hidden">
+          <div className="contents">
             <SalesMobileControls
               from={from}
               to={to}

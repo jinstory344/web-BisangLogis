@@ -2,8 +2,7 @@
 
 import Link from "next/link"
 import { usePathname, useSearchParams } from "next/navigation"
-import { ChevronDown, ChevronRight } from "lucide-react"
-import { Fragment, useMemo, useState, useTransition } from "react"
+import { useState, useTransition } from "react"
 import { toast } from "sonner"
 
 import {
@@ -16,23 +15,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { ReturnToLink } from "@/components/common/return-to-link"
 import { Button } from "@/components/ui/button"
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
-import { expensePaymentLabel } from "@/lib/constants/payment-method"
-import {
-  formatDateWithWeekday,
-  formatMonthDay,
-  getWeekOfMonth,
 } from "@/lib/date"
-import { formatKRW } from "@/lib/money"
 import type { ExpenseRow } from "@/lib/supabase/database.types"
 
 import { deleteExpenseAction } from "./actions"
@@ -49,41 +34,9 @@ interface ExpenseListProps {
   totalPages: number
 }
 
-interface WeekGroup {
-  key: string
-  label: string
-  rows: ExpenseRow[]
-  total: number
-}
-
-/** expense_date 내림차순으로 정렬된 목록을 "M월 N주차" 단위로 묶는다 */
-function groupExpensesByWeek(expenses: ExpenseRow[]): WeekGroup[] {
-  const groups: WeekGroup[] = []
-  const indexByKey = new Map<string, number>()
-
-  for (const expense of expenses) {
-    const [year, month] = expense.expense_date.split("-")
-    const week = getWeekOfMonth(expense.expense_date)
-    const key = `${year}-${month}-${week}`
-
-    let idx = indexByKey.get(key)
-    if (idx === undefined) {
-      idx = groups.length
-      indexByKey.set(key, idx)
-      groups.push({ key, label: `${Number(month)}월 ${week}주차`, rows: [], total: 0 })
-    }
-
-    const group = groups[idx]
-    group.rows.push(expense)
-    group.total += expense.amount
-  }
-
-  return groups
-}
 
 export function ExpenseList({
   expenses,
-  summary,
   page,
   totalPages,
 }: ExpenseListProps) {
@@ -92,20 +45,6 @@ export function ExpenseList({
   const [deleteTarget, setDeleteTarget] = useState<ExpenseRow | null>(null)
   const [isPending, startTransition] = useTransition()
 
-  const weekGroups = useMemo(() => groupExpensesByWeek(expenses), [expenses])
-  // 가장 최근 주차만 펼친 채로 시작하고 나머지는 클릭해서 펼쳐보게 한다.
-  const [expandedWeeks, setExpandedWeeks] = useState<Set<string>>(
-    () => new Set(weekGroups.slice(0, 1).map((g) => g.key))
-  )
-
-  function toggleWeek(key: string) {
-    setExpandedWeeks((prev) => {
-      const next = new Set(prev)
-      if (next.has(key)) next.delete(key)
-      else next.add(key)
-      return next
-    })
-  }
 
   function pageHref(nextPage: number) {
     const params = new URLSearchParams(searchParams.toString())
@@ -138,109 +77,8 @@ export function ExpenseList({
 
   return (
     <>
-      {/* 데스크톱 표 */}
-      <div className="hidden overflow-x-auto rounded-md border md:block">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>날짜</TableHead>
-              <TableHead>대분류</TableHead>
-              <TableHead>소분류</TableHead>
-              <TableHead className="text-right">금액</TableHead>
-              <TableHead>결제수단</TableHead>
-              <TableHead>비고</TableHead>
-              <TableHead className="text-right">관리</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {weekGroups.map((group) => {
-              const isExpanded = expandedWeeks.has(group.key)
-              return (
-                <Fragment key={group.key}>
-                  <TableRow
-                    className="cursor-pointer bg-muted/40 hover:bg-muted"
-                    onClick={() => toggleWeek(group.key)}
-                  >
-                    <TableCell colSpan={7}>
-                      <div className="flex items-center justify-between gap-4">
-                        <span className="flex items-center gap-1.5 font-medium">
-                          {isExpanded ? (
-                            <ChevronDown className="size-4" />
-                          ) : (
-                            <ChevronRight className="size-4" />
-                          )}
-                          {group.label}
-                          <span className="font-normal text-muted-foreground">
-                            {formatMonthDay(group.rows[group.rows.length - 1].expense_date)}
-                            ~{formatMonthDay(group.rows[0].expense_date)} · {group.rows.length}건
-                          </span>
-                        </span>
-                        <span className="text-muted-foreground">
-                          합계 {formatKRW(group.total)}
-                        </span>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                  {isExpanded
-                    ? group.rows.map((expense) => (
-                        <TableRow key={expense.id}>
-                          <TableCell>
-                            {formatDateWithWeekday(expense.expense_date)}
-                          </TableCell>
-                          <TableCell>{expense.category_major}</TableCell>
-                          <TableCell>{expense.category_minor}</TableCell>
-                          <TableCell className="text-right">
-                            {formatKRW(expense.amount)}
-                          </TableCell>
-                          <TableCell>
-                            {expensePaymentLabel(expense) || "-"}
-                          </TableCell>
-                          <TableCell className="max-w-40 truncate">
-                            {expense.memo ?? "-"}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <div className="flex justify-end gap-2">
-                              <Button variant="outline" size="sm" asChild>
-                                <ReturnToLink href={`/expenses/${expense.id}/edit`}>
-                                  수정
-                                </ReturnToLink>
-                              </Button>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => setDeleteTarget(expense)}
-                              >
-                                삭제
-                              </Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    : null}
-                </Fragment>
-              )
-            })}
-          </TableBody>
-        </Table>
-        <div className="border-t bg-muted/30 p-3 text-sm">
-          <div className="flex items-center justify-between font-medium">
-            <span>{summary.count}건</span>
-            <span>합계 {formatKRW(summary.total)}</span>
-          </div>
-          {summary.byMajor.length > 0 ? (
-            <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-muted-foreground">
-              {summary.byMajor.map((row) => (
-                <span key={row.major}>
-                  {row.major} {formatKRW(row.total)}
-                </span>
-              ))}
-            </div>
-          ) : null}
-        </div>
-      </div>
-
-      {/* 모바일: 날짜별 묶음 + 한 건당 두 줄 행 (요약은 페이지 상단 ExpenseMobileControls) */}
-      <div className="md:hidden">
+      {/* 컴퓨터 화면도 모바일과 같은 목록(2026-11-20): 날짜별 묶음 + 한 건당 두 줄 행 (요약은 페이지 상단 ExpenseMobileControls) */}
+      <div>
         <ExpenseMobileList
           expenses={expenses}
           onDelete={setDeleteTarget}

@@ -25,7 +25,7 @@ export function TotalsRow({
   return (
     <dl
       className={cn(
-        "-mx-4 grid border-b px-2 md:mx-0 md:px-0",
+        "-mx-4 grid border-b px-2",
         large ? "py-3" : "py-1.5"
       )}
       style={{ gridTemplateColumns: `repeat(${items.length}, minmax(0, 1fr))` }}

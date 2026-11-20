@@ -54,7 +54,7 @@ export function LedgerCalendar({
 
   return (
     <div className="flex flex-col">
-      <div className="-mx-4 grid grid-cols-7 border-b md:mx-0">
+      <div className="-mx-4 grid grid-cols-7 border-b">
         {WEEKDAYS.map((label, index) => (
           <span
             key={label}
@@ -72,7 +72,7 @@ export function LedgerCalendar({
         ))}
       </div>
 
-      <div className="-mx-4 grid grid-cols-7 md:mx-0">
+      <div className="-mx-4 grid grid-cols-7">
         {cells.map((cell, index) => {
           const bucket = cell.inMonth ? byDate.get(cell.date) : undefined
           const day = Number(cell.date.slice(8, 10))

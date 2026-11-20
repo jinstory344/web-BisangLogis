@@ -1,5 +1,6 @@
 "use client"
 
+import { DetailSheet } from "@/components/layout/detail-sheet"
 import { SaleSourceCell } from "@/components/ledger/sale-source-cell"
 import { Check } from "lucide-react"
 import Link from "next/link"
@@ -10,8 +11,6 @@ import { ContactRow } from "@/components/common/contact-row"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import {
-  Sheet,
-  SheetContent,
   SheetDescription,
   SheetHeader,
   SheetTitle,
@@ -193,8 +192,7 @@ export function SalesMobileList({
         </section>
       ))}
 
-      <Sheet open={isSheetOpen && sheetSale !== null} onOpenChange={setIsSheetOpen}>
-        <SheetContent side="bottom" className="gap-0 pb-6">
+      <DetailSheet open={isSheetOpen && sheetSale !== null} onOpenChange={setIsSheetOpen} className="gap-0 pb-6">
           {sheetSale ? (
             <SaleActionSheetBody
               sale={sheetSale}
@@ -212,8 +210,8 @@ export function SalesMobileList({
               }}
             />
           ) : null}
-        </SheetContent>
-      </Sheet>
+        
+</DetailSheet>
     </div>
   )
 }

@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import { DetailSheet } from "@/components/layout/detail-sheet"
 import { useMemo, useState, type ReactNode } from "react"
 
 import { ReturnToLink } from "@/components/common/return-to-link"
@@ -10,8 +11,6 @@ import { ContactRow } from "@/components/common/contact-row"
 import { DispatchMessageSheet, type MessageTarget } from "./message-sheets"
 import { Button } from "@/components/ui/button"
 import {
-  Sheet,
-  SheetContent,
   SheetDescription,
   SheetHeader,
   SheetTitle,
@@ -157,11 +156,7 @@ export function DispatchMobileList({
         </section>
       ))}
 
-      <Sheet
-        open={isSheetOpen && sheetDispatch !== null}
-        onOpenChange={setIsSheetOpen}
-      >
-        <SheetContent side="bottom" className="max-h-[85svh] gap-0 overflow-y-auto pb-6">
+      <DetailSheet open={isSheetOpen && sheetDispatch !== null} onOpenChange={setIsSheetOpen} className="max-h-[85svh] gap-0 overflow-y-auto pb-6">
           {sheetDispatch ? (
             <DispatchActionSheetBody
               dispatch={sheetDispatch}
@@ -176,8 +171,8 @@ export function DispatchMobileList({
               }}
             />
           ) : null}
-        </SheetContent>
-      </Sheet>
+        
+</DetailSheet>
 
       <DispatchMessageSheet
         target={messageDispatch ? message!.target : null}

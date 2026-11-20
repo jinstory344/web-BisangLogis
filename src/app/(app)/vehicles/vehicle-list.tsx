@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import { DetailSheet } from "@/components/layout/detail-sheet"
 import { ArrowDownWideNarrow, ArrowUpDown, ArrowUpNarrowWide, Check, ChevronDown, ChevronRight, ChevronUp, Copy, Star } from "lucide-react"
 import { useState, useTransition } from "react"
 import { toast } from "sonner"
@@ -18,8 +19,6 @@ import {
 import { ContactRow } from "@/components/common/contact-row"
 import { Button } from "@/components/ui/button"
 import {
-  Sheet,
-  SheetContent,
   SheetDescription,
   SheetHeader,
   SheetTitle,
@@ -176,8 +175,8 @@ export function VehicleList({
   return (
     <>
       {pinned.length > 0 ? (
-        <section className="-mx-4 md:mx-0">
-          <div className={cn("sticky z-20 flex h-9 items-center justify-between bg-background px-4 text-sm text-muted-foreground md:static", SECTION_COLORS.vehicle.line, UNDER_STICKY_HEAD)}>
+        <section className="-mx-4">
+          <div className={cn("sticky z-20 flex h-9 items-center justify-between bg-background px-4 text-sm text-muted-foreground", SECTION_COLORS.vehicle.line, UNDER_STICKY_HEAD)}>
             <span>
               <span className="font-semibold text-foreground">고정</span> {pinned.length}/
               {MAX_PINNED_VEHICLES}
@@ -201,8 +200,8 @@ export function VehicleList({
         </section>
       ) : null}
 
-      <section className="-mx-4 md:mx-0">
-        <div className={cn("sticky z-20 flex h-11 items-center justify-between bg-background px-4 text-sm text-muted-foreground md:static", "border-b", UNDER_STICKY_HEAD)}>
+      <section className="-mx-4">
+        <div className={cn("sticky z-20 flex h-11 items-center justify-between bg-background px-4 text-sm text-muted-foreground", "border-b", UNDER_STICKY_HEAD)}>
           {/* 누르면 전체 목록을 접고 펴기(접은 상태는 휴대폰에 기억) */}
           <button
             type="button"
@@ -242,8 +241,7 @@ export function VehicleList({
         {isOthersOpen ? <ul>{others.map((v) => row(v, null))}</ul> : null}
       </section>
 
-      <Sheet open={sheetVehicle !== null} onOpenChange={(open) => !open && setSheetVehicle(null)}>
-        <SheetContent side="bottom" className="max-h-[90svh] gap-0 overflow-y-auto pb-6">
+      <DetailSheet open={sheetVehicle !== null} onOpenChange={(open) => !open && setSheetVehicle(null)} className="max-h-[90svh] gap-0 overflow-y-auto pb-6">
           {sheetVehicle ? (
             <>
               {/* ✕ 옆 ★: 거래처·메모처럼 누르는 즉시 고정·해제 */}
@@ -297,8 +295,8 @@ export function VehicleList({
               </div>
             </>
           ) : null}
-        </SheetContent>
-      </Sheet>
+        
+</DetailSheet>
 
       <AlertDialog
         open={deleteTarget !== null}

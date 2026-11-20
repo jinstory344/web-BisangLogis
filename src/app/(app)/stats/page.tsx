@@ -44,8 +44,8 @@ export default async function StatsPage({
   const month = getMonthRange(from)
 
   return (
-    <div className="px-4 pb-4 md:p-6">
-      <div className="mx-auto flex max-w-2xl flex-col gap-3">
+    <div className="px-4 pb-4">
+      <div className="mx-auto flex max-w-4xl flex-col gap-3">
         {/* 위에 고정: 제목 + 종류 탭 (비상 화면과 같은 모양) */}
         <div className="sticky top-0 z-30 -mx-4 bg-background px-4 pt-6 md:static md:mx-0 md:px-0 md:pt-0">
           <header className="grid h-10 grid-cols-[2.5rem_1fr_2.5rem] items-center">

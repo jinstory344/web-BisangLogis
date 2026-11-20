@@ -24,7 +24,7 @@ export function DayHeader({
 }: DayHeaderProps) {
   return (
     // 바깥은 고정용(불투명 바탕), 안쪽은 원래의 옅은 회색 줄
-    <div className={cn("sticky z-10 bg-background md:static", stickyTopClassName)}>
+    <div className={cn("sticky z-10 bg-background", stickyTopClassName)}>
     <div className="flex items-center justify-between bg-muted/50 px-4 py-2">
       <span className="flex items-center gap-1.5">
         {showMonth ? (

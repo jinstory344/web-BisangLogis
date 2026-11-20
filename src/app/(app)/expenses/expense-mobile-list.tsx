@@ -1,14 +1,13 @@
 "use client"
 
 import Link from "next/link"
+import { DetailSheet } from "@/components/layout/detail-sheet"
 import { useMemo, useState } from "react"
 
 import { ReturnToLink } from "@/components/common/return-to-link"
 import { DayHeader } from "@/components/list/day-header"
 import { Button } from "@/components/ui/button"
 import {
-  Sheet,
-  SheetContent,
   SheetDescription,
   SheetHeader,
   SheetTitle,
@@ -125,11 +124,7 @@ export function ExpenseMobileList({
         </section>
       ))}
 
-      <Sheet
-        open={isSheetOpen && sheetExpense !== null}
-        onOpenChange={setIsSheetOpen}
-      >
-        <SheetContent side="bottom" className="gap-0 pb-6">
+      <DetailSheet open={isSheetOpen && sheetExpense !== null} onOpenChange={setIsSheetOpen} className="gap-0 pb-6">
           {sheetExpense ? (
             <ExpenseActionSheetBody
               expense={sheetExpense}
@@ -139,8 +134,8 @@ export function ExpenseMobileList({
               }}
             />
           ) : null}
-        </SheetContent>
-      </Sheet>
+        
+</DetailSheet>
     </div>
   )
 }

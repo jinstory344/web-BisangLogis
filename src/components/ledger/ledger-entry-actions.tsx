@@ -1,5 +1,6 @@
 "use client"
 
+import { DetailSheet } from "@/components/layout/detail-sheet"
 import { useRouter } from "next/navigation"
 import { useState, useTransition } from "react"
 import { toast } from "sonner"
@@ -25,7 +26,6 @@ import {
 } from "@/components/ui/alert-dialog"
 import { PayDateSheet } from "@/components/sales/pay-date-sheet"
 import { salePayText, shortMonthDay } from "@/lib/sales-pay-text"
-import { Sheet, SheetContent } from "@/components/ui/sheet"
 
 /**
  * 비상 화면에서 건을 누르면 뜨는 작업 시트 (매출·지출 목록과 같은 시트).
@@ -92,8 +92,7 @@ export function LedgerEntryActions({
 
   return (
     <>
-      <Sheet open={open && entry !== null} onOpenChange={onOpenChange}>
-        <SheetContent side="bottom" className="gap-0 pb-6">
+      <DetailSheet open={open && entry !== null} onOpenChange={onOpenChange} className="gap-0 pb-6">
           {entry?.kind === "sale" ? (
             <SaleActionSheetBody
               sale={entry.row}
@@ -119,8 +118,8 @@ export function LedgerEntryActions({
               }}
             />
           ) : null}
-        </SheetContent>
-      </Sheet>
+        
+</DetailSheet>
 
       <PayDateSheet
         open={payTarget !== null}

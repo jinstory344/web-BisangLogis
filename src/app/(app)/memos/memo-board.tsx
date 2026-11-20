@@ -170,16 +170,15 @@ export function MemoBoard({
   }
 
   return (
-    <div className="mx-auto max-w-2xl p-4 md:p-6">
+    <div className="mx-auto max-w-2xl p-4 lg:max-w-5xl">
       {/* 스크롤해도 제목·탭·거래처·찾기 칸까지 위에 고정 */}
-      <StickyHead className="-mx-4 -mt-4 px-4 pt-4 pb-2 md:static md:mx-0 md:mt-0 md:px-0 md:pt-0">
+      <StickyHead className="-mx-4 -mt-4 px-4 pt-4 pb-2">
         {/* 차량·거래처와 같은 머리: 왼쪽 통합검색 · 가운데 제목 · 오른쪽 새 메모 */}
-        <div className="mt-2 grid h-10 grid-cols-[2.5rem_1fr_2.5rem] items-center md:mt-0 md:flex md:h-auto md:justify-between md:gap-4">
-          <span className="md:hidden">
+        <div className="mt-2 grid h-10 grid-cols-[2.5rem_1fr_2.5rem] items-center">
+          <span>
             <SearchButton />
           </span>
-          <PageTitle title="메모" barClassName={MEMO_TITLE_BAR} className="md:hidden" />
-          <h1 className="hidden text-2xl font-semibold md:block">메모</h1>
+          <PageTitle title="메모" barClassName={MEMO_TITLE_BAR} />
           <button
             type="button"
             aria-label="새 메모"
@@ -288,7 +287,7 @@ export function MemoBoard({
 
       {view === "grid" && shown.length > 0 ? (
         // 2칸 보기(기본): 한 줄에 카드 2개 — 위쪽 색 줄, (전체 탭이면 종류 꼬리표) · 제목 · 내용 2줄 · 거래처와 복사
-        <div className="mt-1 grid grid-cols-2 gap-2 md:mt-3">
+        <div className="mt-1 grid grid-cols-2 gap-2 md:mt-3 md:grid-cols-3 lg:grid-cols-4">
           {shown.map((memo) => (
             <div key={memo.id} className={cn("flex min-h-32 flex-col rounded-xl bg-muted/60 p-2.5", KIND_STYLE[memo.kind].card)}>
               <button

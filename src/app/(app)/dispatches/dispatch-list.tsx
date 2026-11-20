@@ -15,20 +15,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { ReturnToLink } from "@/components/common/return-to-link"
 import { Button } from "@/components/ui/button"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableFooter,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
-import { formatDateWithWeekday } from "@/lib/date"
-import { formatKRW } from "@/lib/money"
-import { formatPhoneNumber } from "@/lib/phone"
 import type { DispatchRow } from "@/lib/supabase/database.types"
 
 import { deleteDispatchAction } from "./actions"
@@ -53,7 +40,6 @@ interface DispatchListProps {
 export function DispatchList({
   dispatches,
   clientNameMap,
-  totalCount,
   summary,
   page,
   totalPages,
@@ -94,96 +80,8 @@ export function DispatchList({
 
   return (
     <>
-      {/* 데스크톱 표 */}
-      <div className="hidden overflow-x-auto rounded-md border md:block">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>날짜</TableHead>
-              <TableHead>거래처</TableHead>
-              <TableHead>담당자</TableHead>
-              <TableHead>경로</TableHead>
-              <TableHead className="text-right">파렛</TableHead>
-              <TableHead className="text-right">중량</TableHead>
-              <TableHead>차량정보</TableHead>
-              <TableHead>전화번호</TableHead>
-              <TableHead className="text-right">운임</TableHead>
-              <TableHead className="text-right">수수료</TableHead>
-              <TableHead className="text-right">관리</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {dispatches.map((d) => (
-              <TableRow key={d.id}>
-                <TableCell>{formatDateWithWeekday(d.dispatch_date)}</TableCell>
-                <TableCell>
-                  {d.client_id ? clientNameMap[d.client_id] ?? "-" : "-"}
-                </TableCell>
-                <TableCell>{d.contact_name ?? "-"}</TableCell>
-                <TableCell>
-                  {d.origin} → {d.destination}
-                </TableCell>
-                <TableCell className="text-right">
-                  {d.pallet_count ?? "-"}
-                </TableCell>
-                <TableCell className="text-right">
-                  {d.weight_ton != null ? `${d.weight_ton}톤` : "-"}
-                </TableCell>
-                <TableCell>
-                  {d.driver_name_snapshot ? `${d.driver_name_snapshot} ` : ""}
-                  {d.plate_no_snapshot ?? "-"}
-                </TableCell>
-                <TableCell>{formatPhoneNumber(d.driver_phone_snapshot)}</TableCell>
-                <TableCell className="text-right">
-                  {d.freight_amount != null ? formatKRW(d.freight_amount) : "-"}
-                </TableCell>
-                <TableCell className="text-right">
-                  {formatKRW(d.fee_amount)}
-                </TableCell>
-                <TableCell className="text-right">
-                  <div className="flex justify-end gap-2">
-                    <Button variant="outline" size="sm" asChild>
-                      <Link href={`/dispatches/${d.id}`}>상세</Link>
-                    </Button>
-                    <Button variant="outline" size="sm" asChild>
-                      <ReturnToLink href={`/dispatches/${d.id}/edit`}>수정</ReturnToLink>
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setDeleteTarget(d)}
-                    >
-                      삭제
-                    </Button>
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-          <TableFooter>
-            <TableRow>
-              <TableCell>{totalCount}건</TableCell>
-              <TableCell />
-              <TableCell />
-              <TableCell />
-              <TableCell className="text-right" />
-              <TableCell className="text-right" />
-              <TableCell />
-              <TableCell />
-              <TableCell className="text-right">
-                {formatKRW(summary.freightAmount)}
-              </TableCell>
-              <TableCell className="text-right">
-                {formatKRW(summary.feeAmount)}
-              </TableCell>
-              <TableCell className="text-right" />
-            </TableRow>
-          </TableFooter>
-        </Table>
-      </div>
-
-      {/* 모바일: 날짜별 묶음 + 한 건당 두 줄 행 (요약은 페이지 상단 DispatchMobileControls) */}
-      <div className="md:hidden">
+      {/* 컴퓨터 화면도 모바일과 같은 목록(2026-11-20): 날짜별 묶음 + 한 건당 두 줄 행 (요약은 페이지 상단 DispatchMobileControls) */}
+      <div>
         <DispatchMobileList
           dispatches={dispatches}
           clientNameMap={clientNameMap}

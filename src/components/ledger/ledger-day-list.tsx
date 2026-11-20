@@ -44,7 +44,7 @@ export function LedgerDayList({
 
   return (
     // 상자 없이 화면 폭을 꽉 채운 줄 목록 (가계부 앱의 일일 화면처럼)
-    <div className="-mx-4 flex flex-col md:mx-0">
+    <div className="-mx-4 flex flex-col">
       {buckets.map((bucket) => (
         <section key={bucket.date} className="border-b">
           <DayHeader

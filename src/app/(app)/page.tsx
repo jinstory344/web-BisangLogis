@@ -193,15 +193,15 @@ export default async function LedgerPage({
   // 서버가 이 화면을 그린 시각 — 폰에 저장해 둔 옛 화면으로 열렸는지 알아보는 데 쓴다
 
   return (
-    <div className="px-4 pb-4 md:px-6 md:pb-6">
-      <div className="mx-auto max-w-2xl">
+    <div className="px-4 pb-4">
+      <div className="mx-auto max-w-3xl">
         <SwipePager
           prevHref={neighbors ? ledgerHref(view, neighbors.prev, kind) : null}
           nextHref={neighbors ? ledgerHref(view, neighbors.next, kind) : null}
           className="flex flex-col"
         >
           {/* 위에 고정되는 부분: 목록을 내려도 제목·날짜·보기 탭·합계·미입금이 계속 보인다 */}
-          <StickyHead className="z-30 -mx-4 px-4 pt-6 md:-mx-6 md:px-6 md:pt-6">
+          <StickyHead className="z-30 -mx-4 px-4 pt-6">
             {/* 가계부 앱처럼: 왼쪽 검색 · 가운데 제목 */}
             <header className="grid grid-cols-[2.5rem_1fr_2.5rem] items-center">
               <SearchButton />

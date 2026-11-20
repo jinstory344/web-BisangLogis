@@ -36,7 +36,7 @@ export function LedgerKindChips({
     <nav
       aria-label="보기 거르기"
       className={cn(
-        "sticky z-20 -mx-4 flex min-h-[52px] items-center justify-between gap-2 border-b bg-background px-4 py-2 text-sm text-muted-foreground md:-mx-6 md:px-6",
+        "sticky z-20 -mx-4 flex min-h-[52px] items-center justify-between gap-2 border-b bg-background px-4 py-2 text-sm text-muted-foreground",
         UNDER_STICKY_HEAD
       )}
     >

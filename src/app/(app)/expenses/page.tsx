@@ -14,7 +14,6 @@ import type { ExpenseRow } from "@/lib/supabase/database.types"
 import { getMajors } from "@/lib/constants/expense-categories"
 import { filterExpenses, summarizeExpenses } from "@/lib/expense-list"
 
-import { ExpenseFilters } from "./expense-filters"
 import { ExpenseList } from "./expense-list"
 import { ExpenseMobileControls } from "./expense-mobile-controls"
 import { getExpenseCategories } from "./categories"
@@ -40,7 +39,7 @@ export default async function ExpensesPage({
   const to = params.to || defaultRange.to
 
   return (
-    <div className="px-4 pb-4 md:p-6">
+    <div className="mx-auto max-w-3xl px-4 pb-4">
       <div className="flex flex-col md:gap-2">
         <ListPageHead
           title="지출"
@@ -126,17 +125,8 @@ async function ExpensesBody({ params }: { params: ExpenseSearchParams }) {
 
   return (
     <MonthSwipe className="flex flex-col gap-3 md:gap-4">
-          <div className="hidden md:block">
-            <ExpenseFilters
-              from={from}
-              to={to}
-              categoryMajor={categoryMajor}
-              categoryMinor={categoryMinor}
-              categories={categories}
-            />
-          </div>
           {/* 모바일 조작부는 contents라서 안의 달 이동·합계가 목록 전체 높이에서 고정될 수 있다 */}
-          <div className="contents md:hidden">
+          <div className="contents">
             <ExpenseMobileControls
               from={from}
               to={to}

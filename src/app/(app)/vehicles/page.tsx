@@ -90,16 +90,15 @@ export default async function VehiclesPage({
   )
 
   return (
-    <div className="mx-auto max-w-2xl p-4 md:p-6">
+    <div className="mx-auto max-w-3xl p-4">
       {/* 스크롤해도 제목·검색(·정렬 칩)까지 위에 고정 */}
-      <StickyHead className="-mx-4 -mt-4 px-4 pt-4 pb-2 md:static md:mx-0 md:mt-0 md:px-0 md:pt-0">
+      <StickyHead className="-mx-4 -mt-4 px-4 pt-4 pb-2">
         {/* 모바일: 배차·HOME과 같은 머리 (왼쪽 통합검색 · 가운데 제목 · 오른쪽 등록). 데스크톱: 왼쪽 큰 제목 + 오른쪽 등록 */}
-        <div className="mt-2 grid h-10 grid-cols-[2.5rem_1fr_2.5rem] items-center md:mt-0 md:flex md:h-auto md:justify-between md:gap-4">
-          <span className="md:hidden">
+        <div className="mt-2 grid h-10 grid-cols-[2.5rem_1fr_2.5rem] items-center">
+          <span>
             <SearchButton />
           </span>
-          <PageTitle title="차량 정보" barClassName={SECTION_COLORS.vehicle.titleBar} className="md:hidden" />
-          <h1 className="hidden text-2xl font-semibold md:block">차량 정보</h1>
+          <PageTitle title="차량 정보" barClassName={SECTION_COLORS.vehicle.titleBar} />
           <Link
             href="/vehicles/new"
             prefetch

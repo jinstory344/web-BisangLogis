@@ -2,8 +2,7 @@
 
 import Link from "next/link"
 import { usePathname, useSearchParams } from "next/navigation"
-import { Fragment, useMemo, useState, useTransition } from "react"
-import { ChevronDown, ChevronRight } from "lucide-react"
+import { useState, useTransition } from "react"
 import { toast } from "sonner"
 
 import {
@@ -16,27 +15,10 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { ReturnToLink } from "@/components/common/return-to-link"
 import { Button } from "@/components/ui/button"
-import { Checkbox } from "@/components/ui/checkbox"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
-import { PaymentBadge } from "@/components/dispatches/payment-badge"
 import { PayDateSheet } from "@/components/sales/pay-date-sheet"
 import { salePayText, shortMonthDay } from "@/lib/sales-pay-text"
-import { PAYMENT_METHOD_LABELS } from "@/lib/constants/payment-method"
-import { formatSaleSource } from "@/lib/constants/sale-sources"
 import {
-  formatDateWithWeekday,
-  formatMonthDay,
-  formatShortDate,
-  getWeekOfMonth,
 } from "@/lib/date"
 import { formatKRW } from "@/lib/money"
 import type { SaleRow } from "@/lib/supabase/database.types"
@@ -61,50 +43,10 @@ interface SalesListProps {
   totalPages: number
 }
 
-interface WeekGroup {
-  key: string
-  label: string
-  rows: SaleRow[]
-  totalAmount: number
-  supplyAmount: number
-}
-
-/** sale_date 내림차순으로 정렬된 목록을 "M월 N주차" 단위로 묶는다 */
-function groupSalesByWeek(sales: SaleRow[]): WeekGroup[] {
-  const groups: WeekGroup[] = []
-  const indexByKey = new Map<string, number>()
-
-  for (const s of sales) {
-    const [year, month] = s.sale_date.split("-")
-    const week = getWeekOfMonth(s.sale_date)
-    const key = `${year}-${month}-${week}`
-
-    let idx = indexByKey.get(key)
-    if (idx === undefined) {
-      idx = groups.length
-      indexByKey.set(key, idx)
-      groups.push({
-        key,
-        label: `${Number(month)}월 ${week}주차`,
-        rows: [],
-        totalAmount: 0,
-        supplyAmount: 0,
-      })
-    }
-
-    const group = groups[idx]
-    group.rows.push(s)
-    group.totalAmount += s.total_amount
-    group.supplyAmount += s.supply_amount
-  }
-
-  return groups
-}
 
 /** 매출(실제 수익) 목록 — 차량/기사/화물 정보는 배차 페이지 담당, 여기서는 다루지 않는다 */
 export function SalesList({
   sales,
-  summary,
   page,
   totalPages,
 }: SalesListProps) {
@@ -120,20 +62,6 @@ export function SalesList({
   const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState(false)
   const [isPending, startTransition] = useTransition()
 
-  const weekGroups = useMemo(() => groupSalesByWeek(sales), [sales])
-  // 가장 최근 주차만 펼친 채로 시작하고 나머지는 클릭해서 펼쳐보게 한다.
-  const [expandedWeeks, setExpandedWeeks] = useState<Set<string>>(
-    () => new Set(weekGroups.slice(0, 1).map((g) => g.key))
-  )
-
-  function toggleWeek(key: string) {
-    setExpandedWeeks((prev) => {
-      const next = new Set(prev)
-      if (next.has(key)) next.delete(key)
-      else next.add(key)
-      return next
-    })
-  }
 
   function pageHref(nextPage: number) {
     const params = new URLSearchParams(searchParams.toString())
@@ -267,153 +195,8 @@ export function SalesList({
         </div>
       ) : null}
 
-      {/* 데스크톱 표 */}
-      <div className="hidden overflow-x-auto rounded-md border md:block">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-10">
-                <Checkbox
-                  checked={selected.size > 0 && selected.size === sales.length}
-                  onCheckedChange={(checked) => toggleAll(checked === true)}
-                />
-              </TableHead>
-              <TableHead>날짜</TableHead>
-              <TableHead>구간</TableHead>
-              <TableHead>출처</TableHead>
-              <TableHead>사업자 정보</TableHead>
-              <TableHead className="text-right">공급가액</TableHead>
-              <TableHead className="text-right">세액</TableHead>
-              <TableHead className="text-right">합계금액</TableHead>
-              <TableHead>지불방법</TableHead>
-              <TableHead>입금여부</TableHead>
-              <TableHead>입금일</TableHead>
-              <TableHead className="text-right">관리</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {weekGroups.map((group) => {
-              const isExpanded = expandedWeeks.has(group.key)
-              return (
-                <Fragment key={group.key}>
-                  <TableRow
-                    className="cursor-pointer bg-muted/40 hover:bg-muted"
-                    onClick={() => toggleWeek(group.key)}
-                  >
-                    <TableCell colSpan={12}>
-                      <div className="flex items-center justify-between gap-4">
-                        <span className="flex items-center gap-1.5 font-medium">
-                          {isExpanded ? (
-                            <ChevronDown className="size-4" />
-                          ) : (
-                            <ChevronRight className="size-4" />
-                          )}
-                          {group.label}
-                          <span className="font-normal text-muted-foreground">
-                            {formatMonthDay(group.rows[group.rows.length - 1].sale_date)}
-                            ~{formatMonthDay(group.rows[0].sale_date)} · {group.rows.length}건
-                          </span>
-                        </span>
-                        <span className="text-muted-foreground">
-                          합계금액 {formatKRW(group.totalAmount)}
-                        </span>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                  {isExpanded
-                    ? group.rows.map((s) => (
-                        <TableRow key={s.id}>
-                          <TableCell>
-                            <Checkbox
-                              checked={selected.has(s.id)}
-                              onCheckedChange={(checked) =>
-                                toggleOne(s.id, checked === true)
-                              }
-                            />
-                          </TableCell>
-                          <TableCell>{formatDateWithWeekday(s.sale_date)}</TableCell>
-                          <TableCell>
-                            {s.origin} → {s.destination}
-                          </TableCell>
-                          <TableCell>
-                            {formatSaleSource(s.source_major, s.source_sub) || "-"}
-                            {s.source_minor ? ` / ${s.source_minor}` : ""}
-                          </TableCell>
-                          <TableCell>{s.billing_entity_name ?? "-"}</TableCell>
-                          <TableCell className="text-right">
-                            {formatKRW(s.supply_amount)}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            {formatKRW(s.vat_amount)}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            {formatKRW(s.total_amount)}
-                          </TableCell>
-                          <TableCell>
-                            {PAYMENT_METHOD_LABELS[s.payment_method]}
-                          </TableCell>
-                          <TableCell>
-                            <PaymentBadge status={s.payment_status} />
-                          </TableCell>
-                          <TableCell>
-                            {s.paid_at ? formatShortDate(s.paid_at) : "-"}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <div className="flex justify-end gap-2">
-                              {s.payment_status === "UNPAID" ? (
-                                <Button
-                                  type="button"
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => {
-                                    setSinglePayTarget(s)
-                                  }}
-                                >
-                                  입금 처리
-                                </Button>
-                              ) : (
-                                <Button
-                                  type="button"
-                                  variant="ghost"
-                                  size="sm"
-                                  className="text-muted-foreground"
-                                  onClick={() => setCancelPayTarget(s)}
-                                >
-                                  입금 취소
-                                </Button>
-                              )}
-                              <Button variant="outline" size="sm" asChild>
-                                <Link href={`/sales/${s.id}`}>상세</Link>
-                              </Button>
-                              <Button variant="outline" size="sm" asChild>
-                                <ReturnToLink href={`/sales/${s.id}/edit`}>수정</ReturnToLink>
-                              </Button>
-                              <Button
-                                variant="destructive"
-                                size="sm"
-                                onClick={() => setDeleteTarget(s)}
-                              >
-                                삭제
-                              </Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    : null}
-                </Fragment>
-              )
-            })}
-          </TableBody>
-        </Table>
-        <div className="flex items-center justify-between border-t bg-muted/30 p-3 text-sm font-medium">
-          <span>{summary.count}건</span>
-          <span>합계금액 {formatKRW(summary.totalAmount)}</span>
-          <span>공급가액 {formatKRW(summary.supplyAmount)}</span>
-        </div>
-      </div>
-
-      {/* 모바일: 날짜별 묶음 + 한 건당 두 줄 행 (요약은 페이지 상단 SalesMobileControls) */}
-      <div className="md:hidden">
+      {/* 컴퓨터 화면도 모바일과 같은 목록(2026-11-20): 날짜별 묶음 + 한 건당 두 줄 행 (요약은 페이지 상단 SalesMobileControls) */}
+      <div>
         <SalesMobileList
           sales={sales}
           selectMode={selectMode}

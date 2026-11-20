@@ -28,7 +28,7 @@ export function LedgerRangeList({
 }) {
   return (
     // 상자 없이 화면 폭을 꽉 채운 줄 목록
-    <div className="-mx-4 divide-y border-b md:mx-0">
+    <div className="-mx-4 divide-y border-b">
       {buckets.map((bucket) => {
         const isEmpty = bucket.count === 0
         return (
