@@ -10,6 +10,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet"
 import { normalizeCategoryName } from "@/lib/constants/expense-categories"
+import { ConfirmDelete } from "@/components/common/confirm-delete"
 import { cn } from "@/lib/utils"
 
 import {
@@ -55,10 +56,10 @@ export function CardPickerSheet({
     setOpen(false)
   }
 
+  // 지울 카드(확인 창을 띄우는 동안)
+  const [confirmName, setConfirmName] = useState<string | null>(null)
+
   async function remove(name: string) {
-    if (!window.confirm(`'${name}' 카드를 목록에서 지울까요? 이미 등록한 지출의 카드 이름은 그대로 남아요.`)) {
-      return
-    }
     const error = apply(await deleteExpenseCardAction(name))
     if (error) window.alert(error)
     else if (selected === name) setSelected(null)
@@ -154,7 +155,7 @@ export function CardPickerSheet({
                   <button
                     type="button"
                     aria-label={`${name} 삭제`}
-                    onClick={() => void remove(name)}
+                    onClick={() => setConfirmName(name)}
                     className="absolute top-1 right-1 flex size-7 items-center justify-center rounded-full bg-muted text-muted-foreground hover:text-destructive"
                   >
                     <X className="size-3.5" />
@@ -208,6 +209,16 @@ export function CardPickerSheet({
                 : "카드를 누르면 정해져요."}
             </p>
           )}
+          <ConfirmDelete
+            open={confirmName !== null}
+            onOpenChange={(open) => !open && setConfirmName(null)}
+            title={`'${confirmName ?? ""}' 카드를 목록에서 지울까요?`}
+            description="이미 등록한 지출의 카드 이름은 그대로 남아요."
+            onConfirm={() => {
+              if (confirmName) void remove(confirmName)
+              setConfirmName(null)
+            }}
+          />
         </SheetContent>
       </Sheet>
     </>

@@ -6,6 +6,7 @@ import { toast } from "sonner"
 
 import { deleteMemoAction, saveMemoAction, setMemoPinnedAction, type MemoItem } from "@/app/(app)/memos/actions"
 import { ClientSheet } from "@/components/clients/client-sheet"
+import { ConfirmDelete } from "@/components/common/confirm-delete"
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet"
 import type { MemoKind } from "@/lib/supabase/database.types"
 import { cn } from "@/lib/utils"
@@ -91,8 +92,10 @@ export function MemoEditor({
     onSaved(result.memo)
   }
 
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false)
+
   async function remove() {
-    if (!value.id || !window.confirm(`'${value.title}' 메모를 지울까요?`)) return
+    if (!value.id) return
     setIsBusy(true)
     const result = await deleteMemoAction(value.id)
     setIsBusy(false)
@@ -214,7 +217,7 @@ export function MemoEditor({
             <button
               type="button"
               disabled={isBusy}
-              onClick={remove}
+              onClick={() => setIsConfirmOpen(true)}
               className="h-12 rounded-xl px-4 text-sm text-destructive disabled:opacity-50"
             >
               지우기
@@ -239,6 +242,12 @@ export function MemoEditor({
             set("client_id", client.id)
             setPickedName(client.name)
           }}
+        />
+        <ConfirmDelete
+          open={isConfirmOpen}
+          onOpenChange={setIsConfirmOpen}
+          title={`'${value.title}' 메모를 지울까요?`}
+          onConfirm={remove}
         />
       </SheetContent>
     </Sheet>

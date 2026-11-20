@@ -359,7 +359,7 @@ export function ClientForm({
           </ul>
           <AlertDialogFooter>
             <AlertDialogCancel>취소</AlertDialogCancel>
-            <AlertDialogAction onClick={handleConfirmDuplicate}>
+            <AlertDialogAction destructive={false} onClick={handleConfirmDuplicate}>
               그래도 저장
             </AlertDialogAction>
           </AlertDialogFooter>
