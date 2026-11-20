@@ -70,7 +70,7 @@ export function VehicleList({
   } | null>(null)
   const [isReordering, setIsReordering] = useState(false)
   const [isPending, startTransition] = useTransition()
-  const [isOthersOpen, toggleOthers] = useSectionOpen("bisang-vehicles-others")
+  const [isOthersOpen, toggleOthers] = useSectionOpen()
 
   function handleCopy(vehicle: VehicleRow) {
     navigator.clipboard.writeText(vehicleCopyText(vehicle)).then(

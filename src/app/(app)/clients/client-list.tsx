@@ -66,7 +66,7 @@ export function ClientList({
   } | null>(null)
   const [isPending, startTransition] = useTransition()
   const [isReordering, setIsReordering] = useState(false)
-  const [isOthersOpen, toggleOthers] = useSectionOpen("bisang-clients-others")
+  const [isOthersOpen, toggleOthers] = useSectionOpen()
 
   const [openGroups, setOpenGroups] = useState<Set<string>>(new Set())
 
