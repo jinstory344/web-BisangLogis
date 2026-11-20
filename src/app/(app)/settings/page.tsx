@@ -69,6 +69,14 @@ export default async function SettingsPage() {
             <span className="flex-1">휴지통</span>
             <ChevronRight className="size-4 text-muted-foreground" />
           </Link>
+          <Link
+            href="/settings/export"
+            className="flex h-12 items-center gap-3 border-b px-4 text-[15px] last:border-b-0 active:bg-muted"
+          >
+            <FileSpreadsheet className="size-5" />
+            <span className="flex-1">엑셀 내보내기</span>
+            <ChevronRight className="size-4 text-muted-foreground" />
+          </Link>
           <SoonRow icon={<FileSpreadsheet className="size-5" />} label="엑셀 가져오기" />
         </Section>
 
