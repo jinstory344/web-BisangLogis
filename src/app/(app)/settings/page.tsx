@@ -1,5 +1,6 @@
-import { FileSpreadsheet, Trash2, UserRound } from "lucide-react"
+import { ChevronRight, FileSpreadsheet, Trash2, UserRound } from "lucide-react"
 import type { Metadata } from "next"
+import Link from "next/link"
 import type { ReactNode } from "react"
 
 import { createClient } from "@/lib/supabase/server"
@@ -60,7 +61,14 @@ export default async function SettingsPage() {
         </Section>
 
         <Section title="관리">
-          <SoonRow icon={<Trash2 className="size-5" />} label="휴지통" />
+          <Link
+            href="/trash"
+            className="flex h-12 items-center gap-3 border-b px-4 text-[15px] last:border-b-0 active:bg-muted"
+          >
+            <Trash2 className="size-5" />
+            <span className="flex-1">휴지통</span>
+            <ChevronRight className="size-4 text-muted-foreground" />
+          </Link>
           <SoonRow icon={<FileSpreadsheet className="size-5" />} label="엑셀 가져오기" />
         </Section>
 

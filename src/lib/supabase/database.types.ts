@@ -19,7 +19,7 @@ export type TaxInvoiceStatus =
   | "FAILED"
   | "CANCELLED"
 export type PurchaseInvoiceSource = "POPBILL" | "MANUAL"
-export type AuditAction = "CREATE" | "UPDATE" | "DELETE" | "RESTORE"
+export type AuditAction = "CREATE" | "UPDATE" | "DELETE" | "RESTORE" | "PURGE"
 export type DropoffType = "SAME_DAY" | "NEXT_DAY"
 export type CargoBoxType =
   | "CARGO"
@@ -300,6 +300,13 @@ export type Database = {
         Returns: undefined
       }
       restore_deleted: {
+        Args: {
+          p_table_name: string
+          p_record_id: string
+        }
+        Returns: undefined
+      }
+      purge_deleted: {
         Args: {
           p_table_name: string
           p_record_id: string
