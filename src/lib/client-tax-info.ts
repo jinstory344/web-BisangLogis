@@ -71,5 +71,6 @@ export function clientBizInfoText(c: {
     c.contact_email?.trim(),
   ].filter(Boolean)
   const memo = (c.memo ?? "").replace(/\r\n?/g, "\n").trim()
-  return [`< ${c.name.trim()} 사업자정보 >`, "", ...lines, ...(memo ? [memo] : [])].join("\n")
+  // 비고는 위 사업자정보와 한 줄 띄고
+  return [`< ${c.name.trim()} 사업자정보 >`, "", ...lines, ...(memo ? ["", memo] : [])].join("\n")
 }
