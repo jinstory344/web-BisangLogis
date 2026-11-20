@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { ArrowDownWideNarrow, ArrowUpDown, ArrowUpNarrowWide, Check, ChevronDown, ChevronUp, Copy, Star } from "lucide-react"
+import { ArrowDownWideNarrow, ArrowUpDown, ArrowUpNarrowWide, Check, ChevronDown, ChevronRight, ChevronUp, Copy, Star } from "lucide-react"
 import { useState, useTransition } from "react"
 import { toast } from "sonner"
 
@@ -43,6 +43,7 @@ import {
 import { VehicleDispatchHistory } from "./vehicle-dispatch-history"
 import { SECTION_COLORS } from "@/lib/constants/section-colors"
 import { UNDER_STICKY_HEAD } from "@/components/layout/sticky-head"
+import { useSectionOpen } from "@/components/list/use-section-open"
 
 export function VehicleList({
   pinned,
@@ -69,6 +70,7 @@ export function VehicleList({
   } | null>(null)
   const [isReordering, setIsReordering] = useState(false)
   const [isPending, startTransition] = useTransition()
+  const [isOthersOpen, toggleOthers] = useSectionOpen("bisang-vehicles-others")
 
   function handleCopy(vehicle: VehicleRow) {
     navigator.clipboard.writeText(vehicleCopyText(vehicle)).then(
@@ -201,9 +203,20 @@ export function VehicleList({
 
       <section className="-mx-4 md:mx-0">
         <div className={cn("sticky z-20 flex h-11 items-center justify-between bg-background px-4 text-sm text-muted-foreground md:static", "border-b", UNDER_STICKY_HEAD)}>
-          <span>
+          {/* 누르면 전체 목록을 접고 펴기(접은 상태는 휴대폰에 기억) */}
+          <button
+            type="button"
+            aria-expanded={isOthersOpen}
+            onClick={toggleOthers}
+            className="-ml-1 flex h-9 items-center gap-1 rounded-md px-1"
+          >
             <span className="font-semibold text-foreground">전체</span> {others.length}대
-          </span>
+            {isOthersOpen ? (
+              <ChevronDown className="size-4 text-muted-foreground" />
+            ) : (
+              <ChevronRight className="size-4 text-muted-foreground" />
+            )}
+          </button>
           {/* 차주 이름 가나다순(↑)·역순(↓). 다른 정렬 중이면 흐리게, 누르면 이름순으로 */}
           <Link
             href={sortDirHref}
@@ -226,7 +239,7 @@ export function VehicleList({
             )}
           </Link>
         </div>
-        <ul>{others.map((v) => row(v, null))}</ul>
+        {isOthersOpen ? <ul>{others.map((v) => row(v, null))}</ul> : null}
       </section>
 
       <Sheet open={sheetVehicle !== null} onOpenChange={(open) => !open && setSheetVehicle(null)}>

@@ -41,6 +41,7 @@ import {
 } from "./actions"
 import { SECTION_COLORS } from "@/lib/constants/section-colors"
 import { UNDER_STICKY_HEAD } from "@/components/layout/sticky-head"
+import { useSectionOpen } from "@/components/list/use-section-open"
 
 /** 거래처 목록: 차량 정보와 같은 줄 목록. 줄을 누르면 아래에서 상세·전화·수정·삭제 */
 export function ClientList({
@@ -65,6 +66,7 @@ export function ClientList({
   } | null>(null)
   const [isPending, startTransition] = useTransition()
   const [isReordering, setIsReordering] = useState(false)
+  const [isOthersOpen, toggleOthers] = useSectionOpen("bisang-clients-others")
 
   const [openGroups, setOpenGroups] = useState<Set<string>>(new Set())
 
@@ -347,11 +349,22 @@ export function ClientList({
 
       <section className="-mx-4 md:mx-0">
         <div className={cn("sticky z-20 flex h-11 items-center bg-background px-4 text-sm text-muted-foreground md:static", "border-b", UNDER_STICKY_HEAD)}>
-          <span>
+          {/* 누르면 전체 목록을 접고 펴기(접은 상태는 휴대폰에 기억) */}
+          <button
+            type="button"
+            aria-expanded={isOthersOpen}
+            onClick={toggleOthers}
+            className="-ml-1 flex h-9 items-center gap-1 rounded-md px-1"
+          >
             <span className="font-semibold text-foreground">전체</span> {others.length}곳
-          </span>
+            {isOthersOpen ? (
+              <ChevronDown className="size-4 text-muted-foreground" />
+            ) : (
+              <ChevronRight className="size-4 text-muted-foreground" />
+            )}
+          </button>
         </div>
-        <ul>{unitRows(otherUnits, false)}</ul>
+        {isOthersOpen ? <ul>{unitRows(otherUnits, false)}</ul> : null}
       </section>
 
       <Sheet open={sheetClient !== null} onOpenChange={(open) => !open && setSheetClient(null)}>

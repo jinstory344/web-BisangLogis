@@ -23,7 +23,7 @@ import {
 } from "@/lib/telegram/bot"
 import { parseDispatchLines } from "@/lib/telegram/parse-dispatch"
 import { parseExpenseLines } from "@/lib/telegram/parse-expense"
-import { detectKind, parseSaleLines, type ParsedSale } from "@/lib/telegram/parse-sale"
+import { detectKind, normalizeLeadingDate, parseSaleLines, type ParsedSale } from "@/lib/telegram/parse-sale"
 
 export const dynamic = "force-dynamic"
 
@@ -40,7 +40,7 @@ const HELP = [
   "",
   "· 출처는 '지인,마상구'·'카톡,스마일,오더자'처럼 쉼표로, 거래처는 이름 앞글자(우영)만",
   "· 사업자 정보는 '세금 상호' (세금계산서로 들어가요)",
-  "· 금액·날짜(11/14, 어제)·지불방법(이체·현금)·출처·사업자 정보는 아무 줄에나",
+  "· 금액·날짜(11/14, 어제, 첫 줄이면 1114도)·지불방법(이체·현금)·출처·사업자 정보는 아무 줄에나",
   "· 나머지 줄은 차례로 상차지 → 하차지",
   "· 날짜를 안 쓰면 오늘, 지불방법을 안 쓰면 세금계산서",
   "",
@@ -422,12 +422,14 @@ export async function POST(request: Request) {
 
     const lines = (update.message?.text ?? "").split("\n").map((l) => l.trim()).filter(Boolean)
     const kind = lines.length > 0 ? detectKind(lines[0]) : null
+    // 종류 바로 아래 "1123"·"11 23"은 날짜(11/23)로
+    const body = normalizeLeadingDate(lines.slice(1))
     if (kind === "sale") {
-      await handleSale(chatId, lines.slice(1))
+      await handleSale(chatId, body)
     } else if (kind === "expense") {
-      await handleExpense(chatId, lines.slice(1))
+      await handleExpense(chatId, body)
     } else if (kind === "dispatch") {
-      await handleDispatch(chatId, lines.slice(1))
+      await handleDispatch(chatId, body)
     } else {
       await sendText(chatId, HELP)
     }

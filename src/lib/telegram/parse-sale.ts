@@ -127,6 +127,22 @@ export function parseDateLine(line: string, today: string): string | null {
   return date > shiftDays(today, 31) ? validDate(year - 1, Number(short[1]), Number(short[2])) : date
 }
 
+/**
+ * 종류 단어 바로 아래 첫 줄의 숫자만 쓴 날짜 → "11/23" 모양으로.
+ * "1123", "923"(9/23), "11 23", "11.23", "11,23". 날짜가 아니면 그대로.
+ * 첫 줄에만 쓴다 — 다른 줄의 "1123"은 금액일 수 있어서.
+ */
+export function normalizeLeadingDate(lines: string[]): string[] {
+  const [first, ...rest] = lines
+  if (first === undefined) return lines
+  const m = first.trim().match(/^(\d{1,2})[\s.,](\d{1,2})$/) ?? first.trim().match(/^(\d{1,2})(\d{2})$/)
+  if (!m) return lines
+  const month = Number(m[1])
+  const day = Number(m[2])
+  if (month < 1 || month > 12 || day < 1 || day > 31) return lines
+  return [`${month}/${day}`, ...rest]
+}
+
 const SOURCE_ALIASES: Record<string, string> = {
   카톡: "카카오톡",
   카카오: "카카오톡",

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest"
 
 import {
   detectKind,
+  normalizeLeadingDate,
   parseAmountToken,
   parseDateLine,
   parseSaleLines,
@@ -175,5 +176,24 @@ describe("parseSaleLines", () => {
   it("사업자 정보를 거래처 앞글자로 쓰면 전체 이름으로 바꾼다", () => {
     const r = parseSaleLines(["10만", "a", "b", "지인,마상구", "세금 조은"], ctx)
     expect(r.ok && r.value.billing_entity_name).toBe("조은물류")
+  })
+})
+
+describe("normalizeLeadingDate (첫 줄 숫자 날짜)", () => {
+  it.each([
+    ["1123", "11/23"],
+    ["923", "9/23"],
+    ["11 23", "11/23"],
+    ["11.23", "11/23"],
+    ["11,23", "11/23"],
+    ["0105", "1/5"],
+  ])("%s → %s", (input, want) => {
+    expect(normalizeLeadingDate([input, "75만"])).toEqual([want, "75만"])
+  })
+  it("날짜가 아니거나 첫 줄이 아니면 그대로", () => {
+    expect(normalizeLeadingDate(["1340", "피셔"])).toEqual(["1340", "피셔"])
+    expect(normalizeLeadingDate(["75만", "1123"])).toEqual(["75만", "1123"])
+    expect(normalizeLeadingDate(["33"])).toEqual(["33"])
+    expect(normalizeLeadingDate([])).toEqual([])
   })
 })
