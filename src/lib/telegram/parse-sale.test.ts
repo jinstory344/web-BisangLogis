@@ -103,6 +103,7 @@ describe("parseSaleLines", () => {
         cargo_note: null,
         weight_ton: null,
         contact_name: null,
+        contact_phone: null,
       },
     })
   })
@@ -224,5 +225,20 @@ describe("매출: 띄어 쓴 거래처 줄(배차 모양)", () => {
   it("장소가 두 줄뿐이면 장소를 거래처로 빼지 않는다", () => {
     const r = parseSaleLines(["우영 창고", "부산대", "40만"], ctx)
     expect(r.ok && [r.value.origin, r.value.client_id]).toEqual(["우영 창고", null])
+  })
+})
+
+describe("매출: 거래처 줄의 담당자 번호", () => {
+  it("'우영 김부장 010-1234-5678' → 담당자 김부장 · 연락처", () => {
+    const r = parseSaleLines(["부산3곳", "남양주", "40만", "우영 김부장 010-1234-5678"], ctx)
+    expect(r.ok && [r.value.source_minor, r.value.contact_name, r.value.contact_phone]).toEqual([
+      "우영로지스",
+      "김부장",
+      "010-1234-5678",
+    ])
+  })
+  it("번호 없으면 연락처는 비워 둔다(봇이 거래처 담당자 목록에서 찾음)", () => {
+    const r = parseSaleLines(["부산3곳", "남양주", "40만", "우영 김부장"], ctx)
+    expect(r.ok && r.value.contact_phone).toBeNull()
   })
 })

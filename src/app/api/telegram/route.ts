@@ -106,7 +106,9 @@ function saleSummary(sale: ParsedSale, vat: number, duplicate: boolean): string 
   return [
     `✅ 매출 등록 (${shortDate(sale.sale_date)})`,
     `${sale.origin} → ${sale.destination}`,
-    source ? `출처: ${source}${sale.contact_name ? ` · 담당자 ${sale.contact_name}` : ""}` : null,
+    source
+      ? `출처: ${source}${sale.contact_name ? ` · 담당자 ${sale.contact_name}` : ""}${sale.contact_phone ? ` ${sale.contact_phone}` : ""}`
+      : null,
     sale.billing_entity_name ? `사업자 정보: ${sale.billing_entity_name}` : null,
     `공급가액 ${sale.supply_amount.toLocaleString("ko-KR")} + 세액 ${vat.toLocaleString("ko-KR")} = ${formatKRW(sale.supply_amount + vat)}`,
     `${PAYMENT_METHOD_LABELS[sale.payment_method]} · 미입금`,
@@ -136,6 +138,18 @@ async function handleSale(chatId: number, lines: string[]) {
   if (!parsed.ok) return askAgain(chatId, parsed.error)
   const sale = parsed.value
 
+  // 담당자 번호를 안 썼으면 그 거래처에 등록된 같은 이름의 담당자 번호로 채운다(매출 판에서 바로 전화)
+  if (sale.client_id && sale.contact_name && !sale.contact_phone) {
+    const { data: contacts } = await supabase
+      .from("client_contacts")
+      .select("name, phone")
+      .eq("client_id", sale.client_id)
+      .is("deleted_at", null)
+    const key = (v: string) => v.replace(/\s/g, "")
+    sale.contact_phone =
+      contacts?.find((c) => c.phone && key(c.name) === key(sale.contact_name ?? ""))?.phone ?? null
+  }
+
   const { count } = await supabase
     .from("sales")
     .select("id", { count: "exact", head: true })
@@ -163,6 +177,7 @@ async function handleSale(chatId: number, lines: string[]) {
     p_cargo_note: sale.cargo_note,
     p_weight_ton: sale.weight_ton,
     p_contact_name: sale.contact_name,
+    p_order_contact_phone: sale.contact_phone,
   })
   if (error || !id) {
     await sendText(chatId, `⚠️ 저장하지 못했어요: ${error?.message ?? "알 수 없는 오류"}`)

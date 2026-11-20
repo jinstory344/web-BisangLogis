@@ -32,6 +32,8 @@ export type ParsedSale = {
   weight_ton: number | null
   /** 담당자 — "아토 이준호"의 이준호 */
   contact_name: string | null
+  /** 담당자 연락처 — 그 줄에 쓴 번호(없으면 봇이 거래처 담당자 목록에서 찾아 채운다) */
+  contact_phone: string | null
 }
 
 export type ParseResult<T> = { ok: true; value: T } | { ok: false; error: string }
@@ -266,6 +268,8 @@ export function parseWeightLine(line: string): number | null {
   return value > 0 && value < 100 ? value : null
 }
 
+const SALE_PHONE = /(01\d[-\s]?\d{3,4}[-\s]?\d{4})/
+
 export function parseSaleLines(
   lines: string[],
   ctx: { today: string; sources: SaleSourceOption[]; clients: ClientOption[] }
@@ -336,16 +340,19 @@ export function parseSaleLines(
   }
 
   // "아토 이준호"처럼 띄어 쓴 거래처 줄(배차 메시지 모양): 끝 줄부터, 첫 단어가 거래처이고
-  // 그 줄을 빼도 상차지·하차지가 남을 때만 거래처로 본다. 뒤 이름은 비고에 남긴다.
+  // 그 줄을 빼도 상차지·하차지가 남을 때만 거래처로 본다. 뒤 이름은 담당자, 전화번호는 담당자 연락처.
   const notes: string[] = []
+  let contactPhone: string | null = null
   if (source === null && places.length > 2) {
     for (let i = places.length - 1; i >= 0; i--) {
-      const [first, ...more] = places[i].split(/\s+/)
-      if (more.length === 0) continue
+      const phone = places[i].match(SALE_PHONE)?.[1] ?? null
+      const [first, ...more] = places[i].replace(SALE_PHONE, " ").trim().split(/\s+/)
+      if (more.length === 0 && !phone) continue
       const client = findByPrefix(ctx.clients, (c) => c.name, first)
       if (!client || client === "ambiguous") continue
       source = { source_major: "거래처", source_sub: null, source_minor: client.name, client_id: client.id }
-      notes.push(more.join(" "))
+      if (more.length > 0) notes.push(more.join(" "))
+      contactPhone = phone
       places.splice(i, 1)
       break
     }
@@ -373,6 +380,7 @@ export function parseSaleLines(
       billing_entity_name: resolveBilling(billing, source, ctx.clients),
       memo: places.slice(2).join(" / ") || null,
       contact_name: notes.join(" ") || null,
+      contact_phone: contactPhone,
       cargo_note: cargoNote,
       weight_ton: weight,
     },
