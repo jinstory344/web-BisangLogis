@@ -140,6 +140,11 @@
   }
   html {
     @apply font-sans;
+    /* 아이폰 위아래 반동을 끈다 — 맨 위 쓸어내리기는 PullToRefresh가 사파리처럼 직접 보여 준다 */
+    overscroll-behavior-y: none;
+  }
+  body {
+    overscroll-behavior-y: none;
   }
 }
 

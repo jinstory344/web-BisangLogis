@@ -1,6 +1,5 @@
 "use client"
 
-import { RotateCw } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useEffect, useRef, useState } from "react"
 
@@ -8,7 +7,7 @@ import { cn } from "@/lib/utils"
 
 /** 이만큼(px) 끌어내리면 놓을 때 새로 고침 */
 const TRIGGER = 64
-const MAX = 96
+const MAX = 110
 
 /**
  * 맨 위에서 아래로 쓸어내리면 새로 고침(데스크톱의 F5).
@@ -88,27 +87,45 @@ export function PullToRefresh() {
     }
   }, [router])
 
-  if (pull === 0 && !isRefreshing) return null
-  const ready = pull >= TRIGGER || isRefreshing
+  // 사파리처럼: 화면 전체가 아래로 밀리고, 위에 생긴 빈 공간에 아이폰식 로딩 표시(살 8개)
+  const height = isRefreshing ? 52 : pull
+  const progress = Math.min(pull / TRIGGER, 1)
+  const spokes = isRefreshing ? 8 : Math.ceil(progress * 8)
   return (
     <div
       aria-live="polite"
       data-pull-indicator
-      className="pointer-events-none fixed inset-x-0 z-[60] flex justify-center"
-      style={{ top: `calc(env(safe-area-inset-top) + ${Math.max(pull - 32, 4)}px)` }}
+      className={cn(
+        "flex items-end justify-center overflow-hidden",
+        // 손을 떼면 부드럽게 접히고, 끄는 동안은 손가락을 바로 따라간다
+        isRefreshing || pull === 0 ? "transition-[height] duration-200" : ""
+      )}
+      style={{ height }}
     >
-      <span
-        className={cn(
-          "flex size-9 items-center justify-center rounded-full border bg-popover shadow-md",
-          ready ? "text-foreground" : "text-muted-foreground"
-        )}
-      >
-        <RotateCw
-          className={cn("size-4", isRefreshing && "animate-spin")}
-          style={isRefreshing ? undefined : { transform: `rotate(${pull * 3}deg)` }}
-        />
-        <span className="sr-only">{isRefreshing ? "새로 고치는 중" : "놓으면 새로 고침"}</span>
-      </span>
+      {height > 0 ? (
+        <svg
+          viewBox="0 0 24 24"
+          className="mb-3 size-6 text-muted-foreground"
+          style={isRefreshing ? { animation: "spin 0.8s steps(8, end) infinite" } : undefined}
+          aria-hidden
+        >
+          {Array.from({ length: 8 }, (_, i) => (
+            <line
+              key={i}
+              x1="12"
+              y1="3"
+              x2="12"
+              y2="7.5"
+              stroke="currentColor"
+              strokeWidth="2.2"
+              strokeLinecap="round"
+              transform={`rotate(${i * 45} 12 12)`}
+              opacity={i < spokes ? 1 - i * 0.1 : 0}
+            />
+          ))}
+        </svg>
+      ) : null}
+      <span className="sr-only">{isRefreshing ? "새로 고치는 중" : pull > 0 ? "놓으면 새로 고침" : ""}</span>
     </div>
   )
 }
