@@ -290,6 +290,15 @@ export function SaleActionSheetBody({
             : ""}
         </p>
 
+        {sale.cargo_note || sale.weight_ton != null ? (
+          <p className="text-sm text-muted-foreground">
+            물량{" "}
+            <span className="text-foreground">
+              {[sale.cargo_note, sale.weight_ton != null ? `${sale.weight_ton}톤` : null].filter(Boolean).join(" · ")}
+            </span>
+          </p>
+        ) : null}
+
         {phone ? (
           <ContactRow label="오더자" name={sale.source_minor || "연락처"} phone={phone} />
         ) : null}

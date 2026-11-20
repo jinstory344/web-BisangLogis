@@ -80,6 +80,10 @@ export default async function SaleDetailPage({
           label="사업자 정보"
           value={sale.billing_entity_name ?? "-"}
         />
+        <Field
+          label="물량"
+          value={[sale.cargo_note, sale.weight_ton != null ? `${sale.weight_ton}톤` : null].filter(Boolean).join(" · ") || "-"}
+        />
         <Field label="비고" value={sale.memo ?? "-"} />
       </div>
     </div>

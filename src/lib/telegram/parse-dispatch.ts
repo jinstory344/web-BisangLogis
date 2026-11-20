@@ -5,9 +5,14 @@ import {
   parseAmountToken,
   parseDateLine,
   squash,
+  parseLoadLine,
+  parseWeightLine,
   type ClientOption,
   type ParseResult,
 } from "@/lib/telegram/parse-sale"
+
+// 물량·무게 읽기는 매출과 같이 쓴다(매출 파일에 있음). 예전처럼 여기서도 꺼내 쓸 수 있게.
+export { parseLoadLine, parseWeightLine }
 
 /**
  * 텔레그램 배차 메시지. 줄 모양으로 알아보는 것(아무 줄에나):
@@ -58,32 +63,12 @@ const CARGO_WORDS: Record<string, CargoBoxType> = {
 }
 
 /** "냉동탑 3", "윙", "카고" → 차종(+파레트 수) */
-const LOAD = /^(냉동|냉장|상온|실온)\s*(\d+)?\s*(?:파레트|파렛|plt|p)?\s*(?:[,，\s]\s*(\d+(?:\.\d+)?)\s*(?:톤|t)?)?$/i
-
-/** "냉동3", "냉동 3, 1.3", "냉장 2p 1.5톤" → 물량("냉동3p") + 중량(톤). 이 배차의 화물이지 차종이 아니다. */
-export function parseLoadLine(line: string): { note: string; weight: number | null } | null {
-  const m = line.trim().match(LOAD)
-  if (!m) return null
-  const weight = m[3] ? Number(m[3]) : null
-  if (weight !== null && !(weight > 0 && weight < 100)) return null
-  return { note: `${m[1]}${m[2] ? `${m[2]}p` : ""}`, weight }
-}
-
 export function parseCargoLine(line: string): { type: CargoBoxType; pallets: number | null } | null {
   const m = line.replace(/\s/g, "").match(/^([가-힣]+?)(\d+)?(?:파레트|plt|p)?$/i)
   if (!m) return null
   const type = CARGO_WORDS[m[1]]
   if (!type) return null
   return { type, pallets: m[2] ? Number(m[2]) : null }
-}
-
-/** "1.6", "1.6톤", "5톤" → 무게(톤). 단위 없는 정수는 100 미만일 때만(금액과 헷갈리지 않게). */
-export function parseWeightLine(line: string): number | null {
-  const m = line.replace(/\s/g, "").match(/^(\d+(?:\.\d+)?)(톤|t)?$/i)
-  if (!m) return null
-  const value = Number(m[1])
-  if (!m[2] && Number.isInteger(value) && value >= 100) return null
-  return value > 0 && value < 100 ? value : null
 }
 
 /** "수2만", "수수료 2만" → 수수료 금액 */

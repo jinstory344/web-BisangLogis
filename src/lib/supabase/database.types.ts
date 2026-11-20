@@ -135,6 +135,10 @@ export type SaleRow = BaseColumns & {
    */
   client_id: string | null
   memo: string | null
+  /** 물량(화물). 예: "냉동3p". 매출은 늘 내 차라 차종 칸은 없다. */
+  cargo_note: string | null
+  /** 중량(톤) */
+  weight_ton: number | null
 }
 
 export type ExpenseRow = BaseColumns & {
@@ -367,6 +371,8 @@ export type Database = {
           /** 출처 대분류가 "거래처"일 때만 허용된다 (RPC가 검사). */
           p_client_id?: string | null
           p_source_sub?: string | null
+          p_cargo_note?: string | null
+          p_weight_ton?: number | null
         }
         Returns: string
       }
@@ -387,6 +393,8 @@ export type Database = {
           p_order_contact_phone?: string | null
           p_client_id?: string | null
           p_source_sub?: string | null
+          p_cargo_note?: string | null
+          p_weight_ton?: number | null
         }
         Returns: undefined
       }

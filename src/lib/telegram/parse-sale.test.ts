@@ -100,6 +100,8 @@ describe("parseSaleLines", () => {
         client_id: "c-woo",
         billing_entity_name: "우영로지스",
         memo: null,
+        cargo_note: null,
+        weight_ton: null,
       },
     })
   })
@@ -198,15 +200,16 @@ describe("normalizeLeadingDate (첫 줄 숫자 날짜)", () => {
   })
 })
 
-describe("매출에 섞인 화물 줄(냉동3·1.0)", () => {
-  it("금액으로 읽지 않고 비고에 붙인다", () => {
+describe("매출 물량·중량(냉동3·1.0)", () => {
+  it("냉동3은 물량, 1.0은 중량 — 금액으로 읽지 않는다", () => {
     const r = parseSaleLines(["11/23", "부산3곳", "남양주 케이푸드", "40만", "냉동3", "1.0", "우영"], ctx)
-    expect(r.ok && [r.value.supply_amount, r.value.origin, r.value.destination, r.value.memo]).toEqual([
-      400_000,
-      "부산3곳",
-      "남양주 케이푸드",
-      "냉동3 / 1.0",
-    ])
+    expect(
+      r.ok && [r.value.supply_amount, r.value.origin, r.value.destination, r.value.cargo_note, r.value.weight_ton, r.value.memo]
+    ).toEqual([400_000, "부산3곳", "남양주 케이푸드", "냉동3p", 1, null])
+  })
+  it("'냉동 3, 1.0' 한 줄도 물량·중량", () => {
+    const r = parseSaleLines(["부산3곳", "남양주", "40만", "냉동 3, 1.0"], ctx)
+    expect(r.ok && [r.value.cargo_note, r.value.weight_ton]).toEqual(["냉동3p", 1])
   })
 })
 
@@ -217,7 +220,7 @@ describe("매출: 띄어 쓴 거래처 줄(배차 모양)", () => {
       true,
       "우영로지스",
       "남양주 케이푸드",
-      "김부장 / 냉동3",
+      "김부장",
     ])
   })
   it("장소가 두 줄뿐이면 장소를 거래처로 빼지 않는다", () => {

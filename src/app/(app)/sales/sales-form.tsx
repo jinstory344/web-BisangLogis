@@ -465,6 +465,48 @@ export function SalesForm({
 
         {billingShownAbove ? billingField : null}
 
+        {/* 물량(화물) = 싣는 것. 텔레그램 봇의 "냉동 3, 1.0"이 여기로 들어온다. 매출은 늘 내 차라 차종 칸은 없다. */}
+        <fieldset className="grid gap-0 rounded-xl border px-3 pb-1 md:grid-cols-2 md:gap-4 md:p-3">
+          <legend className="px-1 text-xs text-muted-foreground">물량 (화물)</legend>
+          <FormField
+            control={form.control}
+            name="cargo_note"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>물량</FormLabel>
+                <FormControl>
+                  <Input {...field} placeholder="예: 냉동3p" />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="weight_ton"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>중량</FormLabel>
+                <FormControl>
+                  <Input
+                    type="number"
+                    inputMode="decimal"
+                    min={0}
+                    step={0.01}
+                    placeholder="톤"
+                    value={field.value ?? ""}
+                    onChange={(e) => {
+                      const next = e.target.valueAsNumber
+                      field.onChange(e.target.value === "" || Number.isNaN(next) ? null : next)
+                    }}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </fieldset>
+
         <FormField
           control={form.control}
           name="memo"

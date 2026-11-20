@@ -26,6 +26,10 @@ export type ParsedSale = {
   /** 사업자 정보(계산서 받을 상호) — "세금 주주부린물류" 줄에서 */
   billing_entity_name: string | null
   memo: string | null
+  /** 물량(화물) "냉동3p" — 배차 메시지처럼 "냉동 3, 1.0"을 쓰면 */
+  cargo_note: string | null
+  /** 중량(톤) */
+  weight_ton: number | null
 }
 
 export type ParseResult<T> = { ok: true; value: T } | { ok: false; error: string }
@@ -240,17 +244,24 @@ function resolveBilling(
 }
 
 /** 첫 줄(종류)을 뺀 나머지 줄로 매출 값을 만든다. */
-/**
- * 배차 메시지를 그대로 매출로 보낼 때 섞이는 화물 줄: "냉동3", "냉동 3, 1.3"(물량), "1.0", "1.6톤"(무게).
- * 매출에는 이런 칸이 없으니 금액·장소로 읽지 않고 비고에 붙인다("1.0"이 금액 1원으로 읽히던 문제).
- */
-function isCargoLine(line: string): boolean {
-  const t = line.trim()
-  return (
-    /^(냉동|냉장|상온|실온)\s*\d*\s*(파레트|파렛|plt|p)?\s*([,，\s]\s*\d+(\.\d+)?\s*(톤|t)?)?$/i.test(t) ||
-    /^\d+\.\d+\s*(톤|t)?$/i.test(t) ||
-    /^\d+(\.\d+)?\s*(톤|t)$/i.test(t)
-  )
+const LOAD = /^(냉동|냉장|상온|실온)\s*(\d+)?\s*(?:파레트|파렛|plt|p)?\s*(?:[,，\s]\s*(\d+(?:\.\d+)?)\s*(?:톤|t)?)?$/i
+
+/** "냉동3", "냉동 3, 1.3", "냉장 2p 1.5톤" → 물량("냉동3p") + 중량(톤). 이 배차의 화물이지 차종이 아니다. */
+export function parseLoadLine(line: string): { note: string; weight: number | null } | null {
+  const m = line.trim().match(LOAD)
+  if (!m) return null
+  const weight = m[3] ? Number(m[3]) : null
+  if (weight !== null && !(weight > 0 && weight < 100)) return null
+  return { note: `${m[1]}${m[2] ? `${m[2]}p` : ""}`, weight }
+}
+
+/** "1.6", "1.6톤", "5톤" → 무게(톤). 단위 없는 정수는 100 미만일 때만(금액과 헷갈리지 않게). */
+export function parseWeightLine(line: string): number | null {
+  const m = line.replace(/\s/g, "").match(/^(\d+(?:\.\d+)?)(톤|t)?$/i)
+  if (!m) return null
+  const value = Number(m[1])
+  if (!m[2] && Number.isInteger(value) && value >= 100) return null
+  return value > 0 && value < 100 ? value : null
 }
 
 export function parseSaleLines(
@@ -263,15 +274,28 @@ export function parseSaleLines(
   let source: SourcePick | null = null
   let billing: string | null = null
   const places: string[] = []
-  const cargo: string[] = []
+  let cargoNote: string | null = null
+  let weight: number | null = null
 
   for (const raw of lines) {
     const line = raw.trim()
     if (!line) continue
 
-    if (isCargoLine(line)) {
-      cargo.push(line)
-      continue
+    // 물량("냉동3", "냉동 3, 1.0")과 무게("1.0", "1.6톤") — "1.0"이 금액 1원으로 읽히지 않게 먼저 본다
+    if (cargoNote === null) {
+      const load = parseLoadLine(line)
+      if (load) {
+        cargoNote = load.note
+        if (load.weight !== null && weight === null) weight = load.weight
+        continue
+      }
+    }
+    if (weight === null && /[.톤t]/i.test(line)) {
+      const w = parseWeightLine(line)
+      if (w !== null) {
+        weight = w
+        continue
+      }
     }
 
     const parsedDate: string | null = date === null ? parseDateLine(line, ctx.today) : null
@@ -345,7 +369,9 @@ export function parseSaleLines(
       client_id: source?.client_id ?? null,
       // 앱 매출 폼처럼: 사업자 정보를 안 쓰면 거래처 이름으로, 쓴 이름이 거래처 앞글자면 전체 이름으로
       billing_entity_name: resolveBilling(billing, source, ctx.clients),
-      memo: [...places.slice(2), ...notes, ...cargo].join(" / ") || null,
+      memo: [...places.slice(2), ...notes].join(" / ") || null,
+      cargo_note: cargoNote,
+      weight_ton: weight,
     },
   }
 }

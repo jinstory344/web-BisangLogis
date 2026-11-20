@@ -224,6 +224,8 @@ export async function createSaleAction(
     p_memo: values.memo || null,
     p_billing_entity_name: values.billing_entity_name || null,
     p_order_contact_phone: values.order_contact_phone || null,
+    p_cargo_note: values.cargo_note || null,
+    p_weight_ton: values.weight_ton ?? null,
     p_client_id: resolveSaleClientId(values),
     p_source_sub: resolveSaleSourceSub(values),
   })
@@ -269,6 +271,8 @@ export async function updateSaleAction(
     p_memo: values.memo || null,
     p_billing_entity_name: values.billing_entity_name || null,
     p_order_contact_phone: values.order_contact_phone || null,
+    p_cargo_note: values.cargo_note || null,
+    p_weight_ton: values.weight_ton ?? null,
     p_client_id: resolveSaleClientId(values),
     p_source_sub: resolveSaleSourceSub(values),
   })

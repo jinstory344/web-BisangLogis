@@ -39,6 +39,8 @@ const baseRow: SaleRow = {
   order_contact_phone: "010-1234-5678",
   client_id: CLIENT_ID,
   memo: "냉동",
+  cargo_note: "냉동3p",
+  weight_ton: 1.5,
 }
 
 /**
@@ -97,6 +99,8 @@ describe("buildSaleCopyDefaults (이전 건 복사)", () => {
       order_contact_phone: "010-1234-5678",
       client_id: CLIENT_ID,
       memo: "냉동",
+      cargo_note: "냉동3p",
+      weight_ton: 1.5,
     })
   })
 

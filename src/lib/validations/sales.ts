@@ -52,6 +52,10 @@ export const saleFormSchema = z.object({
     z.string().uuid("거래처 값이 올바르지 않습니다"),
   ]),
   memo: z.string().trim(),
+  /** 물량(화물) — 예: "냉동3p". 선택 입력 */
+  cargo_note: z.string().trim().max(100),
+  /** 중량(톤) — 선택 입력. 미입력은 null(undefined 금지 — 배차 폼과 같은 이유) */
+  weight_ton: z.number().min(0).max(9999.99).nullable(),
 })
 
 export type SaleFormValues = z.infer<typeof saleFormSchema>
@@ -71,6 +75,8 @@ export const saleFormDefaults: SaleFormValues = {
   order_contact_phone: "",
   client_id: "",
   memo: "",
+  cargo_note: "",
+  weight_ton: null,
 }
 
 /**
@@ -95,6 +101,8 @@ export function saleRowToFormValues(row: SaleRow): SaleFormValues {
     order_contact_phone: row.order_contact_phone ?? "",
     client_id: row.client_id ?? "",
     memo: row.memo ?? "",
+    cargo_note: row.cargo_note ?? "",
+    weight_ton: row.weight_ton,
   }
 }
 
@@ -130,7 +138,8 @@ export function buildSaleCopyDefaults(
 export function buildSaleFormData(values: SaleFormValues): FormData {
   const fd = new FormData()
   Object.entries(values).forEach(([key, value]) => {
-    if (value === undefined) return
+    // null(중량 미입력)은 보내지 않는다 — "null" 글자가 되지 않게. 서버가 null로 되돌린다.
+    if (value === undefined || value === null) return
     fd.set(key, String(value))
   })
   // 폼 상태가 어긋나 있어도 항상 지불방법 규칙대로 보낸다 (서버도 다시 계산한다).
@@ -152,6 +161,9 @@ export function coerceSaleFormData(
     order_contact_phone: raw.order_contact_phone ?? "",
     client_id: raw.client_id ?? "",
     source_sub: raw.source_sub ?? "",
+    cargo_note: raw.cargo_note ?? "",
+    weight_ton:
+      raw.weight_ton === "" || raw.weight_ton === undefined ? null : Number(raw.weight_ton),
   }
 }
 
