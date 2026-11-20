@@ -16,16 +16,8 @@ import {
 } from "@/components/ui/alert-dialog"
 import { ReturnToLink } from "@/components/common/return-to-link"
 import { Button } from "@/components/ui/button"
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { getTodayInSeoul } from "@/lib/date"
+import { PayDateSheet } from "@/components/sales/pay-date-sheet"
+import { shortMonthDay } from "@/lib/sales-pay-text"
 import type { PaymentStatus } from "@/lib/supabase/database.types"
 
 import {
@@ -37,13 +29,15 @@ import {
 export function SaleDetailActions({
   id,
   paymentStatus,
+  payText,
 }: {
   id: string
   paymentStatus: PaymentStatus
+  /** 입금 창 제목·설명 (salePayText) */
+  payText?: { title: string; caption?: string }
 }) {
   const router = useRouter()
   const [payDialogOpen, setPayDialogOpen] = useState(false)
-  const [paidAt, setPaidAt] = useState(getTodayInSeoul())
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [cancelPayOpen, setCancelPayOpen] = useState(false)
   const [isPending, startTransition] = useTransition()
@@ -62,11 +56,11 @@ export function SaleDetailActions({
     })
   }
 
-  function handlePayConfirm() {
+  function handlePayConfirm(paidAt: string) {
     startTransition(async () => {
       try {
         await markSalePaidAction(id, paidAt)
-        toast.success("입금 처리했습니다")
+        toast.success(`입금 처리했어요 · ${shortMonthDay(paidAt)}`)
         router.refresh()
       } catch (err) {
         toast.error(err instanceof Error ? err.message : "입금 처리 실패")
@@ -97,7 +91,6 @@ export function SaleDetailActions({
           variant="outline"
           size="sm"
           onClick={() => {
-            setPaidAt(getTodayInSeoul())
             setPayDialogOpen(true)
           }}
         >
@@ -121,27 +114,14 @@ export function SaleDetailActions({
         삭제
       </Button>
 
-      <Dialog open={payDialogOpen} onOpenChange={setPayDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>입금 처리</DialogTitle>
-          </DialogHeader>
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="sale-detail-paid-at">입금일</Label>
-            <Input
-              id="sale-detail-paid-at"
-              type="date"
-              value={paidAt}
-              onChange={(e) => setPaidAt(e.target.value)}
-            />
-          </div>
-          <DialogFooter>
-            <Button onClick={handlePayConfirm} disabled={isPending}>
-              확인
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <PayDateSheet
+        open={payDialogOpen}
+        onOpenChange={setPayDialogOpen}
+        disabled={isPending}
+        title={payText?.title ?? "입금 처리할까요?"}
+        caption={payText?.caption}
+        onPick={handlePayConfirm}
+      />
 
       <AlertDialog open={cancelPayOpen} onOpenChange={setCancelPayOpen}>
         <AlertDialogContent>

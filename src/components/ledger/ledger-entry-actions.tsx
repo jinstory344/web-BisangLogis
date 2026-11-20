@@ -23,18 +23,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { Button } from "@/components/ui/button"
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
+import { PayDateSheet } from "@/components/sales/pay-date-sheet"
+import { salePayText, shortMonthDay } from "@/lib/sales-pay-text"
 import { Sheet, SheetContent } from "@/components/ui/sheet"
-import { getTodayInSeoul } from "@/lib/date"
 
 /**
  * 비상 화면에서 건을 누르면 뜨는 작업 시트 (매출·지출 목록과 같은 시트).
@@ -52,7 +43,6 @@ export function LedgerEntryActions({
   onOpenChange: (open: boolean) => void
 }) {
   const [payTarget, setPayTarget] = useState<DayLedgerEntry | null>(null)
-  const [paidAt, setPaidAt] = useState(getTodayInSeoul())
   const [cancelPayTarget, setCancelPayTarget] = useState<DayLedgerEntry | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<DayLedgerEntry | null>(null)
   const [isPending, startTransition] = useTransition()
@@ -73,10 +63,10 @@ export function LedgerEntryActions({
     })
   }
 
-  function confirmPay() {
+  function confirmPay(paidAt: string) {
     if (!payTarget) return
     const id = payTarget.id
-    run(() => markSalePaidAction(id, paidAt), "입금 처리했습니다", "입금 처리 실패", () =>
+    run(() => markSalePaidAction(id, paidAt), `입금 처리했어요 · ${shortMonthDay(paidAt)}`, "입금 처리 실패", () =>
       setPayTarget(null)
     )
   }
@@ -109,7 +99,6 @@ export function LedgerEntryActions({
               sale={entry.row}
               onPay={() => {
                 onOpenChange(false)
-                setPaidAt(getTodayInSeoul())
                 setPayTarget(entry)
               }}
               onCancelPaid={() => {
@@ -133,27 +122,13 @@ export function LedgerEntryActions({
         </SheetContent>
       </Sheet>
 
-      <Dialog open={payTarget !== null} onOpenChange={(next) => !next && setPayTarget(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>입금 처리</DialogTitle>
-          </DialogHeader>
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="ledger-paid-at">입금일</Label>
-            <Input
-              id="ledger-paid-at"
-              type="date"
-              value={paidAt}
-              onChange={(event) => setPaidAt(event.target.value)}
-            />
-          </div>
-          <DialogFooter>
-            <Button onClick={confirmPay} disabled={isPending}>
-              확인
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <PayDateSheet
+        open={payTarget !== null}
+        onOpenChange={(next) => !next && setPayTarget(null)}
+        disabled={isPending}
+        {...(payTarget?.kind === "sale" ? salePayText(payTarget.row) : { title: "입금 처리할까요?" })}
+        onPick={confirmPay}
+      />
 
       <AlertDialog
         open={cancelPayTarget !== null}

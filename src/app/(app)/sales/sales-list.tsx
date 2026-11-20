@@ -20,15 +20,6 @@ import { ReturnToLink } from "@/components/common/return-to-link"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import {
   Table,
   TableBody,
   TableCell,
@@ -37,13 +28,14 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { PaymentBadge } from "@/components/dispatches/payment-badge"
+import { PayDateSheet } from "@/components/sales/pay-date-sheet"
+import { salePayText, shortMonthDay } from "@/lib/sales-pay-text"
 import { PAYMENT_METHOD_LABELS } from "@/lib/constants/payment-method"
 import { formatSaleSource } from "@/lib/constants/sale-sources"
 import {
   formatDateWithWeekday,
   formatMonthDay,
   formatShortDate,
-  getTodayInSeoul,
   getWeekOfMonth,
 } from "@/lib/date"
 import { formatKRW } from "@/lib/money"
@@ -121,10 +113,8 @@ export function SalesList({
   const [selected, setSelected] = useState<Set<string>>(new Set())
   // 모바일 목록에서만 쓰는 "선택" 모드: 켜져 있을 때만 행에 체크박스가 나온다.
   const [selectMode, setSelectMode] = useState(false)
-  const [bulkPaidAt, setBulkPaidAt] = useState(getTodayInSeoul())
   const [bulkDialogOpen, setBulkDialogOpen] = useState(false)
   const [singlePayTarget, setSinglePayTarget] = useState<SaleRow | null>(null)
-  const [singlePaidAt, setSinglePaidAt] = useState(getTodayInSeoul())
   const [deleteTarget, setDeleteTarget] = useState<SaleRow | null>(null)
   const [cancelPayTarget, setCancelPayTarget] = useState<SaleRow | null>(null)
   const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState(false)
@@ -169,12 +159,12 @@ export function SalesList({
     })
   }
 
-  function handleBulkConfirm() {
+  function handleBulkConfirm(bulkPaidAt: string) {
     const ids = Array.from(selected)
     startTransition(async () => {
       try {
         await bulkMarkSalesPaidAction(ids, bulkPaidAt)
-        toast.success(`${ids.length}건 입금 처리했습니다`)
+        toast.success(`${ids.length}건 입금 처리했어요 · ${shortMonthDay(bulkPaidAt)}`)
         setSelected(new Set())
       } catch (err) {
         toast.error(err instanceof Error ? err.message : "입금 처리 실패")
@@ -184,13 +174,13 @@ export function SalesList({
     })
   }
 
-  function handleSinglePayConfirm() {
+  function handleSinglePayConfirm(singlePaidAt: string) {
     if (!singlePayTarget) return
     const target = singlePayTarget
     startTransition(async () => {
       try {
         await markSalePaidAction(target.id, singlePaidAt)
-        toast.success("입금 처리했습니다")
+        toast.success(`입금 처리했어요 · ${shortMonthDay(singlePaidAt)}`)
       } catch (err) {
         toast.error(err instanceof Error ? err.message : "입금 처리 실패")
       } finally {
@@ -261,7 +251,6 @@ export function SalesList({
             type="button"
             size="sm"
             onClick={() => {
-              setBulkPaidAt(getTodayInSeoul())
               setBulkDialogOpen(true)
             }}
           >
@@ -377,7 +366,6 @@ export function SalesList({
                                   variant="outline"
                                   size="sm"
                                   onClick={() => {
-                                    setSinglePaidAt(getTodayInSeoul())
                                     setSinglePayTarget(s)
                                   }}
                                 >
@@ -434,7 +422,6 @@ export function SalesList({
           onToggleSelected={toggleOne}
           onToggleAll={toggleAll}
           onPay={(sale) => {
-            setSinglePaidAt(getTodayInSeoul())
             setSinglePayTarget(sale)
           }}
           onCancelPaid={setCancelPayTarget}
@@ -469,54 +456,24 @@ export function SalesList({
         </div>
       ) : null}
 
-      {/* 일괄 입금 처리 다이얼로그 */}
-      <Dialog open={bulkDialogOpen} onOpenChange={setBulkDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{selected.size}건 일괄 입금 처리</DialogTitle>
-          </DialogHeader>
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="bulk-paid-at">입금일</Label>
-            <Input
-              id="bulk-paid-at"
-              type="date"
-              value={bulkPaidAt}
-              onChange={(e) => setBulkPaidAt(e.target.value)}
-            />
-          </div>
-          <DialogFooter>
-            <Button onClick={handleBulkConfirm} disabled={isPending}>
-              확인
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* 여러 건 한꺼번에 입금 처리 */}
+      <PayDateSheet
+        open={bulkDialogOpen}
+        onOpenChange={setBulkDialogOpen}
+        disabled={isPending}
+        title={`${selected.size}건 입금 처리할까요?`}
+        caption={`합계 ${formatKRW(sales.filter((s) => selected.has(s.id)).reduce((sum, s) => sum + s.total_amount, 0))}`}
+        onPick={handleBulkConfirm}
+      />
 
-      {/* 개별 입금 처리 다이얼로그 */}
-      <Dialog
+      {/* 한 건 입금 처리 */}
+      <PayDateSheet
         open={singlePayTarget !== null}
         onOpenChange={(open) => !open && setSinglePayTarget(null)}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>입금 처리</DialogTitle>
-          </DialogHeader>
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="single-paid-at">입금일</Label>
-            <Input
-              id="single-paid-at"
-              type="date"
-              value={singlePaidAt}
-              onChange={(e) => setSinglePaidAt(e.target.value)}
-            />
-          </div>
-          <DialogFooter>
-            <Button onClick={handleSinglePayConfirm} disabled={isPending}>
-              확인
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        disabled={isPending}
+        {...(singlePayTarget ? salePayText(singlePayTarget) : { title: "입금 처리할까요?" })}
+        onPick={handleSinglePayConfirm}
+      />
 
       <AlertDialog
         open={cancelPayTarget !== null}

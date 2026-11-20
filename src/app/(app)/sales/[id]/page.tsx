@@ -8,6 +8,8 @@ import { formatKRW } from "@/lib/money"
 import { formatPhoneNumber } from "@/lib/phone"
 import { createClient } from "@/lib/supabase/server"
 
+import { salePayText } from "@/lib/sales-pay-text"
+
 import { SaleDetailActions } from "./detail-actions"
 
 function Field({ label, value }: { label: string; value: string }) {
@@ -45,7 +47,7 @@ export default async function SaleDetailPage({
           <Button variant="outline" size="sm" asChild>
             <Link href="/sales">리스트</Link>
           </Button>
-          <SaleDetailActions id={sale.id} paymentStatus={sale.payment_status} />
+          <SaleDetailActions id={sale.id} paymentStatus={sale.payment_status} payText={salePayText(sale)} />
         </div>
       </div>
 
