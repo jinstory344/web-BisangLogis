@@ -42,3 +42,25 @@ export function RefreshIfStale({ renderedAt }: { renderedAt: number }) {
   }, [renderedAt, router])
   return null
 }
+
+/**
+ * 다른 앱(텔레그램 봇 등)에 갔다가 돌아오면 최신 내용을 다시 받는다.
+ * 화면 보관(staleTimes 5분) 때문에 봇으로 넣은 자료가 늦게 보이지 않게 — 3초 넘게 떠나 있었을 때만.
+ */
+export function RefreshOnReturn() {
+  const router = useRouter()
+  useEffect(() => {
+    let hiddenAt: number | null = null
+    const onChange = () => {
+      if (document.visibilityState === "hidden") {
+        hiddenAt = Date.now()
+      } else if (hiddenAt !== null && Date.now() - hiddenAt > 3_000) {
+        hiddenAt = null
+        router.refresh()
+      }
+    }
+    document.addEventListener("visibilitychange", onChange)
+    return () => document.removeEventListener("visibilitychange", onChange)
+  }, [router])
+  return null
+}

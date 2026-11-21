@@ -2,7 +2,7 @@ import type { ReactNode } from "react"
 
 import { AppShell } from "@/components/layout/app-shell"
 import { PullToRefresh } from "@/components/layout/pull-to-refresh"
-import { RefreshIfStale } from "@/components/layout/service-worker"
+import { RefreshIfStale, RefreshOnReturn } from "@/components/layout/service-worker"
 import { createClient } from "@/lib/supabase/server"
 
 export default async function AppLayout({
@@ -20,6 +20,8 @@ export default async function AppLayout({
     <AppShell userEmail={typeof email === "string" ? email : null}>
       {/* 폰에 저장해 둔 옛 화면(서비스 워커)으로 열렸으면 바로 최신으로 다시 그린다 — 어느 화면이든 */}
       <RefreshIfStale renderedAt={Date.now()} />
+      {/* 텔레그램 등 다른 앱에서 돌아오면 최신으로 */}
+      <RefreshOnReturn />
       {/* 맨 위에서 쓸어내리면 새로 고침 */}
       <PullToRefresh />
       {children}
