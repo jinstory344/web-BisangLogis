@@ -235,6 +235,28 @@ export function parseDispatchLines(
       continue
     }
 
+    // 차량번호 없이 차주 이름만("김진승", "김진승 010-…"): 차량 정보에 등록된 차주면 그 차로
+    if (vehicle === null) {
+      const typedPhone: string | null = line.match(PHONE)?.[1] ?? null
+      const nameOnly = line.replace(PHONE, " ").trim()
+      if (/^[가-힣]{2,5}$/.test(nameOnly)) {
+        const same = ctx.vehicles.filter((v) => squash(v.driver_name) === squash(nameOnly))
+        if (same.length > 1) {
+          return { ok: false, error: `"${nameOnly}" 차주 차량이 ${same.length}대예요. 차량번호도 같이 써 주세요. 예: 서울86바7754 ${nameOnly}` }
+        }
+        if (same.length === 1) {
+          const known = same[0]
+          vehicle = {
+            vehicle_id: known.id,
+            plate_no_snapshot: known.plate_no,
+            driver_name_snapshot: known.driver_name,
+            driver_phone_snapshot: typedPhone ?? known.driver_phone,
+          }
+          continue
+        }
+      }
+    }
+
     places.push(line)
   }
 

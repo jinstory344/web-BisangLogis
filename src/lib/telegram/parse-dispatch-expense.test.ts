@@ -316,3 +316,39 @@ describe("parseVehicleLine (차량번호·차주·연락처 순서 상관없이)
     })
   })
 })
+
+describe("차주 이름만으로 차량 채우기", () => {
+  const cs = [{ id: "c-woo", name: "우영로지스" }]
+  const vs = [
+    { id: "v-1", plate_no: "서울86바7754", driver_name: "김진승", driver_phone: "010-2746-0344" },
+    { id: "v-2", plate_no: "경기12가3456", driver_name: "홍길동", driver_phone: "010-1111-1111" },
+    { id: "v-3", plate_no: "인천34나5678", driver_name: "홍길동", driver_phone: "010-2222-2222" },
+  ]
+  const run = (vehicleLine: string) =>
+    parseDispatchLines(["피셔", "경북대병원", "20만", vehicleLine, "우영"], { today, clients: cs, vehicles: vs })
+
+  it("'김진승'만 써도 등록된 차량번호·연락처가 들어간다", () => {
+    const r = run("김진승")
+    expect(r.ok && r.value).toMatchObject({
+      vehicle_id: "v-1",
+      plate_no_snapshot: "서울86바7754",
+      driver_name_snapshot: "김진승",
+      driver_phone_snapshot: "010-2746-0344",
+      origin: "피셔",
+      destination: "경북대병원",
+      client_id: "c-woo",
+    })
+  })
+  it("이름 + 다른 번호를 쓰면 쓴 번호로", () => {
+    const r = run("김진승 010-9999-8888")
+    expect(r.ok && r.value.driver_phone_snapshot).toBe("010-9999-8888")
+  })
+  it("같은 이름 차주가 두 대면 차량번호를 써 달라고 되묻는다", () => {
+    const r = run("홍길동")
+    expect(r.ok).toBe(false)
+  })
+  it("등록 안 된 이름은 차량이 아니라 장소로 남는다(예전과 같음)", () => {
+    const r = parseDispatchLines(["피셔", "경북대병원", "20만", "우영"], { today, clients: cs, vehicles: vs })
+    expect(r.ok && r.value.vehicle_id).toBeNull()
+  })
+})
