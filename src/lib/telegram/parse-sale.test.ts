@@ -121,6 +121,13 @@ describe("parseSaleLines", () => {
     })
   })
 
+  it("하위분류만 써도 대분류를 찾는다(스마일 → 카카오톡)", () => {
+    const r = parseSaleLines(["10만", "피셔", "부산", "스마일"], ctx)
+    expect(r.ok && r.value).toMatchObject({ source_major: "카카오톡", source_sub: "스마일", source_minor: null, origin: "피셔", destination: "부산" })
+    const r2 = parseSaleLines(["10만", "피셔", "부산", "스마일,김재천"], ctx)
+    expect(r2.ok && r2.value).toMatchObject({ source_major: "카카오톡", source_sub: "스마일", source_minor: "김재천" })
+  })
+
   it("하위분류가 아니면 둘째 칸은 오더자", () => {
     const r = parseSaleLines(["10만", "a", "b", "카톡,홍길동"], ctx)
     expect(r.ok && r.value).toMatchObject({ source_major: "카카오톡", source_sub: null, source_minor: "홍길동" })

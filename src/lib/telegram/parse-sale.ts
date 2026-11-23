@@ -203,7 +203,15 @@ function parseSourceLine(
 
   const majors = [...new Set(sources.map((s) => s.major))]
   const major = SOURCE_ALIASES[squash(head)] ?? majors.find((m) => squash(m) === squash(head))
-  if (!major) return null
+  if (!major) {
+    // "스마일" / "스마일,김재천"처럼 하위분류만 쓴 줄 — 장소와 헷갈리지 않게 이름이 정확히 같을 때만
+    const bySub = sources.filter((s) => s.sub && squash(s.sub) === squash(head))
+    if (bySub.length !== 1) return null
+    return {
+      ok: true,
+      value: { source_major: bySub[0].major, source_sub: bySub[0].sub, source_minor: rest[0] ?? null, client_id: null },
+    }
+  }
 
   if (major === "거래처") {
     const picked = rest[0] ? findByPrefix(clients, (c) => c.name, rest[0]) : null
