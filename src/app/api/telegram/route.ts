@@ -150,6 +150,20 @@ async function handleSale(chatId: number, lines: string[]) {
       contacts?.find((c) => c.phone && key(c.name) === key(sale.contact_name ?? ""))?.phone ?? null
   }
 
+  // 오더자(카톡·지인 등) 번호를 안 썼으면 같은 출처·같은 오더자의 최근 매출에 적힌 번호로 채운다
+  if (!sale.client_id && sale.source_major && sale.source_minor && !sale.contact_phone) {
+    const { data: prev } = await supabase
+      .from("sales")
+      .select("order_contact_phone")
+      .is("deleted_at", null)
+      .eq("source_major", sale.source_major)
+      .eq("source_minor", sale.source_minor)
+      .not("order_contact_phone", "is", null)
+      .order("sale_date", { ascending: false })
+      .limit(1)
+    sale.contact_phone = prev?.[0]?.order_contact_phone ?? null
+  }
+
   const { count } = await supabase
     .from("sales")
     .select("id", { count: "exact", head: true })
