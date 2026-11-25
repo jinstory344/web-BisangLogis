@@ -16,6 +16,7 @@ export function TabPanels({
   before,
   panels,
   addButtons,
+  stickyExtras = {},
 }: {
   tabs: readonly CarTab[]
   initial: string
@@ -24,6 +25,8 @@ export function TabPanels({
   panels: Record<string, ReactNode>
   /** 탭마다 ＋ 버튼(기본 종류가 탭에 따라 다름) */
   addButtons: Record<string, ReactNode>
+  /** 탭 줄 바로 아래에 함께 고정될 것 (정비 탭의 [전체 ▾] 항목 고르기 등) */
+  stickyExtras?: Record<string, ReactNode>
 }) {
   const [current, setCurrent] = useState(initial)
 
@@ -42,6 +45,8 @@ export function TabPanels({
   return (
     <>
       <MonthSwipe className="flex flex-col gap-3">
+      {/* 위쪽 고정: 머리(제목·보기 탭, 113px) 바로 밑에 비용 박스·탭 줄·항목 고르기까지 고정하고 아래 내용만 스크롤 */}
+      <div className="sticky top-[112px] z-20 -mx-4 flex flex-col gap-2 bg-background px-4 pb-2 md:static md:mx-0 md:px-0">
       {before}
       <nav
         aria-label="차계부 보기"
@@ -68,6 +73,8 @@ export function TabPanels({
           )
         })}
       </nav>
+      {stickyExtras[current]}
+      </div>
       {panels[current]}
       </MonthSwipe>
       {/* ＋는 화면에 고정되므로 쓸어 넘기기(transform) 밖에 둔다 */}

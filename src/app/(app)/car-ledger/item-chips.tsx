@@ -33,7 +33,7 @@ export function ItemChips({ counts, selected }: { counts: ItemCount[]; selected:
 
   return (
     <>
-      <div className="flex flex-wrap gap-2">
+      <div className="flex justify-end">
         <button
           type="button"
           onClick={() => setIsOpen(true)}

@@ -30,7 +30,7 @@ export function CostSummary({
 }) {
   const positive = byKind.filter((row) => row.total > 0)
   return (
-    <section aria-label={`${monthLabel} 차 비용`} className="rounded-xl border bg-card p-4">
+    <section aria-label={`${monthLabel} 차 비용`} className="rounded-xl border bg-card px-4 py-3">
       {carLabel || action ? (
         <div className="-mt-1.5 -mr-1.5 flex items-center gap-2">
           <p className={`min-w-0 flex-1 truncate ${SUMMARY_TITLE_CLASS} font-semibold`}>{carLabel}</p>
@@ -49,7 +49,7 @@ export function CostSummary({
         </p>
       ) : null}
 
-      <div className="mt-3 flex h-2.5 overflow-hidden rounded-full bg-muted" aria-hidden>
+      <div className="mt-2 flex h-2 overflow-hidden rounded-full bg-muted" aria-hidden>
         {total > 0
           ? positive.map((row) => (
               <span
@@ -61,12 +61,13 @@ export function CostSummary({
           : null}
       </div>
 
-      <ul className="mt-3 grid grid-cols-2 gap-x-4 gap-y-1.5 text-[13px] sm:grid-cols-3">
+      {/* 종류 범례는 한 줄 (위 고정 부분이 짧아지게) — 칸이 좁아 "원" 없이 숫자만 */}
+      <ul className="mt-2 flex gap-3 text-[12px]">
         {byKind.map((row) => (
-          <li key={row.kind} className="flex min-w-0 items-center gap-1.5">
+          <li key={row.kind} className="flex min-w-0 flex-1 items-center gap-1">
             <span aria-hidden className="size-2 shrink-0 rounded-full" style={{ backgroundColor: row.color }} />
-            <span className="truncate text-muted-foreground">{row.kind}</span>
-            <span className="ml-auto shrink-0 font-medium tabular-nums">{formatKRW(row.total)}</span>
+            <span className="shrink-0 text-muted-foreground">{row.kind}</span>
+            <span className="ml-auto truncate font-medium tabular-nums">{row.total.toLocaleString("ko-KR")}</span>
           </li>
         ))}
       </ul>

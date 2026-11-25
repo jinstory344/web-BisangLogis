@@ -1,29 +1,25 @@
 import { formatEntryDate, formatKm, formatKmNumber } from "@/lib/car-ledger/constants"
 import { sortEntriesDesc, type CarEntry } from "@/lib/car-ledger/entries"
-import type { ItemCount, ItemHistory } from "@/lib/car-ledger/stats"
+import type { ItemHistory } from "@/lib/car-ledger/stats"
 import { formatKRW } from "@/lib/money"
 
 import { EntryLink } from "./entry-link"
-import { ItemChips } from "./item-chips"
 
 /**
- * 정비 탭: 항목 칩(전체 · 많이 한 4개 · 더보기) +
+ * 정비 탭 내용([전체 ▾] 항목 고르기는 탭 줄 밑에 고정되어 page에서 따로 그린다):
  * 항목을 안 골랐으면 그 달 정비 기록 카드, 골랐으면 그 항목의 전체 기간 이력.
  */
 export function ServiceTab({
   monthEntries,
-  counts,
   history,
   today,
 }: {
   monthEntries: CarEntry[]
-  counts: ItemCount[]
   history: ItemHistory | null
   today: string
 }) {
   return (
     <div className="flex flex-col gap-3">
-      <ItemChips counts={counts} selected={history?.item ?? ""} />
       {history ? (
         <ItemHistoryList history={history} today={today} />
       ) : (

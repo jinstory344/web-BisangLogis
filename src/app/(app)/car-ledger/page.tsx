@@ -34,6 +34,7 @@ import {
   loadCarMasters,
   primaryBusinessCarId,
 } from "./data"
+import { ItemChips } from "./item-chips"
 import { KindTab } from "./kind-tab"
 import { ServiceTab } from "./service-tab"
 import { TabPanels } from "./tab-panels"
@@ -179,7 +180,6 @@ export default async function CarLedgerPage({
                 <ServiceTab
                   key={t.value}
                   monthEntries={serviceEntries.filter((entry) => entry.dates.some((date) => inRange(date, month.from, month.to)))}
-                  counts={serviceItemCounts(serviceEntries)}
                   history={item ? itemHistory(serviceEntries, item) : null}
                   today={today}
                 />
@@ -206,6 +206,9 @@ export default async function CarLedgerPage({
               ),
             ])
           )}
+          stickyExtras={{
+            [SERVICE_TAB]: <ItemChips counts={serviceItemCounts(serviceEntries)} selected={item} />,
+          }}
           addButtons={Object.fromEntries(
             tabs.map((t) => [
               t.value,
