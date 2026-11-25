@@ -53,6 +53,8 @@ export interface CarEntry {
   /** 지출이면 첫 회차 줄 id, car_log면 그 id */
   id: string
   date: string
+  /** 돈이 나간 날들(할부면 회차 날짜들, 아니면 date 하나) — 달 목록은 이 중 하나라도 그 달이면 보여 준다 */
+  dates: string[]
   /** 정비·주유·요소수·세차 … */
   kind: string
   /** 총액(할부 묶음은 합계) */
@@ -118,6 +120,7 @@ export function expensesToCarEntries(
       source: "expense" as const,
       id: first.id,
       date: first.expense_date,
+      dates: sorted.map((row) => row.expense_date),
       kind: expenseKindOf(first.category_minor),
       amount: sorted.reduce((sum, row) => sum + Number(row.amount), 0),
       liters: sorted.find((row) => row.liters !== null)?.liters ?? null,
@@ -142,6 +145,7 @@ export function carLogsToEntries(
     source: "log" as const,
     id: row.id,
     date: row.log_date,
+    dates: [row.log_date],
     kind: row.kind,
     amount: Number(row.amount),
     liters: row.liters === null ? null : Number(row.liters),

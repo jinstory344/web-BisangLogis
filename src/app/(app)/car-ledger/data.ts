@@ -124,6 +124,23 @@ export async function loadCarLedgerData(
       .order("sort_order"),
   ])
 
+  // 할부가 시작일 전에 시작해 그 뒤까지 이어지면 묶음 전체를 함께 읽는다(항목 줄은 1회차에 붙어 있음)
+  const groupIds = [
+    ...new Set(serviceExpenses.map((row) => row.installment_group_id).filter((id): id is string => !!id)),
+  ]
+  if (groupIds.length) {
+    const earlier = await fetchAllRows<CarExpenseInput>((a, b) =>
+      expenseQuery()
+        .eq("category_minor", CAR_SERVICE_MINOR)
+        .in("installment_group_id", groupIds)
+        .lt("expense_date", SERVICE_LEDGER_START)
+        .order("expense_date")
+        .order("id")
+        .range(a, b)
+    )
+    serviceExpenses.unshift(...earlier)
+  }
+
   // 정비 항목 줄은 위에서 읽은 기록(살아 있는 부모)에 붙은 것만 읽는다
   const expenseIds = serviceExpenses.map((row) => row.id)
   const logIds = logs.map((row) => row.id)

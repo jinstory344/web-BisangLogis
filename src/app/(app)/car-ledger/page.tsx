@@ -139,7 +139,7 @@ export default async function CarLedgerPage({
               t.value === SERVICE_TAB ? (
                 <ServiceTab
                   key={t.value}
-                  monthEntries={serviceEntries.filter((entry) => inRange(entry.date, month.from, month.to))}
+                  monthEntries={serviceEntries.filter((entry) => entry.dates.some((date) => inRange(date, month.from, month.to)))}
                   counts={serviceItemCounts(serviceEntries)}
                   history={item ? itemHistory(serviceEntries, item) : null}
                   today={today}
