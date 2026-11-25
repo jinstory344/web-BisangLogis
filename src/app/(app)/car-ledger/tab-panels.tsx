@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, type ReactNode } from "react"
+import { useLayoutEffect, useState, type ReactNode } from "react"
 
 import type { CarTab } from "@/lib/car-ledger/tabs"
 import { StickyHead } from "@/components/layout/sticky-head"
@@ -30,6 +30,17 @@ export function TabPanels({
   stickyExtras?: Record<string, ReactNode>
 }) {
   const [current, setCurrent] = useState(initial)
+  // 위 머리(제목·보기 탭, data-car-head)의 실제 높이 — 폰마다 조금씩 달라서 재서 그 바로 밑에 붙인다(기본 113px)
+  const [headPx, setHeadPx] = useState(113)
+  useLayoutEffect(() => {
+    const head = document.querySelector<HTMLElement>("[data-car-head]")
+    if (!head) return
+    const set = () => setHeadPx(Math.floor(head.getBoundingClientRect().height))
+    set()
+    const observer = new ResizeObserver(set)
+    observer.observe(head)
+    return () => observer.disconnect()
+  }, [])
 
   function select(value: string) {
     setCurrent(value)
@@ -49,8 +60,9 @@ export function TabPanels({
       {/* 위쪽 고정: 머리(제목·보기 탭, 113px) 바로 밑에 비용 박스·탭 줄·항목 고르기까지 고정하고 아래 내용만 스크롤.
           높이를 재서(--sticky-head-h) 목록의 날짜 줄이 이 묶음 바로 밑에 붙어 고정되게 한다 */}
       <StickyHead
-        topPx={112}
-        className="top-[112px] z-20 -mx-4 flex flex-col gap-2 px-4 pb-2 md:static md:mx-0 md:px-0"
+        topPx={headPx - 1}
+        style={{ top: headPx - 1 }}
+        className="z-20 -mx-4 flex flex-col gap-2 px-4 pb-2 md:static md:mx-0 md:px-0"
       >
       {before}
       <nav

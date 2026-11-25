@@ -15,7 +15,10 @@ export function StickyHead({
   children,
   className,
   topPx = 0,
+  style,
 }: {
+  /** top 값을 숫자로 바로 줄 때 (재서 정하는 경우) */
+  style?: React.CSSProperties
   children: ReactNode
   className?: string
   /** 이 머리가 붙는 위치(px). 다른 고정 머리 밑에 붙는 경우(예: 목록 화면 합계 줄은 104px) */
@@ -40,7 +43,7 @@ export function StickyHead({
   }, [topPx])
 
   return (
-    <div ref={ref} className={cn("sticky top-0 z-30 bg-background", className)}>
+    <div ref={ref} style={style} className={cn("sticky top-0 z-30 bg-background", className)}>
       {children}
     </div>
   )
