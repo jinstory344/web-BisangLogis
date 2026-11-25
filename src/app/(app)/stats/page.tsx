@@ -5,7 +5,7 @@ import { SearchButton } from "@/components/layout/search-button"
 
 import { ListBodyFallback } from "@/components/list/list-body-fallback"
 import { MonthSwipe } from "@/components/list/month-swipe"
-import { SummaryMonthNav } from "@/components/list/summary-month-nav"
+import { SummaryMonthPicker } from "@/components/list/summary-month-picker"
 
 import { getCurrentMonthRangeInSeoul, getMonthRange } from "@/lib/date"
 import { parseAnchorDate } from "@/lib/ledger"
@@ -31,7 +31,7 @@ function parseStatType(raw: string | string[] | undefined): StatType {
 
 /**
  * 통계(하단 탭): 매출 · 지출 · 배차의 월간 집계를 한곳에서 본다.
- * 각 집계 위쪽의 ‹ 달 이동 › 은 이 화면 주소의 from·to를 바꾼다.
+ * 머리 오른쪽 달력 아이콘으로 달을 고르고(주소의 from), 이전·다음 달은 좌우로 쓸어 넘긴다.
  */
 export default async function StatsPage({
   searchParams,
@@ -51,17 +51,13 @@ export default async function StatsPage({
           <header className="grid h-10 grid-cols-[2.5rem_1fr_2.5rem] items-center">
             <SearchButton />
             <h1 className="text-center text-xl font-bold tracking-tight">통계</h1>
-            <span aria-hidden />
+            {/* 다른 화면처럼 오른쪽 끝 달력 아이콘(안에 달 숫자)으로 달 고르기, 이전·다음 달은 쓸어 넘기기 */}
+            <SummaryMonthPicker from={month.from} to={month.to} />
           </header>
-
-          {/* HOME과 같은 순서: 제목 → ‹ 달 › → 종류 탭 */}
-          <div className="mt-2">
-            <SummaryMonthNav from={month.from} to={month.to} />
-          </div>
 
           <nav
             aria-label="통계 종류"
-            className="-mx-4 grid grid-cols-3 border-b px-2 md:mx-0 md:px-0"
+            className="-mx-4 mt-3 grid grid-cols-3 border-b px-2 md:mx-0 md:px-0"
           >
             {STAT_TYPES.map((item) => {
               const isActive = item.value === type
@@ -105,15 +101,11 @@ async function StatsBody({ type, from }: { type: StatType; from: string }) {
   return (
     <MonthSwipe>
       {type === "sales" ? (
-        <SalesSummary from={from} monthNav="hidden" />
+        <SalesSummary from={from} />
       ) : type === "expenses" ? (
-        <ExpenseSummary
-          from={from}
-          categories={(await getExpenseCategories()).tree}
-          monthNav="hidden"
-        />
+        <ExpenseSummary from={from} categories={(await getExpenseCategories()).tree} />
       ) : (
-        <DispatchSummary from={from} monthNav="hidden" />
+        <DispatchSummary from={from} />
       )}
     </MonthSwipe>
   )

@@ -23,7 +23,7 @@ export function KindTab({
   /** 이 달, 이 종류 기록 */
   entries: CarEntry[]
   month: DateRange
-  /** "11월" 또는 1년치 보기면 "2026년" */
+  /** "11월" (달력 날짜·주별 줄에서 들어온 짧은 기간이면 "11/8~11/14") */
   periodLabel: string
   showLiters: boolean
   today: string

@@ -5,6 +5,7 @@ import {
 } from "@/lib/car-ledger/constants"
 import {
   carLogsToEntries,
+  expenseKindOf,
   expensesToCarEntries,
   toAmountRows,
   type CarAmountRow,
@@ -78,6 +79,101 @@ export const SERVICE_LEDGER_START = "2026-11-01"
  */
 export const SERVICE_LEDGER_EDITED_SINCE = "2026-11-25T12:15:00Z"
 
+function carExpenseQuery(supabase: Supabase) {
+  return supabase
+    .from("expenses")
+    .select(EXPENSE_COLUMNS)
+    .is("deleted_at", null)
+    .eq("category_major", CAR_EXPENSE_MAJOR)
+}
+
+/**
+ * 차계부에 보이는 정비 지출: SERVICE_LEDGER_START부터, 또는 SERVICE_LEDGER_EDITED_SINCE 뒤에 넣거나 고친 것.
+ * 할부 묶음의 일부만 읽혔으면(시작일 전에 시작한 할부 등) 묶음 전체를 함께 읽는다(항목 줄은 1회차에 붙어 있음).
+ * 일일(탭) 화면과 달력·주별·월별·연별 보기가 같은 규칙을 쓰도록 한곳에 둔다.
+ */
+async function loadServiceExpenses(supabase: Supabase): Promise<CarExpenseInput[]> {
+  const serviceExpenses = await fetchAllRows<CarExpenseInput>((a, b) =>
+    carExpenseQuery(supabase)
+      .eq("category_minor", CAR_SERVICE_MINOR)
+      .or(
+        `expense_date.gte.${SERVICE_LEDGER_START},created_at.gte.${SERVICE_LEDGER_EDITED_SINCE},updated_at.gte.${SERVICE_LEDGER_EDITED_SINCE}`
+      )
+      .order("expense_date")
+      .order("id")
+      .range(a, b)
+  )
+
+  const groupIds = [
+    ...new Set(serviceExpenses.map((row) => row.installment_group_id).filter((id): id is string => !!id)),
+  ]
+  if (groupIds.length) {
+    const earlier = await fetchAllRows<CarExpenseInput>((a, b) =>
+      carExpenseQuery(supabase)
+        .eq("category_minor", CAR_SERVICE_MINOR)
+        .in("installment_group_id", groupIds)
+        .order("expense_date")
+        .order("id")
+        .range(a, b)
+    )
+    const seen = new Set(serviceExpenses.map((row) => row.id))
+    serviceExpenses.push(...earlier.filter((row) => !seen.has(row.id)))
+  }
+  return serviceExpenses
+}
+
+/**
+ * 달력·주별·월별·연별 보기용: 한 차의 비용 줄(날짜·종류·금액)만 from~to로 읽는다 — 차계부 달 합계와 같은 기준
+ * (지출은 첫 업무용 차만, 정비는 loadServiceExpenses 규칙, 할부는 회차 줄 금액).
+ */
+export async function loadCarAmountRows(
+  supabase: Supabase,
+  carId: string,
+  withExpenses: boolean,
+  from: string,
+  to: string
+): Promise<CarAmountRow[]> {
+  const otherMinors = CAR_EXPENSE_MINORS.filter((minor) => minor !== CAR_SERVICE_MINOR)
+  const [serviceExpenses, otherExpenses, logs] = await Promise.all([
+    withExpenses ? loadServiceExpenses(supabase) : Promise.resolve([] as CarExpenseInput[]),
+    withExpenses
+      ? fetchAllRows((a, b) =>
+          supabase
+            .from("expenses")
+            .select("expense_date, category_minor, amount")
+            .is("deleted_at", null)
+            .eq("category_major", CAR_EXPENSE_MAJOR)
+            .in("category_minor", otherMinors)
+            .gte("expense_date", from)
+            .lte("expense_date", to)
+            .order("expense_date")
+            .order("id")
+            .range(a, b)
+        )
+      : Promise.resolve([]),
+    fetchAllRows((a, b) =>
+      supabase
+        .from("car_logs")
+        .select("log_date, kind, amount")
+        .eq("car_id", carId)
+        .is("deleted_at", null)
+        .gte("log_date", from)
+        .lte("log_date", to)
+        .order("log_date")
+        .order("id")
+        .range(a, b)
+    ),
+  ])
+
+  return [
+    ...serviceExpenses,
+    ...otherExpenses,
+  ]
+    .map((row) => ({ date: row.expense_date, kind: expenseKindOf(row.category_minor), amount: Number(row.amount) }))
+    .concat(logs.map((row) => ({ date: row.log_date, kind: row.kind, amount: Number(row.amount) })))
+    .filter((row) => row.date >= from && row.date <= to)
+}
+
 /**
  * 한 차의 차계부 자료: 지출(첫 업무용 차만 — 정비는 SERVICE_LEDGER_START부터, 주유·요소수는 고른 해만)
  * + car_logs + 그 기록들에 붙은 정비 항목 줄 + 교체 주기 표.
@@ -89,26 +185,13 @@ export async function loadCarLedgerData(
   withExpenses: boolean,
   year: string
 ): Promise<CarLedgerData> {
-  const expenseQuery = () =>
-    supabase.from("expenses").select(EXPENSE_COLUMNS).is("deleted_at", null).eq("category_major", CAR_EXPENSE_MAJOR)
   const otherMinors = CAR_EXPENSE_MINORS.filter((minor) => minor !== CAR_SERVICE_MINOR)
 
   const [serviceExpenses, otherExpenses, logs, cycles] = await Promise.all([
+    withExpenses ? loadServiceExpenses(supabase) : Promise.resolve([] as CarExpenseInput[]),
     withExpenses
       ? fetchAllRows<CarExpenseInput>((a, b) =>
-          expenseQuery()
-            .eq("category_minor", CAR_SERVICE_MINOR)
-            .or(
-              `expense_date.gte.${SERVICE_LEDGER_START},created_at.gte.${SERVICE_LEDGER_EDITED_SINCE},updated_at.gte.${SERVICE_LEDGER_EDITED_SINCE}`
-            )
-            .order("expense_date")
-            .order("id")
-            .range(a, b)
-        )
-      : Promise.resolve([] as CarExpenseInput[]),
-    withExpenses
-      ? fetchAllRows<CarExpenseInput>((a, b) =>
-          expenseQuery()
+          carExpenseQuery(supabase)
             .in("category_minor", otherMinors)
             .gte("expense_date", `${year}-01-01`)
             .lte("expense_date", `${year}-12-31`)
@@ -134,23 +217,6 @@ export async function loadCarLedgerData(
       .is("deleted_at", null)
       .order("sort_order"),
   ])
-
-  // 할부 묶음의 일부만 읽혔으면(시작일 전에 시작한 할부 등) 묶음 전체를 함께 읽는다(항목 줄은 1회차에 붙어 있음)
-  const groupIds = [
-    ...new Set(serviceExpenses.map((row) => row.installment_group_id).filter((id): id is string => !!id)),
-  ]
-  if (groupIds.length) {
-    const earlier = await fetchAllRows<CarExpenseInput>((a, b) =>
-      expenseQuery()
-        .eq("category_minor", CAR_SERVICE_MINOR)
-        .in("installment_group_id", groupIds)
-        .order("expense_date")
-        .order("id")
-        .range(a, b)
-    )
-    const seen = new Set(serviceExpenses.map((row) => row.id))
-    serviceExpenses.push(...earlier.filter((row) => !seen.has(row.id)))
-  }
 
   // 정비 항목 줄은 위에서 읽은 기록(살아 있는 부모)에 붙은 것만 읽는다
   const expenseIds = serviceExpenses.map((row) => row.id)

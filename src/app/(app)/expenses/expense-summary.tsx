@@ -1,12 +1,17 @@
 import { DonutChart } from "@/components/stats/donut-chart"
-import { SummaryMonthNav } from "@/components/list/summary-month-nav"
 import type { ExpenseCategoryTree } from "@/lib/constants/expense-categories"
 import { formatYearMonth, getMonthRange, shiftMonthRange } from "@/lib/date"
 import { buildMonthBreakdown } from "@/lib/expense-list"
-import { formatLiters, FUEL_MAJOR, FUEL_MINORS, summarizeLiters } from "@/lib/fuel"
+import { formatLiters, FUEL_MAJOR, FUEL_MINORS, summarizeLiters, type LiterSummary } from "@/lib/fuel"
 import { formatKRW } from "@/lib/money"
-import { formatChangeRate, percentOf } from "@/lib/summary"
+import { formatChangeRate, percentOf, SUMMARY_TITLE_CLASS, type SummaryComparison } from "@/lib/summary"
 import { createClient } from "@/lib/supabase/server"
+
+export interface ExpenseSummaryRow {
+  category_major: string
+  category_minor: string
+  amount: number
+}
 
 /**
  * 지출 월간 집계 탭: 목록 탭에서 보고 있는 달(from이 속한 달)을 집계한다.
@@ -16,20 +21,15 @@ import { createClient } from "@/lib/supabase/server"
 export async function ExpenseSummary({
   from,
   categories,
-  monthNav = "all",
 }: {
   from: string
   categories: ExpenseCategoryTree
-  /** 위쪽 달 이동: 모두 보임(기본) · desktop(모바일은 화면 머리에 따로 있음) · hidden(화면이 따로 그림) */
-  monthNav?: "all" | "desktop" | "hidden"
 }) {
   const supabase = await createClient()
   const current = getMonthRange(from)
   const previous = shiftMonthRange(from, -1)
 
-  // 리터 월 평균: 이번 달 포함 최근 12개월
-  const yearAgo = shiftMonthRange(from, -11)
-  const [{ data: currentRows, error: currentError }, { data: previousRows }, { data: literRows }] =
+  const [{ data: currentRows, error: currentError }, { data: previousRows }, liters] =
     await Promise.all([
       supabase
         .from("expenses")
@@ -43,15 +43,7 @@ export async function ExpenseSummary({
         .is("deleted_at", null)
         .gte("expense_date", previous.from)
         .lte("expense_date", previous.to),
-      supabase
-        .from("expenses")
-        .select("expense_date, category_minor, liters")
-        .is("deleted_at", null)
-        .eq("category_major", FUEL_MAJOR)
-        .in("category_minor", [...FUEL_MINORS])
-        .not("liters", "is", null)
-        .gte("expense_date", yearAgo.from)
-        .lte("expense_date", current.to),
+      loadMonthLiters(supabase, current.from),
     ])
 
   if (currentError) {
@@ -62,53 +54,96 @@ export async function ExpenseSummary({
     )
   }
 
-  const rows = currentRows ?? []
-  const grandTotal = rows.reduce((sum, r) => sum + r.amount, 0)
-  const previousTotal = (previousRows ?? []).reduce(
-    (sum, r) => sum + r.amount,
-    0
+  return (
+    <ExpenseSummaryCard
+      title={formatYearMonth(current.from)}
+      rows={currentRows ?? []}
+      categories={categories}
+      previous={{
+        label: "지난 달",
+        rateWord: "전월",
+        total: (previousRows ?? []).reduce((sum, r) => sum + r.amount, 0),
+      }}
+      liters={liters}
+    />
   )
+}
+
+/** 주유비·요소수 리터: 그 달 합 · 최근 12개월(그 달 포함) 중 적은 달의 월 평균 */
+export async function loadMonthLiters(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  monthFrom: string
+): Promise<LiterSummary[]> {
+  const current = getMonthRange(monthFrom)
+  const yearAgo = shiftMonthRange(monthFrom, -11)
+  const { data } = await supabase
+    .from("expenses")
+    .select("expense_date, category_minor, liters")
+    .is("deleted_at", null)
+    .eq("category_major", FUEL_MAJOR)
+    .in("category_minor", [...FUEL_MINORS])
+    .not("liters", "is", null)
+    .gte("expense_date", yearAgo.from)
+    .lte("expense_date", current.to)
+  return summarizeLiters(data ?? [], current.from)
+}
+
+/**
+ * 지출 집계 카드(통계 화면·지출 달력/월별/연별 보기): 합계 · 비교 · (달 집계면) 리터 · 대분류 도넛 · 대분류 → 소분류 목록.
+ */
+export function ExpenseSummaryCard({
+  title,
+  rows,
+  categories,
+  previous,
+  liters = null,
+}: {
+  /** "2026년 11월" / "2026년" / "전체 기간" */
+  title: string
+  rows: readonly ExpenseSummaryRow[]
+  categories: ExpenseCategoryTree
+  previous: SummaryComparison | null
+  /** 달 집계일 때만 (해·전체 집계에는 리터 칸 없음) */
+  liters?: LiterSummary[] | null
+}) {
+  const grandTotal = rows.reduce((sum, r) => sum + r.amount, 0)
+  const previousTotal = previous?.total ?? 0
   const breakdown = buildMonthBreakdown(categories, rows)
-  const liters = summarizeLiters(literRows ?? [], current.from)
 
   return (
     <div className="flex flex-col gap-4">
-      {monthNav === "hidden" ? null : (
-        <div className={monthNav === "desktop" ? "hidden md:block" : undefined}>
-          <SummaryMonthNav from={current.from} to={current.to} />
-        </div>
-      )}
-
       <div className="rounded-md border p-4">
-        <p className="text-sm text-muted-foreground">
-          {formatYearMonth(current.from)} 지출 합계
-        </p>
+        <p className={SUMMARY_TITLE_CLASS}>{title} 지출 합계</p>
         <p className="text-2xl font-semibold">{formatKRW(grandTotal)}</p>
-        <p className="text-sm text-muted-foreground">
-          {formatChangeRate(grandTotal, previousTotal)} (지난 달{" "}
-          {formatKRW(previousTotal)})
-        </p>
+        {previous ? (
+          <p className="text-sm text-muted-foreground">
+            {formatChangeRate(grandTotal, previousTotal, "지출", previous.rateWord)} ({previous.label}{" "}
+            {formatKRW(previousTotal)})
+          </p>
+        ) : null}
       </div>
 
-      {/* 주유비·요소수에 적은 리터: 이번 달 합 · 최근 12개월 중 적은 달의 월 평균 */}
-      <div className="rounded-md border">
-        <p className="border-b p-3 font-medium">넣은 양 (리터)</p>
-        {liters.map((item) => (
-          <div key={item.minor} className="flex items-start justify-between gap-3 border-b p-3 last:border-0">
-            <span>{item.minor}</span>
-            <span className="text-right">
-              <span className="font-medium">
-                {item.monthCount > 0 ? formatLiters(item.month) : "기록 없음"}
+      {/* 주유비·요소수에 적은 리터: 이번 달 합 · 최근 12개월 중 적은 달의 월 평균 (달 집계만) */}
+      {liters ? (
+        <div className="rounded-md border">
+          <p className="border-b p-3 font-medium">넣은 양 (리터)</p>
+          {liters.map((item) => (
+            <div key={item.minor} className="flex items-start justify-between gap-3 border-b p-3 last:border-0">
+              <span>{item.minor}</span>
+              <span className="text-right">
+                <span className="font-medium">
+                  {item.monthCount > 0 ? formatLiters(item.month) : "기록 없음"}
+                </span>
+                <span className="block text-sm text-muted-foreground">
+                  {item.average !== null
+                    ? `월 평균 ${formatLiters(item.average)} (최근 ${item.averageMonths}개월)`
+                    : "지출 등록 때 리터를 적으면 모아 보여 줘요"}
+                </span>
               </span>
-              <span className="block text-sm text-muted-foreground">
-                {item.average !== null
-                  ? `월 평균 ${formatLiters(item.average)} (최근 ${item.averageMonths}개월)`
-                  : "지출 등록 때 리터를 적으면 모아 보여 줘요"}
-              </span>
-            </span>
-          </div>
-        ))}
-      </div>
+            </div>
+          ))}
+        </div>
+      ) : null}
 
       <DonutChart
         ariaLabel="지출 대분류별 비율"

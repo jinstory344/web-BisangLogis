@@ -1,27 +1,32 @@
 import { DonutChart } from "@/components/stats/donut-chart"
-import { SummaryMonthNav } from "@/components/list/summary-month-nav"
 import { formatYearMonth, getMonthRange, shiftMonthRange } from "@/lib/date"
 import {
   summarizeDispatchMonth,
   UNSET_VEHICLE_LABEL,
 } from "@/lib/dispatch-summary"
 import { formatKRW } from "@/lib/money"
-import { formatChangeRate, percentOf } from "@/lib/summary"
+import { formatChangeRate, percentOf, SUMMARY_TITLE_CLASS, type SummaryComparison } from "@/lib/summary"
 import { createClient } from "@/lib/supabase/server"
+
+export interface DispatchSummaryRow {
+  client_id: string | null
+  plate_no_snapshot: string | null
+  driver_name_snapshot: string | null
+  freight_amount: number | null
+  fee_amount: number
+}
+
+/** 배차 집계의 비교 기간: 건수와 운임 */
+export interface DispatchComparison extends SummaryComparison {
+  count: number
+}
 
 /**
  * 배차 월간 집계 탭: 목록 탭에서 보고 있는 달(from이 속한 달)의 배차를
  * 건수 · 운임 · 수수료 합계, 전월 대비, 거래처별, 차량별(기사 이름 + 차량번호)로 보여 준다.
  * 운임·수수료는 기사에게 지급하는 비용과 중개 수수료 기록이라 매출과 합치지 않는다.
  */
-export async function DispatchSummary({
-  from,
-  monthNav = "all",
-}: {
-  from: string
-  /** 위쪽 달 이동: 모두 보임(기본) · desktop(모바일은 화면 머리에 따로 있음) · hidden(화면이 따로 그림) */
-  monthNav?: "all" | "desktop" | "hidden"
-}) {
+export async function DispatchSummary({ from }: { from: string }) {
   const supabase = await createClient()
   const month = getMonthRange(from)
   const previous = shiftMonthRange(from, -1)
@@ -52,14 +57,8 @@ export async function DispatchSummary({
     )
   }
 
-  const summary = summarizeDispatchMonth(currentRows ?? [])
-  const previousCount = previousRows?.length ?? 0
-  const previousFreight = (previousRows ?? []).reduce(
-    (sum, row) => sum + (row.freight_amount ?? 0),
-    0
-  )
-
-  const clientIds = summary.byClient.map((c) => c.clientId)
+  const rows = currentRows ?? []
+  const clientIds = [...new Set(rows.map((row) => row.client_id).filter((id): id is string => !!id))]
   let clientNames: Record<string, string> = {}
   if (clientIds.length > 0) {
     const { data: clientRows } = await supabase
@@ -70,17 +69,43 @@ export async function DispatchSummary({
   }
 
   return (
-    <div className="flex flex-col gap-4">
-      {monthNav === "hidden" ? null : (
-        <div className={monthNav === "desktop" ? "hidden md:block" : undefined}>
-          <SummaryMonthNav from={month.from} to={month.to} />
-        </div>
-      )}
+    <DispatchSummaryCard
+      title={formatYearMonth(month.from)}
+      rows={rows}
+      clientNames={clientNames}
+      previous={{
+        label: "지난 달",
+        rateWord: "전월",
+        count: previousRows?.length ?? 0,
+        total: (previousRows ?? []).reduce((sum, row) => sum + (row.freight_amount ?? 0), 0),
+      }}
+    />
+  )
+}
 
+/**
+ * 배차 집계 카드(통계 화면·배차 달력/월별/연별 보기): 건수 · 운임 · 수수료 · 비교 · 거래처별 도넛 · 거래처별·차량별 목록.
+ */
+export function DispatchSummaryCard({
+  title,
+  rows,
+  clientNames,
+  previous,
+}: {
+  /** "2026년 11월" / "2026년" / "전체 기간" */
+  title: string
+  rows: readonly DispatchSummaryRow[]
+  /** 거래처 id → 이름 */
+  clientNames: Record<string, string>
+  previous: DispatchComparison | null
+}) {
+  const summary = summarizeDispatchMonth(rows)
+  const previousFreight = previous?.total ?? 0
+
+  return (
+    <div className="flex flex-col gap-4">
       <div className="rounded-md border p-4">
-        <p className="text-sm text-muted-foreground">
-          {formatYearMonth(month.from)} 배차
-        </p>
+        <p className={SUMMARY_TITLE_CLASS}>{title} 배차</p>
         <p className="text-2xl font-semibold tabular-nums">{summary.count}건</p>
         <p className="mt-1 text-sm tabular-nums">
           운임 {formatKRW(summary.freightAmount)}
@@ -89,10 +114,12 @@ export async function DispatchSummary({
             · 수수료 {formatKRW(summary.feeAmount)}
           </span>
         </p>
-        <p className="text-sm text-muted-foreground">
-          {formatChangeRate(summary.freightAmount, previousFreight, "운임")} (지난 달{" "}
-          {previousCount}건 · 운임 {formatKRW(previousFreight)})
-        </p>
+        {previous ? (
+          <p className="text-sm text-muted-foreground">
+            {formatChangeRate(summary.freightAmount, previousFreight, "운임", previous.rateWord)} (
+            {previous.label} {previous.count}건 · 운임 {formatKRW(previousFreight)})
+          </p>
+        ) : null}
       </div>
 
       <DonutChart
@@ -105,7 +132,7 @@ export async function DispatchSummary({
 
       {summary.count === 0 ? (
         <p className="py-8 text-center text-sm text-muted-foreground">
-          이 달에 등록된 배차가 없습니다.
+          이 기간에 등록된 배차가 없습니다.
         </p>
       ) : (
         <>

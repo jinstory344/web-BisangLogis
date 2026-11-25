@@ -123,8 +123,15 @@ describe("buildWeekBuckets (주별 장부)", () => {
   })
 
   it("오늘 이후에 시작하는 주차는 뺀다", () => {
-    const buckets = buildWeekBuckets("2026-11-15", rows, "2026-11-10")
+    const buckets = buildWeekBuckets("2026-11-15", rows.filter((r) => r.date <= "2026-11-10"), "2026-11-10")
     expect(buckets.map((b) => b.key)).toEqual(["2026-11-2", "2026-11-1"])
+  })
+
+  it("미리 넣어 둔 앞날짜 기록이 있으면 그 주차까지 보여 준다 (칸 합 = 달 합)", () => {
+    const future = [sale("2026-11-05", 10), sale("2026-11-30", 7)]
+    const buckets = buildWeekBuckets("2026-11-15", future, "2026-11-10")
+    expect(buckets[0]).toMatchObject({ key: "2026-11-5", income: 7 })
+    expect(buckets.reduce((sum, b) => sum + b.income, 0)).toBe(17)
   })
 
   it("2월은 4주차까지이고 윤년 29일은 5주차에 들어간다", () => {

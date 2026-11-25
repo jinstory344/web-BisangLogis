@@ -1,25 +1,26 @@
 import { DonutChart } from "@/components/stats/donut-chart"
-import { SummaryMonthNav } from "@/components/list/summary-month-nav"
 import { PAID_TEXT_CLASS } from "@/components/dispatches/payment-badge"
 import { formatYearMonth, getMonthRange, shiftMonthRange } from "@/lib/date"
 import { formatKRW } from "@/lib/money"
 import { summarizeSalesMonth } from "@/lib/sales-summary"
-import { formatChangeRate, percentOf } from "@/lib/summary"
+import { formatChangeRate, percentOf, SUMMARY_TITLE_CLASS, type SummaryComparison } from "@/lib/summary"
 import { createClient } from "@/lib/supabase/server"
+import type { PaymentStatus } from "@/lib/supabase/database.types"
 import { cn } from "@/lib/utils"
+
+export interface SalesSummaryRow {
+  source_major: string | null
+  source_minor: string | null
+  supply_amount: number
+  total_amount: number
+  payment_status: PaymentStatus
+}
 
 /**
  * 매출 월간 집계 탭: 목록 탭에서 보고 있는 달(from이 속한 달)의 매출을
  * 공급가액 기준으로 합계 · 전월 대비 · 입금/미입금 · 출처별(대분류 → 소분류)로 보여 준다.
  */
-export async function SalesSummary({
-  from,
-  monthNav = "all",
-}: {
-  from: string
-  /** 위쪽 달 이동: 모두 보임(기본) · desktop(모바일은 화면 머리에 따로 있음) · hidden(화면이 따로 그림) */
-  monthNav?: "all" | "desktop" | "hidden"
-}) {
+export async function SalesSummary({ from }: { from: string }) {
   const supabase = await createClient()
   const month = getMonthRange(from)
   const previous = shiftMonthRange(from, -1)
@@ -50,31 +51,48 @@ export async function SalesSummary({
     )
   }
 
-  const summary = summarizeSalesMonth(currentRows ?? [])
-  const previousTotal = (previousRows ?? []).reduce(
-    (sum, row) => sum + row.supply_amount,
-    0
+  return (
+    <SalesSummaryCard
+      title={formatYearMonth(month.from)}
+      rows={currentRows ?? []}
+      previous={{
+        label: "지난 달",
+        rateWord: "전월",
+        total: (previousRows ?? []).reduce((sum, row) => sum + row.supply_amount, 0),
+      }}
+    />
   )
+}
+
+/**
+ * 매출 집계 카드(통계 화면·매출 달력/월별/연별 보기): 공급가액 합계 · 비교 · 입금/미입금 · 출처별 도넛과 목록.
+ */
+export function SalesSummaryCard({
+  title,
+  rows,
+  previous,
+}: {
+  /** "2026년 11월" / "2026년" / "전체 기간" */
+  title: string
+  rows: readonly SalesSummaryRow[]
+  previous: SummaryComparison | null
+}) {
+  const summary = summarizeSalesMonth(rows)
+  const previousTotal = previous?.total ?? 0
 
   return (
     <div className="flex flex-col gap-4">
-      {monthNav === "hidden" ? null : (
-        <div className={monthNav === "desktop" ? "hidden md:block" : undefined}>
-          <SummaryMonthNav from={month.from} to={month.to} />
-        </div>
-      )}
-
       <div className="rounded-md border p-4">
-        <p className="text-sm text-muted-foreground">
-          {formatYearMonth(month.from)} 매출 합계 (공급가액)
-        </p>
+        <p className={SUMMARY_TITLE_CLASS}>{title} 매출 합계 (공급가액)</p>
         <p className="text-2xl font-semibold tabular-nums">
           {formatKRW(summary.supplyAmount)}
         </p>
-        <p className="text-sm text-muted-foreground">
-          {formatChangeRate(summary.supplyAmount, previousTotal, "매출")} (지난 달{" "}
-          {formatKRW(previousTotal)})
-        </p>
+        {previous ? (
+          <p className="text-sm text-muted-foreground">
+            {formatChangeRate(summary.supplyAmount, previousTotal, "매출", previous.rateWord)} (
+            {previous.label} {formatKRW(previousTotal)})
+          </p>
+        ) : null}
         <p className="mt-3 flex flex-wrap gap-x-4 gap-y-0.5 text-sm tabular-nums">
           <span className={cn("font-medium", PAID_TEXT_CLASS)}>
             입금 {formatKRW(summary.paidSupplyAmount)}
@@ -105,7 +123,7 @@ export async function SalesSummary({
 
       {summary.byMajor.length === 0 ? (
         <p className="py-8 text-center text-sm text-muted-foreground">
-          이 달에 등록된 매출이 없습니다.
+          이 기간에 등록된 매출이 없습니다.
         </p>
       ) : (
         <div className="rounded-md border">

@@ -4,11 +4,24 @@ import { Plus } from "lucide-react"
 
 import { ListBodyFallback } from "@/components/list/list-body-fallback"
 import { ListPageHead } from "@/components/list/list-page-head"
+import { ListPeriodView } from "@/components/list/list-period-view"
+import { ListViewMenu } from "@/components/list/list-view-menu"
 import { SECTION_COLORS } from "@/lib/constants/section-colors"
 import { SummaryMonthPicker } from "@/components/list/summary-month-picker"
 import { Button } from "@/components/ui/button"
 import { MonthSwipe } from "@/components/list/month-swipe"
-import { getCurrentMonthRangeInSeoul } from "@/lib/date"
+import { getCurrentMonthRangeInSeoul, getTodayInSeoul } from "@/lib/date"
+import { formatKRW } from "@/lib/money"
+import { DISPATCH_METRIC_KEYS, dispatchMetricRows, rowsInPeriod } from "@/lib/period-metrics"
+import {
+  getViewRange,
+  listAnchor,
+  parseListView,
+  periodBadge,
+  periodTitle,
+  previousPeriod,
+  type ListView,
+} from "@/lib/period-view"
 import { createClient } from "@/lib/supabase/server"
 import type { DispatchRow } from "@/lib/supabase/database.types"
 
@@ -17,12 +30,16 @@ import {
   summarizeDispatches,
 } from "@/lib/dispatch-list"
 
+import { fetchAllRows } from "../ledger-data"
+
 import { DispatchList } from "./dispatch-list"
 import { DispatchMobileControls } from "./dispatch-mobile-controls"
+import { DispatchSummaryCard } from "./dispatch-summary"
 
 const PAGE_SIZE = 200 // 한 달 배차가 많아 200건까지는 페이지 넘기기 없이
 
 interface DispatchSearchParams {
+  view?: string
   from?: string
   to?: string
   client_id?: string
@@ -55,6 +72,7 @@ export default async function DispatchesPage({
               </Link>
             </Button>
           }
+          titleAddon={<ListViewMenu />}
           periodPicker={<SummaryMonthPicker from={from} to={to} />}
         />
 
@@ -68,6 +86,9 @@ export default async function DispatchesPage({
 }
 
 async function DispatchesBody({ params }: { params: DispatchSearchParams }) {
+  const view = parseListView(params.view)
+  if (view !== "day") return <DispatchesPeriodBody params={params} view={view} />
+
   const defaultRange = getCurrentMonthRangeInSeoul()
   const from = params.from || defaultRange.from
   const to = params.to || defaultRange.to
@@ -153,5 +174,122 @@ async function DispatchesBody({ params }: { params: DispatchSearchParams }) {
             />
           )}
           </MonthSwipe>
+  )
+}
+
+/**
+ * 달력·주별·월별·연별 보기: 금액 줄만 읽어(목록 전체 X) 칸별 건수·운임·수수료와 집계 카드를 만든다.
+ * 거래처 거르기는 모든 보기에 그대로 적용된다(기간 직접 지정은 일일 보기에만).
+ */
+async function DispatchesPeriodBody({
+  params,
+  view,
+}: {
+  params: DispatchSearchParams
+  view: Exclude<ListView, "day">
+}) {
+  const defaultRange = getCurrentMonthRangeInSeoul()
+  const from = params.from || defaultRange.from
+  const to = params.to || defaultRange.to
+  const today = getTodayInSeoul()
+  const anchor = listAnchor(from, to, defaultRange.from)
+  const range = getViewRange(view, anchor)
+  const previous = previousPeriod(view, anchor)
+  const clientId = params.client_id ?? ""
+  const clientName = params.client_name ?? ""
+
+  const supabase = await createClient()
+  let rows
+  let clientRows
+  try {
+    ;[rows, { data: clientRows }] = await Promise.all([
+      fetchAllRows((a, b) =>
+        supabase
+          .from("dispatches")
+          .select("dispatch_date, client_id, plate_no_snapshot, driver_name_snapshot, freight_amount, fee_amount")
+          .is("deleted_at", null)
+          .gte("dispatch_date", previous?.from ?? range.from)
+          .lte("dispatch_date", range.to)
+          .order("dispatch_date")
+          .order("id")
+          .range(a, b)
+      ),
+      supabase.from("clients").select("id, name"),
+    ])
+  } catch (error) {
+    return (
+      <p className="text-sm text-destructive">
+        배차를 불러오지 못했습니다: {error instanceof Error ? error.message : "알 수 없는 오류"}
+      </p>
+    )
+  }
+
+  const clientNameMap: Record<string, string> = Object.fromEntries(
+    (clientRows ?? []).map((c) => [c.id, c.name])
+  )
+  const current = rowsInPeriod(rows, (row) => row.dispatch_date, range.from, range.to)
+  const shown = filterDispatchesByClient(current, clientId)
+  const previousRows = previous
+    ? filterDispatchesByClient(
+        rowsInPeriod(rows, (row) => row.dispatch_date, previous.from, previous.to),
+        clientId
+      )
+    : []
+
+  const card =
+    view === "week" ? null : (
+      <DispatchSummaryCard
+        title={periodTitle(view, anchor)}
+        rows={shown}
+        clientNames={clientNameMap}
+        previous={
+          previous
+            ? {
+                label: previous.label,
+                rateWord: previous.rateWord,
+                count: previousRows.length,
+                total: previousRows.reduce((sum, row) => sum + (row.freight_amount ?? 0), 0),
+              }
+            : null
+        }
+      />
+    )
+
+  return (
+    <MonthSwipe className="flex flex-col gap-3 md:gap-4">
+      <div className="contents">
+        <DispatchMobileControls
+          from={from}
+          to={to}
+          clientId={clientId}
+          clientName={clientName}
+          summary={summarizeDispatches(current)}
+          clientNames={clientNameMap}
+          periodLabel={periodBadge(view, anchor)}
+        />
+      </div>
+
+      <ListPeriodView
+        view={view}
+        anchor={anchor}
+        today={today}
+        pathname="/dispatches"
+        params={{ ...params }}
+        rows={dispatchMetricRows(shown)}
+        keys={DISPATCH_METRIC_KEYS}
+        cellLines={({ count, sums }) => [
+          { text: `${count}건`, className: "text-muted-foreground" },
+          ...(sums.freight > 0 ? [{ text: sums.freight.toLocaleString("ko-KR") }] : []),
+        ]}
+        rowView={({ count, sums }) => ({
+          countText: `${count}건`,
+          value: formatKRW(sums.freight),
+          details: [
+            { text: `수수료 ${formatKRW(sums.fee)}`, className: "text-muted-foreground" },
+          ],
+        })}
+        summaryCard={card}
+      />
+    </MonthSwipe>
   )
 }

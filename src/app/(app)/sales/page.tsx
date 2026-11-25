@@ -3,23 +3,42 @@ import { Suspense } from "react"
 import { Plus } from "lucide-react"
 
 import { ListBodyFallback } from "@/components/list/list-body-fallback"
+import { INCOME_TEXT_CLASS } from "@/components/ledger/colors"
+import { PAID_TEXT_CLASS } from "@/components/dispatches/payment-badge"
 import { ListPageHead } from "@/components/list/list-page-head"
+import { ListPeriodView } from "@/components/list/list-period-view"
+import { ListViewMenu } from "@/components/list/list-view-menu"
 import { SummaryMonthPicker } from "@/components/list/summary-month-picker"
 import { Button } from "@/components/ui/button"
 import { MonthSwipe } from "@/components/list/month-swipe"
-import { getCurrentMonthRangeInSeoul } from "@/lib/date"
+import { getCurrentMonthRangeInSeoul, getTodayInSeoul } from "@/lib/date"
+import { formatKRW } from "@/lib/money"
+import { rowsInPeriod, SALE_METRIC_KEYS, saleMetricRows } from "@/lib/period-metrics"
+import {
+  getViewRange,
+  listAnchor,
+  parseListView,
+  periodBadge,
+  periodTitle,
+  previousPeriod,
+  type ListView,
+} from "@/lib/period-view"
 import { createClient } from "@/lib/supabase/server"
 import type { PaymentMethod, PaymentStatus, SaleRow } from "@/lib/supabase/database.types"
 
 import { pickStatusTotals, summarizeByPaymentStatus } from "@/lib/sales-list"
 
+import { fetchAllRows } from "../ledger-data"
+
 import { SalesList } from "./sales-list"
 import { SalesMobileControls } from "./sales-mobile-controls"
+import { SalesSummaryCard } from "./sales-summary"
 import { getSaleSources } from "./sources"
 
 const PAGE_SIZE = 100 // 100건까지는 페이지 넘기기 없이
 
 interface SalesSearchParams {
+  view?: string
   from?: string
   to?: string
   source_major?: string
@@ -53,6 +72,7 @@ export default async function SalesPage({
               </Link>
             </Button>
           }
+          titleAddon={<ListViewMenu />}
           periodPicker={<SummaryMonthPicker from={from} to={to} />}
         />
 
@@ -66,6 +86,9 @@ export default async function SalesPage({
 }
 
 async function SalesBody({ params }: { params: SalesSearchParams }) {
+  const view = parseListView(params.view)
+  if (view !== "day") return <SalesPeriodBody params={params} view={view} />
+
   const defaultRange = getCurrentMonthRangeInSeoul()
   const from = params.from || defaultRange.from
   const to = params.to || defaultRange.to
@@ -177,5 +200,128 @@ async function SalesBody({ params }: { params: SalesSearchParams }) {
             />
           )}
           </MonthSwipe>
+  )
+}
+
+/**
+ * 달력·주별·월별·연별 보기: 금액 줄만 읽어(목록 전체 X) 칸별 합계와 집계 카드를 만든다.
+ * 거르기(출처·하위분류·지불방법·입금 상태)는 모든 보기에 그대로 적용된다.
+ */
+async function SalesPeriodBody({
+  params,
+  view,
+}: {
+  params: SalesSearchParams
+  view: Exclude<ListView, "day">
+}) {
+  const defaultRange = getCurrentMonthRangeInSeoul()
+  const from = params.from || defaultRange.from
+  const to = params.to || defaultRange.to
+  const today = getTodayInSeoul()
+  const anchor = listAnchor(from, to, defaultRange.from)
+  const range = getViewRange(view, anchor)
+  const previous = previousPeriod(view, anchor)
+  const sourceMajor = params.source_major ?? ""
+  const sourceSub = sourceMajor ? (params.source_sub ?? "") : ""
+  const paymentStatus = params.payment_status ?? ""
+  const paymentMethod = params.payment_method ?? ""
+
+  const supabase = await createClient()
+  let rows
+  let sourceTree
+  try {
+    ;[rows, { tree: sourceTree }] = await Promise.all([
+      fetchAllRows((a, b) => {
+        let query = supabase
+          .from("sales")
+          .select("sale_date, source_major, source_minor, supply_amount, total_amount, payment_status")
+          .is("deleted_at", null)
+          .gte("sale_date", previous?.from ?? range.from)
+          .lte("sale_date", range.to)
+        if (sourceMajor) query = query.eq("source_major", sourceMajor)
+        if (sourceSub) query = query.eq("source_sub", sourceSub)
+        if (paymentMethod) query = query.eq("payment_method", paymentMethod as PaymentMethod)
+        return query.order("sale_date").order("id").range(a, b)
+      }),
+      getSaleSources(),
+    ])
+  } catch (error) {
+    return (
+      <p className="text-sm text-destructive">
+        매출을 불러오지 못했습니다: {error instanceof Error ? error.message : "알 수 없는 오류"}
+      </p>
+    )
+  }
+
+  const byStatus = (row: { payment_status: PaymentStatus }) =>
+    !paymentStatus || row.payment_status === paymentStatus
+  const current = rowsInPeriod(rows, (row) => row.sale_date, range.from, range.to)
+  const shown = current.filter(byStatus)
+  const previousRows = previous
+    ? rowsInPeriod(rows, (row) => row.sale_date, previous.from, previous.to).filter(byStatus)
+    : []
+
+  const card =
+    view === "week" ? null : (
+      <SalesSummaryCard
+        title={periodTitle(view, anchor)}
+        rows={shown}
+        previous={
+          previous
+            ? {
+                label: previous.label,
+                rateWord: previous.rateWord,
+                total: previousRows.reduce((sum, row) => sum + row.supply_amount, 0),
+              }
+            : null
+        }
+      />
+    )
+
+  return (
+    <MonthSwipe className="flex flex-col gap-3 md:gap-4">
+      <div className="contents">
+        <SalesMobileControls
+          from={from}
+          to={to}
+          sourceMajor={sourceMajor}
+          sourceSub={sourceSub}
+          sourceTree={sourceTree}
+          paymentStatus={paymentStatus}
+          paymentMethod={paymentMethod}
+          summary={summarizeByPaymentStatus(current)}
+          periodLabel={periodBadge(view, anchor)}
+        />
+      </div>
+
+      <ListPeriodView
+        view={view}
+        anchor={anchor}
+        today={today}
+        pathname="/sales"
+        params={{ ...params }}
+        rows={saleMetricRows(shown)}
+        keys={SALE_METRIC_KEYS}
+        cellLines={({ sums }) => [
+          { text: sums.supply.toLocaleString("ko-KR"), className: INCOME_TEXT_CLASS },
+          // 빨간 숫자 = 그날 미입금 (PRD 4.4 미입금 빨강)
+          ...(sums.unpaid > 0
+            ? [{ text: sums.unpaid.toLocaleString("ko-KR"), className: "text-destructive" }]
+            : []),
+        ]}
+        rowView={({ count, sums }) => ({
+          countText: `${count}건`,
+          value: formatKRW(sums.supply),
+          details: [
+            { text: `입금 ${formatKRW(sums.paid)}`, className: sums.paid > 0 ? PAID_TEXT_CLASS : undefined },
+            {
+              text: `미입금 ${formatKRW(sums.unpaid)}`,
+              className: sums.unpaid > 0 ? "text-destructive" : undefined,
+            },
+          ],
+        })}
+        summaryCard={card}
+      />
+    </MonthSwipe>
   )
 }

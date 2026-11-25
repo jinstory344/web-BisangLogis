@@ -29,6 +29,11 @@ import { cn } from "@/lib/utils"
 interface ExpenseMobileControlsProps {
   from: string
   to: string
+  /**
+   * 달력·주별·월별·연별 보기에서 거르기 줄 왼쪽 배지("11월"/"2026년", 연별은 "" = 배지 없음). 있으면 기간은 보기가 정하므로
+   * 기간 직접 지정 칸을 숨기고 거르기 수에도 넣지 않는다.
+   */
+  periodLabel?: string
   categoryMajor: string
   categoryMinor: string
   /** 기간 안의 전체 지출 요약 (대분류·소분류 필터와 상관없이 센 것) */
@@ -47,6 +52,7 @@ interface ExpenseMobileControlsProps {
 export function ExpenseMobileControls({
   from,
   to,
+  periodLabel,
   categoryMajor,
   categoryMinor,
   summary,
@@ -58,9 +64,14 @@ export function ExpenseMobileControls({
   const searchParams = useSearchParams()
 
   // 전체 기간(HOME 미입금 줄에서 들어옴)은 직접 지정한 기간 필터로 세지 않는다
-  const isMonth = isFullMonthRange({ from, to }) || isAllPeriod({ from, to })
+  const isMonth = periodLabel !== undefined || isFullMonthRange({ from, to }) || isAllPeriod({ from, to })
   // 보고 있는 달 ("11월") — "11월 전체 28건"처럼 거르기 줄 왼쪽에 붙인다(한 달이 아닐 때는 없음)
-  const monthPrefix = isFullMonthRange({ from, to }) ? `${Number(from.slice(5, 7))}월` : undefined
+  const monthPrefix =
+    periodLabel !== undefined
+      ? periodLabel || undefined
+      : isFullMonthRange({ from, to })
+        ? `${Number(from.slice(5, 7))}월`
+        : undefined
   // 기간 직접 지정이나 소분류가 걸려 있으면 필터 버튼에 표시한다.
   const activeFilterCount = (isMonth ? 0 : 1) + (categoryMinor ? 1 : 0)
   const [isFilterOpen, setIsFilterOpen] = useState(activeFilterCount > 0)
@@ -160,13 +171,18 @@ export function ExpenseMobileControls({
             </p>
           )}
 
-          {/* 달을 넘기면 입력값도 새 기간으로 바뀌도록 기간이 바뀔 때 새로 만든다. */}
-          <DateRangeInputs
-            key={`${from}_${to}`}
-            from={isAllPeriod({ from, to }) ? "" : from}
-            to={isAllPeriod({ from, to }) ? "" : to}
-            onApply={(range) => pushParams(range)}
-          />
+          {/* 달력·주별·월별·연별 보기는 기간을 보기가 정하므로 기간 직접 지정 칸이 없다 */}
+          {periodLabel !== undefined ? null : (
+            <>
+              {/* 달을 넘기면 입력값도 새 기간으로 바뀌도록 기간이 바뀔 때 새로 만든다. */}
+              <DateRangeInputs
+                key={`${from}_${to}`}
+                from={isAllPeriod({ from, to }) ? "" : from}
+                to={isAllPeriod({ from, to }) ? "" : to}
+                onApply={(range) => pushParams(range)}
+              />
+            </>
+          )}
         </div>
       ) : null}
     </div>

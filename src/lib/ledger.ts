@@ -1,4 +1,5 @@
 import { getMonthRange } from "@/lib/date"
+import { monthRanges, weekRanges, yearRanges } from "@/lib/period-ranges"
 
 /**
  * 장부 보기: 일일(월 안의 날짜별) · 달력(그 달 달력에 날짜별 합계) · 주별(월 안의 주차별)
@@ -107,10 +108,6 @@ export interface RangeBucket extends LedgerTotals {
   count: number
 }
 
-function pad(value: number): string {
-  return String(value).padStart(2, "0")
-}
-
 function sumRange(
   rows: readonly AmountRow[],
   from: string,
@@ -120,46 +117,38 @@ function sumRange(
   return { ...sumTotals(inRange), count: inRange.length }
 }
 
+/** 오늘과 가장 늦은 기록 날짜 중 늦은 날 — 미리 넣어 둔 앞날짜 기록(예: 11/30 하이패스) 칸도 보이게(칸 합 = 위 합계, PRD 4.3) */
+function lastRecordDay(rows: readonly AmountRow[], today: string): string {
+  let last = today
+  for (const row of rows) if (row.date > last) last = row.date
+  return last
+}
+
 /**
  * 한 달을 7일 단위 주차(1~7일=1주차, 8~14일=2주차 …)로 나눠 주차별 합계를 구한다.
- * 목록 화면의 "M월 N주차"와 같은 구분이다. 오늘 이후에 시작하는 주차는 뺀다. 최근 주차가 먼저.
+ * 목록 화면의 "M월 N주차"와 같은 구분이다. 오늘 이후에 시작하는 주차는 뺀다(앞날짜 기록이 있으면 그 주차까지). 최근 주차가 먼저.
  */
 export function buildWeekBuckets(
   monthAnchor: string,
   rows: readonly AmountRow[],
   today: string
 ): RangeBucket[] {
-  const { from: monthFrom, to: monthTo } = getMonthRange(monthAnchor)
-  const prefix = monthFrom.slice(0, 7)
-  const lastDay = Number(monthTo.slice(8, 10))
-  const weekCount = Math.ceil(lastDay / 7)
-  const buckets: RangeBucket[] = []
-
-  for (let week = 1; week <= weekCount; week += 1) {
-    const from = `${prefix}-${pad((week - 1) * 7 + 1)}`
-    const to = `${prefix}-${pad(Math.min(week * 7, lastDay))}`
-    if (from > today) continue
-    buckets.push({ key: `${prefix}-${week}`, from, to, ...sumRange(rows, from, to) })
-  }
-
-  return buckets.reverse()
+  return weekRanges(monthAnchor, lastRecordDay(rows, today)).map((range) => ({
+    ...range,
+    ...sumRange(rows, range.from, range.to),
+  }))
 }
 
-/** 한 해의 월별 합계. 오늘 이후의 달은 뺀다. 최근 달이 먼저. */
+/** 한 해의 월별 합계. 오늘 이후의 달은 뺀다(앞날짜 기록이 있으면 그 달까지). 최근 달이 먼저. */
 export function buildMonthBuckets(
   year: number,
   rows: readonly AmountRow[],
   today: string
 ): RangeBucket[] {
-  const buckets: RangeBucket[] = []
-
-  for (let month = 1; month <= 12; month += 1) {
-    const { from, to } = getMonthRange(`${year}-${pad(month)}-01`)
-    if (from > today) continue
-    buckets.push({ key: `${year}-${pad(month)}`, from, to, ...sumRange(rows, from, to) })
-  }
-
-  return buckets.reverse()
+  return monthRanges(year, lastRecordDay(rows, today)).map((range) => ({
+    ...range,
+    ...sumRange(rows, range.from, range.to),
+  }))
 }
 
 /**
@@ -170,22 +159,14 @@ export function buildYearBuckets(
   rows: readonly AmountRow[],
   today: string
 ): RangeBucket[] {
-  const currentYear = Number(today.slice(0, 4))
-  const years = rows.map((row) => Number(row.date.slice(0, 4)))
-  const firstYear = Math.min(currentYear, ...years)
-  const buckets: RangeBucket[] = []
-
-  for (let year = firstYear; year <= currentYear; year += 1) {
-    const from = `${year}-01-01`
-    const to = `${year}-12-31`
-    buckets.push({ key: String(year), from, to, ...sumRange(rows, from, to) })
-  }
-
-  return buckets.reverse()
+  return yearRanges(
+    [today, ...rows.map((row) => row.date)],
+    lastRecordDay(rows, today)
+  ).map((range) => ({ ...range, ...sumRange(rows, range.from, range.to) }))
 }
 
 /** 주별 칸의 이름: "2주차 11/8~11/14" */
-export function formatWeekBucketLabel(bucket: RangeBucket): string {
+export function formatWeekBucketLabel(bucket: Pick<RangeBucket, "key" | "from" | "to">): string {
   const week = Number(bucket.key.split("-")[2])
   const [, fromMonth, fromDay] = bucket.from.split("-").map(Number)
   const [, toMonth, toDay] = bucket.to.split("-").map(Number)
@@ -193,7 +174,7 @@ export function formatWeekBucketLabel(bucket: RangeBucket): string {
 }
 
 /** 월별 칸의 이름: "11월" */
-export function formatMonthBucketLabel(bucket: RangeBucket): string {
+export function formatMonthBucketLabel(bucket: Pick<RangeBucket, "key">): string {
   return `${Number(bucket.key.split("-")[1])}월`
 }
 

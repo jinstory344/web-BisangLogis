@@ -29,6 +29,7 @@ export function ListPageHead({
   title,
   periodPicker,
   titleBarClassName,
+  titleAddon,
 }: {
   title: string
   desktopTitle?: string
@@ -37,14 +38,31 @@ export function ListPageHead({
   periodPicker?: ReactNode
   /** 제목 밑 짧은 색 줄 (메뉴별 색, 예: 배차 노랑) */
   titleBarClassName?: string
+  /** 제목 바로 옆 작은 버튼 (보기 메뉴 `일일 ▾`). 제목은 가운데에 그대로 둔다. */
+  titleAddon?: ReactNode
 }) {
   return (
     <div className="sticky top-0 z-30 -mx-4 bg-background px-4 pt-6">
       <header className="grid h-10 grid-cols-[2.5rem_1fr_2.5rem] items-center">
         <SearchButton />
-        <PageTitle title={title} barClassName={titleBarClassName} />
+        <TitleWithAddon addon={titleAddon}>
+          <PageTitle title={title} barClassName={titleBarClassName} />
+        </TitleWithAddon>
         {periodPicker ?? <span aria-hidden />}
       </header>
+    </div>
+  )
+}
+
+/** 제목은 가운데에 두고, 옆 버튼은 제목 오른쪽에 붙인다(제목이 옆으로 밀리지 않게). */
+export function TitleWithAddon({ addon, children }: { addon?: ReactNode; children: ReactNode }) {
+  if (!addon) return <>{children}</>
+  return (
+    <div className="flex min-w-0 justify-center">
+      <span className="relative">
+        {children}
+        <span className="absolute top-0 left-full ml-1.5 flex h-6 items-center whitespace-nowrap">{addon}</span>
+      </span>
     </div>
   )
 }

@@ -3,25 +3,43 @@ import { Suspense } from "react"
 import { Plus } from "lucide-react"
 
 import { ListBodyFallback } from "@/components/list/list-body-fallback"
+import { EXPENSE_TEXT_CLASS } from "@/components/ledger/colors"
 import { ListPageHead } from "@/components/list/list-page-head"
+import { ListPeriodView } from "@/components/list/list-period-view"
+import { ListViewMenu } from "@/components/list/list-view-menu"
 import { SummaryMonthPicker } from "@/components/list/summary-month-picker"
 import { Button } from "@/components/ui/button"
 import { MonthSwipe } from "@/components/list/month-swipe"
 import { loadServiceItemNamesForExpenses } from "@/lib/car-ledger/service-items-db"
-import { getCurrentMonthRangeInSeoul } from "@/lib/date"
+import { getCurrentMonthRangeInSeoul, getTodayInSeoul } from "@/lib/date"
+import { formatKRW } from "@/lib/money"
+import { AMOUNT_METRIC_KEYS, expenseMetricRows, rowsInPeriod } from "@/lib/period-metrics"
+import {
+  getViewRange,
+  listAnchor,
+  parseListView,
+  periodBadge,
+  periodTitle,
+  previousPeriod,
+  type ListView,
+} from "@/lib/period-view"
 import { createClient } from "@/lib/supabase/server"
 import type { ExpenseRow } from "@/lib/supabase/database.types"
 
 import { getMajors } from "@/lib/constants/expense-categories"
 import { filterExpenses, summarizeExpenses } from "@/lib/expense-list"
 
+import { fetchAllRows } from "../ledger-data"
+
 import { ExpenseList } from "./expense-list"
 import { ExpenseMobileControls } from "./expense-mobile-controls"
 import { getExpenseCategories } from "./categories"
+import { ExpenseSummaryCard, loadMonthLiters } from "./expense-summary"
 
 const PAGE_SIZE = 100 // 100건까지는 페이지 넘기기 없이
 
 interface ExpenseSearchParams {
+  view?: string
   from?: string
   to?: string
   category_major?: string
@@ -53,6 +71,7 @@ export default async function ExpensesPage({
               </Link>
             </Button>
           }
+          titleAddon={<ListViewMenu />}
           periodPicker={<SummaryMonthPicker from={from} to={to} />}
         />
 
@@ -66,6 +85,9 @@ export default async function ExpensesPage({
 }
 
 async function ExpensesBody({ params }: { params: ExpenseSearchParams }) {
+  const view = parseListView(params.view)
+  if (view !== "day") return <ExpensesPeriodBody params={params} view={view} />
+
   const defaultRange = getCurrentMonthRangeInSeoul()
   const from = params.from || defaultRange.from
   const to = params.to || defaultRange.to
@@ -158,5 +180,113 @@ async function ExpensesBody({ params }: { params: ExpenseSearchParams }) {
             />
           )}
           </MonthSwipe>
+  )
+}
+
+/**
+ * 달력·주별·월별·연별 보기: 금액 줄만 읽어(목록 전체 X) 칸별 합계와 집계 카드를 만든다.
+ * 거르기(대분류·소분류)는 모든 보기에 그대로 적용된다. 할부는 회차 줄 금액(목록과 같은 기준).
+ */
+async function ExpensesPeriodBody({
+  params,
+  view,
+}: {
+  params: ExpenseSearchParams
+  view: Exclude<ListView, "day">
+}) {
+  const defaultRange = getCurrentMonthRangeInSeoul()
+  const from = params.from || defaultRange.from
+  const to = params.to || defaultRange.to
+  const today = getTodayInSeoul()
+  const anchor = listAnchor(from, to, defaultRange.from)
+  const range = getViewRange(view, anchor)
+  const previous = previousPeriod(view, anchor)
+  const categoryMajor = params.category_major ?? ""
+  const categoryMinor = params.category_minor ?? ""
+
+  const supabase = await createClient()
+  let rows
+  let categories
+  let liters
+  try {
+    ;[rows, { tree: categories }, liters] = await Promise.all([
+      fetchAllRows((a, b) =>
+        supabase
+          .from("expenses")
+          .select("expense_date, category_major, category_minor, amount")
+          .is("deleted_at", null)
+          .gte("expense_date", previous?.from ?? range.from)
+          .lte("expense_date", range.to)
+          .order("expense_date")
+          .order("id")
+          .range(a, b)
+      ),
+      getExpenseCategories(),
+      // 리터는 달 집계(달력 보기)에만 — 분류를 고르지 않았거나 차량을 골랐을 때
+      view === "calendar" && (!categoryMajor || categoryMajor === "차량")
+        ? loadMonthLiters(supabase, anchor)
+        : Promise.resolve(null),
+    ])
+  } catch (error) {
+    return (
+      <p className="text-sm text-destructive">
+        지출을 불러오지 못했습니다: {error instanceof Error ? error.message : "알 수 없는 오류"}
+      </p>
+    )
+  }
+
+  const current = rowsInPeriod(rows, (row) => row.expense_date, range.from, range.to)
+  const shown = filterExpenses(current, categoryMajor, categoryMinor)
+  const previousTotal = previous
+    ? filterExpenses(
+        rowsInPeriod(rows, (row) => row.expense_date, previous.from, previous.to),
+        categoryMajor,
+        categoryMinor
+      ).reduce((sum, row) => sum + row.amount, 0)
+    : 0
+
+  const card =
+    view === "week" ? null : (
+      <ExpenseSummaryCard
+        title={periodTitle(view, anchor)}
+        rows={shown}
+        categories={categories}
+        previous={previous ? { label: previous.label, rateWord: previous.rateWord, total: previousTotal } : null}
+        liters={liters}
+      />
+    )
+
+  return (
+    <MonthSwipe className="flex flex-col gap-3 md:gap-4">
+      <div className="contents">
+        <ExpenseMobileControls
+          from={from}
+          to={to}
+          categoryMajor={categoryMajor}
+          categoryMinor={categoryMinor}
+          summary={summarizeExpenses(current, getMajors(categories))}
+          categories={categories}
+          filteredTotal={shown.reduce((sum, row) => sum + row.amount, 0)}
+          periodLabel={periodBadge(view, anchor)}
+        />
+      </div>
+
+      <ListPeriodView
+        view={view}
+        anchor={anchor}
+        today={today}
+        pathname="/expenses"
+        params={{ ...params }}
+        rows={expenseMetricRows(shown)}
+        keys={AMOUNT_METRIC_KEYS}
+        cellLines={({ sums }) => [{ text: sums.amount.toLocaleString("ko-KR"), className: EXPENSE_TEXT_CLASS }]}
+        rowView={({ count, sums }) => ({
+          countText: `${count}건`,
+          value: formatKRW(sums.amount),
+          valueClassName: EXPENSE_TEXT_CLASS,
+        })}
+        summaryCard={card}
+      />
+    </MonthSwipe>
   )
 }

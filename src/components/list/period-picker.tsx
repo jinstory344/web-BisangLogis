@@ -29,15 +29,13 @@ interface PeriodPickerProps {
    * 작게 넣어, 달 이동 줄이 없어도 몇 월을 보고 있는지 보이게 한다. 빈 글자면 아이콘만.
    */
   iconText?: string
-  /** 있으면(달 고르기) 창 안의 "2026년"을 눌러 그해 1년치를 볼 수 있다 — 그해 주소 */
-  yearHref?: (year: number) => string
 }
 
 /**
  * 달 이동 가운데의 "2026년 11월"을 누르면 1~12월을 바로 고르는 창이 뜬다.
  * 화살표·스와이프로 여러 달을 넘기지 않아도 된다.
  */
-export function PeriodPicker({ mode, value, label, hrefFor, iconText, yearHref }: PeriodPickerProps) {
+export function PeriodPicker({ mode, value, label, hrefFor, iconText }: PeriodPickerProps) {
   const [open, setOpen] = useState(false)
   const selectedYear = Number(value.slice(0, 4))
   const selectedMonth = Number(value.slice(5, 7))
@@ -135,17 +133,7 @@ export function PeriodPicker({ mode, value, label, hrefFor, iconText, yearHref }
           >
             <ChevronLeft className="size-5" />
           </button>
-          {mode === "month" && yearHref ? (
-            <Link
-              href={yearHref(pageYear)}
-              onClick={() => setOpen(false)}
-              className="rounded-md px-2 py-1 text-sm font-semibold underline-offset-2 hover:bg-muted hover:underline"
-            >
-              {pageLabel} 전체
-            </Link>
-          ) : (
-            <span className="text-sm font-semibold">{pageLabel}</span>
-          )}
+          <span className="text-sm font-semibold">{pageLabel}</span>
           <button
             type="button"
             onClick={() => setPageYear((y) => y + step)}
