@@ -18,8 +18,6 @@ import {
   listAnchor,
   parseListView,
   periodBadge,
-  periodTitle,
-  previousPeriod,
   type ListView,
 } from "@/lib/period-view"
 import { createClient } from "@/lib/supabase/server"
@@ -34,7 +32,6 @@ import { fetchAllRows } from "../ledger-data"
 
 import { DispatchList } from "./dispatch-list"
 import { DispatchMobileControls } from "./dispatch-mobile-controls"
-import { DispatchSummaryCard } from "./dispatch-summary"
 
 const PAGE_SIZE = 200 // 한 달 배차가 많아 200건까지는 페이지 넘기기 없이
 
@@ -194,7 +191,6 @@ async function DispatchesPeriodBody({
   const today = getTodayInSeoul()
   const anchor = listAnchor(from, to, defaultRange.from)
   const range = getViewRange(view, anchor)
-  const previous = previousPeriod(view, anchor)
   const clientId = params.client_id ?? ""
   const clientName = params.client_name ?? ""
 
@@ -208,7 +204,7 @@ async function DispatchesPeriodBody({
           .from("dispatches")
           .select("dispatch_date, client_id, plate_no_snapshot, driver_name_snapshot, freight_amount, fee_amount")
           .is("deleted_at", null)
-          .gte("dispatch_date", previous?.from ?? range.from)
+          .gte("dispatch_date", range.from)
           .lte("dispatch_date", range.to)
           .order("dispatch_date")
           .order("id")
@@ -229,31 +225,7 @@ async function DispatchesPeriodBody({
   )
   const current = rowsInPeriod(rows, (row) => row.dispatch_date, range.from, range.to)
   const shown = filterDispatchesByClient(current, clientId)
-  const previousRows = previous
-    ? filterDispatchesByClient(
-        rowsInPeriod(rows, (row) => row.dispatch_date, previous.from, previous.to),
-        clientId
-      )
-    : []
 
-  const card =
-    view === "week" ? null : (
-      <DispatchSummaryCard
-        title={periodTitle(view, anchor)}
-        rows={shown}
-        clientNames={clientNameMap}
-        previous={
-          previous
-            ? {
-                label: previous.label,
-                rateWord: previous.rateWord,
-                count: previousRows.length,
-                total: previousRows.reduce((sum, row) => sum + (row.freight_amount ?? 0), 0),
-              }
-            : null
-        }
-      />
-    )
 
   return (
     <MonthSwipe className="flex flex-col gap-3 md:gap-4">
@@ -288,7 +260,6 @@ async function DispatchesPeriodBody({
             { text: `수수료 ${formatKRW(sums.fee)}`, className: "text-muted-foreground" },
           ],
         })}
-        summaryCard={card}
       />
     </MonthSwipe>
   )

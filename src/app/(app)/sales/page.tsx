@@ -19,8 +19,6 @@ import {
   listAnchor,
   parseListView,
   periodBadge,
-  periodTitle,
-  previousPeriod,
   type ListView,
 } from "@/lib/period-view"
 import { createClient } from "@/lib/supabase/server"
@@ -32,7 +30,6 @@ import { fetchAllRows } from "../ledger-data"
 
 import { SalesList } from "./sales-list"
 import { SalesMobileControls } from "./sales-mobile-controls"
-import { SalesSummaryCard } from "./sales-summary"
 import { getSaleSources } from "./sources"
 
 const PAGE_SIZE = 100 // 100건까지는 페이지 넘기기 없이
@@ -220,7 +217,6 @@ async function SalesPeriodBody({
   const today = getTodayInSeoul()
   const anchor = listAnchor(from, to, defaultRange.from)
   const range = getViewRange(view, anchor)
-  const previous = previousPeriod(view, anchor)
   const sourceMajor = params.source_major ?? ""
   const sourceSub = sourceMajor ? (params.source_sub ?? "") : ""
   const paymentStatus = params.payment_status ?? ""
@@ -236,7 +232,7 @@ async function SalesPeriodBody({
           .from("sales")
           .select("sale_date, source_major, source_minor, supply_amount, total_amount, payment_status")
           .is("deleted_at", null)
-          .gte("sale_date", previous?.from ?? range.from)
+          .gte("sale_date", range.from)
           .lte("sale_date", range.to)
         if (sourceMajor) query = query.eq("source_major", sourceMajor)
         if (sourceSub) query = query.eq("source_sub", sourceSub)
@@ -257,26 +253,7 @@ async function SalesPeriodBody({
     !paymentStatus || row.payment_status === paymentStatus
   const current = rowsInPeriod(rows, (row) => row.sale_date, range.from, range.to)
   const shown = current.filter(byStatus)
-  const previousRows = previous
-    ? rowsInPeriod(rows, (row) => row.sale_date, previous.from, previous.to).filter(byStatus)
-    : []
 
-  const card =
-    view === "week" ? null : (
-      <SalesSummaryCard
-        title={periodTitle(view, anchor)}
-        rows={shown}
-        previous={
-          previous
-            ? {
-                label: previous.label,
-                rateWord: previous.rateWord,
-                total: previousRows.reduce((sum, row) => sum + row.supply_amount, 0),
-              }
-            : null
-        }
-      />
-    )
 
   return (
     <MonthSwipe className="flex flex-col gap-3 md:gap-4">
@@ -320,7 +297,6 @@ async function SalesPeriodBody({
             },
           ],
         })}
-        summaryCard={card}
       />
     </MonthSwipe>
   )

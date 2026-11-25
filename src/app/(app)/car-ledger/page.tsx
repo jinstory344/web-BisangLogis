@@ -20,8 +20,6 @@ import {
   getViewRange,
   listAnchor,
   parseListView,
-  periodTitle,
-  previousPeriod,
   type ListView,
 } from "@/lib/period-view"
 import { createClient } from "@/lib/supabase/server"
@@ -36,7 +34,6 @@ import {
   loadCarMasters,
   loadServiceHistory,
   primaryBusinessCarId,
-  type CarLedgerMasters,
 } from "./data"
 import { HistoryTab } from "./history-tab"
 import { KindTab } from "./kind-tab"
@@ -133,7 +130,6 @@ export default async function CarLedgerPage({
             params={params}
             car={car}
             cars={cars}
-            masters={masters}
             isExpenseCar={isExpenseCar}
           />
         </div>
@@ -261,7 +257,6 @@ async function CarPeriodBody({
   params,
   car,
   cars,
-  masters,
   isExpenseCar,
 }: {
   view: Exclude<ListView, "day">
@@ -270,15 +265,13 @@ async function CarPeriodBody({
   params: CarLedgerSearchParams
   car: CarRow
   cars: CarRow[]
-  masters: CarLedgerMasters
   isExpenseCar: boolean
 }) {
   const range = getViewRange(view, anchor)
-  const previous = previousPeriod(view, anchor)
   const supabase = await createClient()
   let rows
   try {
-    rows = await loadCarAmountRows(supabase, car.id, isExpenseCar, previous?.from ?? range.from, range.to)
+    rows = await loadCarAmountRows(supabase, car.id, isExpenseCar, range.from, range.to)
   } catch (error) {
     return (
       <p className="text-sm text-destructive">
@@ -287,25 +280,7 @@ async function CarPeriodBody({
     )
   }
 
-  const kindOrder = carKindOrder(
-    car.kind,
-    masters.logKinds.map((row) => row.name),
-    [...new Set(rows.map((row) => row.kind))]
-  )
-  const totals = kindTotals(rows, range.from, range.to, kindOrder)
   const current = rows.filter((row) => inRange(row.date, range.from, range.to))
-  const previousTotal = previous ? kindTotals(rows, previous.from, previous.to, kindOrder).total : 0
-
-  const card =
-    view === "week" ? null : (
-      <CostSummary
-        variant="card"
-        monthLabel={periodTitle(view, anchor)}
-        total={totals.total}
-        byKind={totals.byKind.map((row) => ({ ...row, color: kindColor(kindOrder.indexOf(row.kind)) }))}
-        previous={previous ? { label: previous.label, rateWord: previous.rateWord, total: previousTotal } : null}
-      />
-    )
 
   const urlParams = { ...params, view: undefined, tab: undefined, item: undefined }
   return (
@@ -329,7 +304,6 @@ async function CarPeriodBody({
           keys={AMOUNT_METRIC_KEYS}
           cellLines={({ sums }) => [{ text: sums.amount.toLocaleString("ko-KR") }]}
           rowView={({ count, sums }) => ({ countText: `${count}건`, value: formatKRW(sums.amount) })}
-          summaryCard={card}
         />
       </MonthSwipe>
     </>

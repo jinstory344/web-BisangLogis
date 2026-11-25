@@ -19,8 +19,6 @@ import {
   listAnchor,
   parseListView,
   periodBadge,
-  periodTitle,
-  previousPeriod,
   type ListView,
 } from "@/lib/period-view"
 import { createClient } from "@/lib/supabase/server"
@@ -34,7 +32,6 @@ import { fetchAllRows } from "../ledger-data"
 import { ExpenseList } from "./expense-list"
 import { ExpenseMobileControls } from "./expense-mobile-controls"
 import { getExpenseCategories } from "./categories"
-import { ExpenseSummaryCard, loadMonthLiters } from "./expense-summary"
 
 const PAGE_SIZE = 100 // 100건까지는 페이지 넘기기 없이
 
@@ -200,32 +197,26 @@ async function ExpensesPeriodBody({
   const today = getTodayInSeoul()
   const anchor = listAnchor(from, to, defaultRange.from)
   const range = getViewRange(view, anchor)
-  const previous = previousPeriod(view, anchor)
   const categoryMajor = params.category_major ?? ""
   const categoryMinor = params.category_minor ?? ""
 
   const supabase = await createClient()
   let rows
   let categories
-  let liters
   try {
-    ;[rows, { tree: categories }, liters] = await Promise.all([
+    ;[rows, { tree: categories }] = await Promise.all([
       fetchAllRows((a, b) =>
         supabase
           .from("expenses")
           .select("expense_date, category_major, category_minor, amount")
           .is("deleted_at", null)
-          .gte("expense_date", previous?.from ?? range.from)
+          .gte("expense_date", range.from)
           .lte("expense_date", range.to)
           .order("expense_date")
           .order("id")
           .range(a, b)
       ),
       getExpenseCategories(),
-      // 리터는 달 집계(달력 보기)에만 — 분류를 고르지 않았거나 차량을 골랐을 때
-      view === "calendar" && (!categoryMajor || categoryMajor === "차량")
-        ? loadMonthLiters(supabase, anchor)
-        : Promise.resolve(null),
     ])
   } catch (error) {
     return (
@@ -237,24 +228,7 @@ async function ExpensesPeriodBody({
 
   const current = rowsInPeriod(rows, (row) => row.expense_date, range.from, range.to)
   const shown = filterExpenses(current, categoryMajor, categoryMinor)
-  const previousTotal = previous
-    ? filterExpenses(
-        rowsInPeriod(rows, (row) => row.expense_date, previous.from, previous.to),
-        categoryMajor,
-        categoryMinor
-      ).reduce((sum, row) => sum + row.amount, 0)
-    : 0
 
-  const card =
-    view === "week" ? null : (
-      <ExpenseSummaryCard
-        title={periodTitle(view, anchor)}
-        rows={shown}
-        categories={categories}
-        previous={previous ? { label: previous.label, rateWord: previous.rateWord, total: previousTotal } : null}
-        liters={liters}
-      />
-    )
 
   return (
     <MonthSwipe className="flex flex-col gap-3 md:gap-4">
@@ -285,7 +259,6 @@ async function ExpensesPeriodBody({
           value: formatKRW(sums.amount),
           valueClassName: EXPENSE_TEXT_CLASS,
         })}
-        summaryCard={card}
       />
     </MonthSwipe>
   )
