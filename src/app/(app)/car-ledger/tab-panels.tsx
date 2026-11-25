@@ -30,6 +30,7 @@ export function TabPanels({
   stickyExtras?: Record<string, ReactNode>
 }) {
   const [current, setCurrent] = useState(initial)
+  // 머리와 상자 사이 여백(-mt-3 pt-3)도 고정 부분에 넣어, 스크롤을 시작해도 상자가 조금도 올라가지 않게 한다.
   // 위 머리(제목·보기 탭, data-car-head)의 실제 높이 — 폰마다 조금씩 달라서 재서 그 바로 밑에 붙인다(기본 113px)
   const [headPx, setHeadPx] = useState(113)
   useLayoutEffect(() => {
@@ -62,7 +63,7 @@ export function TabPanels({
       <StickyHead
         topPx={headPx - 1}
         style={{ top: headPx - 1 }}
-        className="z-20 -mx-4 flex flex-col gap-2 px-4 pb-2 md:static md:mx-0 md:px-0"
+        className="z-20 -mx-4 -mt-3 flex flex-col gap-2 px-4 pt-3 pb-2 md:static md:mx-0 md:mt-0 md:px-0 md:pt-0"
       >
       {before}
       <nav

@@ -39,20 +39,25 @@ export function HistoryTab({ rows }: { rows: readonly HistoryRow[] }) {
     years.set(year, [...(years.get(year) ?? []), row])
   }
   const total = rows.reduce((sum, row) => sum + (row.amount ?? 0), 0)
+  // 최근 해가 맨 위, 가장 최근 해만 펼쳐 두고 나머지는 접어 둔다(해 줄을 눌러 펴고 접기)
+  const yearList = [...years].sort((a, b) => b[0].localeCompare(a[0]))
 
   return (
     <div className="flex flex-col gap-4">
       <p className="text-xs text-muted-foreground">
-        26년 11월 이전 · {rows.length}건 · 합계 {formatKRW(total)} — 줄을 누르면 자세히 보여요
+        2026년 11월 이전 · {rows.length}건 · 합계 {formatKRW(total)} — 해를 누르면 펴고 접혀요
       </p>
-      {[...years].map(([year, list]) => (
-        <section key={year} aria-label={`${year}년`} className="flex flex-col">
-          <h3 className="flex items-baseline justify-between border-b pb-1 text-sm font-semibold">
-            <span>{year}년</span>
+      {yearList.map(([year, list], index) => (
+        <details key={year} open={index === 0} className="group/year flex flex-col">
+          <summary className="flex cursor-pointer list-none items-center justify-between border-b py-2 text-sm font-semibold [&::-webkit-details-marker]:hidden">
+            <span className="flex items-center gap-1">
+              <ChevronDown className="size-4 -rotate-90 text-muted-foreground transition-transform group-open/year:rotate-0" />
+              {year}년
+            </span>
             <span className="text-xs font-normal text-muted-foreground tabular-nums">
               {list.length}건 · {formatKRW(list.reduce((sum, row) => sum + (row.amount ?? 0), 0))}
             </span>
-          </h3>
+          </summary>
           <ul className="flex flex-col">
             {list.map((row) => (
               <li key={row.id} className="border-b last:border-b-0">
@@ -77,7 +82,7 @@ export function HistoryTab({ rows }: { rows: readonly HistoryRow[] }) {
               </li>
             ))}
           </ul>
-        </section>
+        </details>
       ))}
     </div>
   )

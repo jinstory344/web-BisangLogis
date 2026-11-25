@@ -52,7 +52,7 @@ export default async function CarLedgerSettingsPage() {
               className="flex min-h-12 items-center gap-3 px-4 py-2 text-[15px] active:bg-muted"
             >
               <History className="size-5 shrink-0" />
-              <span className="min-w-0 flex-1">11월 이전 정비 기록</span>
+              <span className="min-w-0 flex-1">2026년 11월 이전 정비 기록</span>
               <span className="shrink-0 text-xs text-muted-foreground tabular-nums">{history.length}건</span>
               <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
             </Link>
