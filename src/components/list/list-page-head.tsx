@@ -7,14 +7,14 @@ import { SearchButton } from "@/components/layout/search-button"
 
 /**
  * 모바일에서 첫째 고정 줄(ListPageHead) 바로 아래에 붙는 둘째 고정 영역의 top.
- * ListPageHead의 모바일 높이 = 위 여백 24px + 제목 줄 40px = 64px(4rem). (달 이동 줄 대신 제목 오른쪽 달력 아이콘)
+ * ListPageHead의 모바일 높이 = 위 여백 24px + 제목 줄 40px + 12px + 보기 탭 줄 37px = 113px (매출·지출·배차는 보기 탭이 있음)
  * 위 여백은 아이폰 시계줄 바로 밑에 제목이 붙어 흐려 보이지 않게 넉넉히 둔다.
  */
 /** ListPageHead 모바일 높이(px) — 합계 줄이 그 밑에 붙는 위치 */
-export const LIST_PAGE_HEAD_PX = 64
+export const LIST_PAGE_HEAD_PX = 113
 
 export const LIST_SUB_STICKY_CLASS =
-  "sticky top-[4rem] z-20 -mx-4 bg-background px-4"
+  "sticky top-[113px] z-20 -mx-4 bg-background px-4"
 
 /** 목록 위 거르기 칩을 조금 작게 (36px) — 비상 화면 칩과 같은 크기 */
 export const LIST_CHIP_CLASS = "min-h-9 px-3.5 text-[13px]"
@@ -30,6 +30,7 @@ export function ListPageHead({
   periodPicker,
   titleBarClassName,
   titleAddon,
+  viewTabs,
 }: {
   title: string
   desktopTitle?: string
@@ -40,6 +41,8 @@ export function ListPageHead({
   titleBarClassName?: string
   /** 제목 바로 옆 작은 버튼 (보기 메뉴 `일일 ▾`). 제목은 가운데에 그대로 둔다. */
   titleAddon?: ReactNode
+  /** 제목 아래 보기 탭 줄 (일일·달력·주별·월별·연별, HOME과 같은 모양) */
+  viewTabs?: ReactNode
 }) {
   return (
     <div className="sticky top-0 z-30 -mx-4 bg-background px-4 pt-6">
@@ -50,6 +53,7 @@ export function ListPageHead({
         </TitleWithAddon>
         {periodPicker ?? <span aria-hidden />}
       </header>
+      {viewTabs ? <div className="mt-3">{viewTabs}</div> : null}
     </div>
   )
 }

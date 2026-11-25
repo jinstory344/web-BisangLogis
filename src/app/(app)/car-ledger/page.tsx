@@ -4,9 +4,8 @@ import { Settings } from "lucide-react"
 
 import { SearchButton } from "@/components/layout/search-button"
 import { PageTitle } from "@/components/layout/page-title"
-import { TitleWithAddon } from "@/components/list/list-page-head"
 import { ListPeriodView } from "@/components/list/list-period-view"
-import { ListViewMenu } from "@/components/list/list-view-menu"
+import { ListViewTabs } from "@/components/list/list-view-menu"
 import { MonthSwipe } from "@/components/list/month-swipe"
 import { SummaryMonthPicker } from "@/components/list/summary-month-picker"
 import { isLiterKind, kindColor, SERVICE_KIND } from "@/lib/car-ledger/constants"
@@ -83,12 +82,13 @@ export default async function CarLedgerPage({
     <div className="sticky top-0 z-30 -mx-4 bg-background px-4 pt-6 md:static md:mx-0 md:px-0 md:pt-0">
       <header className="grid h-10 grid-cols-[2.5rem_1fr_2.5rem] items-center">
         <SearchButton />
-        <TitleWithAddon addon={<ListViewMenu />}>
-          <PageTitle title="차계부" barClassName="bg-[#9b7fd1]" />
-        </TitleWithAddon>
+        <PageTitle title="차계부" barClassName="bg-[#9b7fd1]" />
         {/* 다른 화면처럼 오른쪽 끝 달력 아이콘으로 달 고르기 (월별은 해, 연별은 없음). 이전·다음은 쓸어 넘기기 */}
         <SummaryMonthPicker from={month.from} to={month.to} />
       </header>
+      <div className="mt-3">
+        <ListViewTabs />
+      </div>
     </div>
   )
 

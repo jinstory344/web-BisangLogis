@@ -5,7 +5,7 @@ import { Plus } from "lucide-react"
 import { ListBodyFallback } from "@/components/list/list-body-fallback"
 import { ListPageHead } from "@/components/list/list-page-head"
 import { ListPeriodView } from "@/components/list/list-period-view"
-import { ListViewMenu } from "@/components/list/list-view-menu"
+import { ListViewTabs } from "@/components/list/list-view-menu"
 import { SECTION_COLORS } from "@/lib/constants/section-colors"
 import { SummaryMonthPicker } from "@/components/list/summary-month-picker"
 import { Button } from "@/components/ui/button"
@@ -72,7 +72,7 @@ export default async function DispatchesPage({
               </Link>
             </Button>
           }
-          titleAddon={<ListViewMenu />}
+          viewTabs={<ListViewTabs />}
           periodPicker={<SummaryMonthPicker from={from} to={to} />}
         />
 

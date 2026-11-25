@@ -7,7 +7,7 @@ import { INCOME_TEXT_CLASS } from "@/components/ledger/colors"
 import { PAID_TEXT_CLASS } from "@/components/dispatches/payment-badge"
 import { ListPageHead } from "@/components/list/list-page-head"
 import { ListPeriodView } from "@/components/list/list-period-view"
-import { ListViewMenu } from "@/components/list/list-view-menu"
+import { ListViewTabs } from "@/components/list/list-view-menu"
 import { SummaryMonthPicker } from "@/components/list/summary-month-picker"
 import { Button } from "@/components/ui/button"
 import { MonthSwipe } from "@/components/list/month-swipe"
@@ -72,7 +72,7 @@ export default async function SalesPage({
               </Link>
             </Button>
           }
-          titleAddon={<ListViewMenu />}
+          viewTabs={<ListViewTabs />}
           periodPicker={<SummaryMonthPicker from={from} to={to} />}
         />
 
