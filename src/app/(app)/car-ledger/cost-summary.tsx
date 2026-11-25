@@ -1,3 +1,6 @@
+import type { ReactNode } from "react"
+
+import { MonthBadge } from "@/components/list/month-badge"
 import { formatKRW } from "@/lib/money"
 import { formatChangeRate, SUMMARY_TITLE_CLASS, type SummaryComparison } from "@/lib/summary"
 
@@ -11,7 +14,13 @@ export function CostSummary({
   total,
   byKind,
   previous = null,
+  carLabel,
+  action,
 }: {
+  /** 박스 맨 위 차 이름 · 번호판 (예: "포터2 · 서울86바7754") */
+  carLabel?: string
+  /** 박스 오른쪽 위 버튼 (설정 ⚙) */
+  action?: ReactNode
   /** "11월" / "2026년 11월" / "2026년" / "전체 기간" */
   monthLabel: string
   total: number
@@ -22,10 +31,17 @@ export function CostSummary({
   const positive = byKind.filter((row) => row.total > 0)
   return (
     <section aria-label={`${monthLabel} 차 비용`} className="rounded-xl border bg-card p-4">
-      <p className={SUMMARY_TITLE_CLASS}>
-        {monthLabel} 차 비용
-      </p>
-      <p className="mt-0.5 text-2xl font-bold tracking-tight tabular-nums">{formatKRW(total)}</p>
+      {carLabel || action ? (
+        <div className="-mt-1.5 -mr-1.5 flex items-center gap-2">
+          <p className={`min-w-0 flex-1 truncate ${SUMMARY_TITLE_CLASS} font-semibold`}>{carLabel}</p>
+          {action}
+        </div>
+      ) : null}
+      {/* HOME처럼 동그란 달 배지(차계부 보라) ↔ 금액 맨 오른쪽 */}
+      <div className="mt-1 flex items-center justify-between gap-3">
+        <MonthBadge label={monthLabel} className="mr-0 h-7 bg-[#9b7fd1] px-3 text-sm text-white" />
+        <p className="text-2xl font-bold tracking-tight tabular-nums">{formatKRW(total)}</p>
+      </div>
       {previous ? (
         <p className="text-sm text-muted-foreground">
           {formatChangeRate(total, previous.total, "비용", previous.rateWord)} ({previous.label}{" "}

@@ -12,7 +12,7 @@ import { isLiterKind, kindColor, SERVICE_KIND } from "@/lib/car-ledger/constants
 import type { CarRow } from "@/lib/supabase/database.types"
 import { buildCycleRows, inRange, itemHistory, kindTotals, serviceItemCounts } from "@/lib/car-ledger/stats"
 import { carKindOrder, carTabs, parseCarTab } from "@/lib/car-ledger/tabs"
-import { carDayPeriod, carLedgerHref, CYCLE_TAB, firstParam, HISTORY_TAB, SERVICE_TAB } from "@/lib/car-ledger/url"
+import { carDayPeriod, carLedgerHref, CYCLE_TAB, firstParam, SERVICE_TAB } from "@/lib/car-ledger/url"
 import { getCurrentMonthRangeInSeoul, getTodayInSeoul } from "@/lib/date"
 import { formatKRW } from "@/lib/money"
 import { AMOUNT_METRIC_KEYS, carMetricRows } from "@/lib/period-metrics"
@@ -32,10 +32,8 @@ import {
   loadCarAmountRows,
   loadCarLedgerData,
   loadCarMasters,
-  loadServiceHistory,
   primaryBusinessCarId,
 } from "./data"
-import { HistoryTab } from "./history-tab"
 import { KindTab } from "./kind-tab"
 import { ServiceTab } from "./service-tab"
 import { TabPanels } from "./tab-panels"
@@ -138,17 +136,14 @@ export default async function CarLedgerPage({
       </div>
     )
   }
-  const [data, history] = await Promise.all([
-    loadCarLedgerData(supabase, car.id, isExpenseCar, month.from.slice(0, 4)),
-    loadServiceHistory(supabase, car.id),
-  ])
+  const data = await loadCarLedgerData(supabase, car.id, isExpenseCar, month.from.slice(0, 4))
 
   const kindOrder = carKindOrder(
     car.kind,
     masters.logKinds.map((row) => row.name),
     [...new Set(data.entries.map((entry) => entry.kind))]
   )
-  const tabs = carTabs(kindOrder, history.length > 0)
+  const tabs = carTabs(kindOrder)
   const tab = parseCarTab(firstParam(params.tab), tabs)
   const item = tab === SERVICE_TAB ? firstParam(params.item).trim() : ""
 
@@ -160,13 +155,15 @@ export default async function CarLedgerPage({
       <div className="mx-auto flex max-w-2xl flex-col gap-3">
         {head}
 
-        <CarBar car={car} isDefault={car.id === defaultCarId} />
+        {car.id === defaultCarId ? null : <BackToTruck />}
 
         <TabPanels
           tabs={tabs}
           initial={tab}
           before={
             <CostSummary
+              carLabel={car.plate_no ? `${car.name} · ${car.plate_no}` : car.name}
+              action={<SettingsLink />}
               monthLabel={periodLabel}
               total={monthTotals.total}
               byKind={monthTotals.byKind.map((row) => ({
@@ -178,9 +175,7 @@ export default async function CarLedgerPage({
           panels={Object.fromEntries(
             tabs.map((t) => [
               t.value,
-              t.value === HISTORY_TAB ? (
-                <HistoryTab key={t.value} rows={history} />
-              ) : t.value === SERVICE_TAB ? (
+              t.value === SERVICE_TAB ? (
                 <ServiceTab
                   key={t.value}
                   monthEntries={serviceEntries.filter((entry) => entry.dates.some((date) => inRange(date, month.from, month.to)))}
@@ -218,7 +213,7 @@ export default async function CarLedgerPage({
                 key={t.value}
                 carId={car.id}
                 mode={isExpenseCar ? "expense" : "log"}
-                defaultKind={t.value === SERVICE_TAB || t.value === CYCLE_TAB || t.value === HISTORY_TAB ? SERVICE_KIND : t.value}
+                defaultKind={t.value === SERVICE_TAB || t.value === CYCLE_TAB ? SERVICE_KIND : t.value}
                 returnTo={carLedgerHref({ car: car.id, from: month.from, to: month.to, tab: t.value })}
               />,
             ])
@@ -247,7 +242,16 @@ function CarBar({ car, isDefault }: { car: CarRow; isDefault: boolean }) {
   )
 }
 
-/** 차계부 설정(차·항목) — 다른 차의 차계부도 여기서 고른다 */
+/** 내 트럭이 아닌 차를 보고 있을 때 돌아가기 */
+function BackToTruck() {
+  return (
+    <Link href="/car-ledger" className="self-start rounded-full bg-muted px-3 py-1 text-xs text-muted-foreground">
+      ‹ 내 트럭으로
+    </Link>
+  )
+}
+
+/** 차계부 설정(차·항목·11월 이전 기록) — 다른 차의 차계부도 여기서 고른다 */
 function SettingsLink() {
   return (
     <Link

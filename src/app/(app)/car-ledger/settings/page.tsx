@@ -1,10 +1,13 @@
 import type { Metadata } from "next"
 import type { ReactNode } from "react"
 
+import { ChevronRight, History } from "lucide-react"
+import Link from "next/link"
+
 import { FormPageHeader } from "@/components/form/form-page-header"
 import { createClient } from "@/lib/supabase/server"
 
-import { loadCarMasters } from "../data"
+import { loadCarMasters, loadServiceHistory } from "../data"
 import { CarListEditor } from "./car-list-editor"
 import { ItemListEditor } from "./item-list-editor"
 
@@ -22,10 +25,12 @@ function Section({ title, note, children }: { title: string; note?: string; chil
   )
 }
 
-/** 차계부 설정: 차 · 정비 항목(트럭·승용차 공용) · 기록 종류(승용차) */
+/** 차계부 설정: 차(누르면 그 차 차계부) · 11월 이전 정비 기록 · 정비 항목(트럭·승용차 공용) · 기록 종류(승용차) */
 export default async function CarLedgerSettingsPage() {
   const supabase = await createClient()
   const masters = await loadCarMasters(supabase)
+  const truck = masters.cars.find((row) => row.kind === "business")
+  const history = truck ? await loadServiceHistory(supabase, truck.id) : []
 
   return (
     <div className="px-4 pb-8 md:p-6">
@@ -39,6 +44,20 @@ export default async function CarLedgerSettingsPage() {
         <Section title="차" note="첫 번째 업무용 차에 지출(차량 › 정비·주유비·요소수)이 이어져요.">
           <CarListEditor cars={masters.cars} />
         </Section>
+
+        {history.length > 0 ? (
+          <Section title="기록">
+            <Link
+              href="/car-ledger/history"
+              className="flex min-h-12 items-center gap-3 px-4 py-2 text-[15px] active:bg-muted"
+            >
+              <History className="size-5 shrink-0" />
+              <span className="min-w-0 flex-1">11월 이전 정비 기록</span>
+              <span className="shrink-0 text-xs text-muted-foreground tabular-nums">{history.length}건</span>
+              <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
+            </Link>
+          </Section>
+        ) : null}
 
         <Section title="정비 항목" note="트럭·승용차가 함께 써요. 엔진오일·배터리처럼 정비할 때 고르는 칩이에요.">
           <ItemListEditor
