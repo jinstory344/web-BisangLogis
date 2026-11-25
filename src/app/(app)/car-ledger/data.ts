@@ -70,6 +70,13 @@ const EXPENSE_COLUMNS =
 export const SERVICE_LEDGER_START = "2026-11-01"
 
 /**
+ * 이 시각 뒤에 새로 넣거나 고친 정비 지출은 날짜가 SERVICE_LEDGER_START 전이어도 차계부에 보인다
+ * (사용자 요청 2026-11-25: "지금부터 직접 입력하거나 수정한 건 이전 달에도"). 예전 자료 정리 작업이 끝난 직후 시각.
+ * shortcut: updated_at 기준이라 예전 정비 지출을 스크립트로 일괄 수정하면 그 줄들도 보이게 된다 — 그럴 땐 표시용 칸을 따로 둘 것.
+ */
+export const SERVICE_LEDGER_EDITED_SINCE = "2026-11-25T12:15:00Z"
+
+/**
  * 한 차의 차계부 자료: 지출(첫 업무용 차만 — 정비는 SERVICE_LEDGER_START부터, 주유·요소수는 고른 해만)
  * + car_logs + 그 기록들에 붙은 정비 항목 줄 + 교체 주기 표.
  * 탭·달을 옮길 때마다 다시 읽으므로 필요한 만큼만 읽는다(예전엔 2022년부터 전부 읽어 느렸음).
@@ -89,7 +96,9 @@ export async function loadCarLedgerData(
       ? fetchAllRows<CarExpenseInput>((a, b) =>
           expenseQuery()
             .eq("category_minor", CAR_SERVICE_MINOR)
-            .gte("expense_date", SERVICE_LEDGER_START)
+            .or(
+              `expense_date.gte.${SERVICE_LEDGER_START},created_at.gte.${SERVICE_LEDGER_EDITED_SINCE},updated_at.gte.${SERVICE_LEDGER_EDITED_SINCE}`
+            )
             .order("expense_date")
             .order("id")
             .range(a, b)
@@ -124,7 +133,7 @@ export async function loadCarLedgerData(
       .order("sort_order"),
   ])
 
-  // 할부가 시작일 전에 시작해 그 뒤까지 이어지면 묶음 전체를 함께 읽는다(항목 줄은 1회차에 붙어 있음)
+  // 할부 묶음의 일부만 읽혔으면(시작일 전에 시작한 할부 등) 묶음 전체를 함께 읽는다(항목 줄은 1회차에 붙어 있음)
   const groupIds = [
     ...new Set(serviceExpenses.map((row) => row.installment_group_id).filter((id): id is string => !!id)),
   ]
@@ -133,12 +142,12 @@ export async function loadCarLedgerData(
       expenseQuery()
         .eq("category_minor", CAR_SERVICE_MINOR)
         .in("installment_group_id", groupIds)
-        .lt("expense_date", SERVICE_LEDGER_START)
         .order("expense_date")
         .order("id")
         .range(a, b)
     )
-    serviceExpenses.unshift(...earlier)
+    const seen = new Set(serviceExpenses.map((row) => row.id))
+    serviceExpenses.push(...earlier.filter((row) => !seen.has(row.id)))
   }
 
   // 정비 항목 줄은 위에서 읽은 기록(살아 있는 부모)에 붙은 것만 읽는다
