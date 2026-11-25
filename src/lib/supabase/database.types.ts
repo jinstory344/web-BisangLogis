@@ -158,6 +158,8 @@ export type ExpenseRow = BaseColumns & {
   card_name: string | null
   /** 주유비·요소수에 넣은 양(리터, 소수 첫째 자리). 안 적으면 null */
   liters: number | null
+  /** 주행거리(km). 차량 › 정비·주유비·요소수에 적는다. 안 적으면 null */
+  odometer_km: number | null
   vendor: string | null
   has_tax_invoice: boolean
   memo: string | null
@@ -254,6 +256,64 @@ export type MemoRow = BaseColumns & {
   sort_order: number
 }
 
+export type CarKind = "business" | "personal"
+
+/** 차계부의 차. business = 업무용(비용은 지출이 원본), personal = 개인(car_logs에만 저장) */
+export type CarRow = BaseColumns & {
+  name: string
+  plate_no: string | null
+  kind: CarKind
+  sort_order: number
+  memo: string | null
+}
+
+/** 차계부 항목 종류: service = 정비 세부 항목(트럭·승용차 공용), log = 차계부 기록 종류(주유·정비·세차…) */
+export type CarItemKind = "service" | "log"
+
+export type CarItemRow = BaseColumns & {
+  name: string
+  kind: CarItemKind
+  sort_order: number
+}
+
+/** 차계부 전용 기록(승용차 등). 지출·HOME·통계·검색·백업에 섞지 않는다. */
+export type CarLogRow = BaseColumns & {
+  car_id: string
+  log_date: string
+  /** car_items(kind='log')의 이름을 글자로 저장 */
+  kind: string
+  amount: number
+  liters: number | null
+  odometer_km: number | null
+  vendor: string | null
+  memo: string | null
+}
+
+/**
+ * 정비 항목 줄. expense_id 또는 car_log_id 중 정확히 하나만 값이 있다.
+ * 할부 지출이면 첫 회차(installment_no=1) 줄에 붙인다. 저장 때 지우고 다시 넣는 표라 소프트 삭제 칸이 없다.
+ */
+export type CarServiceItemRow = {
+  id: string
+  expense_id: string | null
+  car_log_id: string | null
+  item: string
+  amount: number | null
+  sort_order: number
+  created_at: string
+}
+
+/** 교체 주기 표 (살아 있는 행끼리 차·항목이 겹치지 않음) */
+export type CarItemCycleRow = BaseColumns & {
+  car_id: string
+  item: string
+  cycle_km: number | null
+  /** 최근 교체를 직접 고친 값 (null이면 정비 기록에서 자동) */
+  manual_date: string | null
+  manual_km: number | null
+  sort_order: number
+}
+
 type TableDef<Row> = {
   Row: Row
   Insert: Partial<Row>
@@ -274,6 +334,11 @@ export type Database = {
       sale_sources: TableDef<SaleSourceRow>
       expense_cards: TableDef<ExpenseCardRow>
       memos: TableDef<MemoRow>
+      cars: TableDef<CarRow>
+      car_items: TableDef<CarItemRow>
+      car_logs: TableDef<CarLogRow>
+      car_service_items: TableDef<CarServiceItemRow>
+      car_item_cycles: TableDef<CarItemCycleRow>
       tax_invoices: TableDef<TaxInvoiceRow>
       tax_invoice_dispatches: TableDef<TaxInvoiceDispatchRow>
       purchase_invoices: TableDef<PurchaseInvoiceRow>

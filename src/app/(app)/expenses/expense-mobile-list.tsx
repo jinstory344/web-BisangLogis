@@ -12,7 +12,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet"
-import { formatLiters } from "@/lib/fuel"
+import { expenseNoteLine } from "@/lib/car-ledger/expense-note"
 import { expensePaymentLabel } from "@/lib/constants/payment-method"
 import { formatDateWithWeekday } from "@/lib/date"
 import { groupByDay, spansMultipleMonths } from "@/lib/day-groups"
@@ -21,6 +21,8 @@ import type { ExpenseRow } from "@/lib/supabase/database.types"
 
 interface ExpenseMobileListProps {
   expenses: ExpenseRow[]
+  /** 지출 id → 정비 항목 이름들 */
+  serviceItemNames?: Record<string, string[]>
   onDelete: (expense: ExpenseRow) => void
 }
 
@@ -29,12 +31,9 @@ function paymentSummary(expense: ExpenseRow): string {
   return expensePaymentLabel(expense)
 }
 
-/** 행 둘째 줄: 사용처와 비고를 한 줄로 */
-function noteLine(expense: ExpenseRow): string {
-  return [expense.liters !== null ? formatLiters(expense.liters) : null, expense.vendor, expense.memo]
-    .map((text) => text?.trim())
-    .filter(Boolean)
-    .join(" · ")
+/** 행 둘째 줄: (정비 항목) · 리터 · km · 사용처 · 비고를 한 줄로 */
+function noteLine(expense: ExpenseRow, itemNames: readonly string[] = []): string {
+  return expenseNoteLine(expense, itemNames)
 }
 
 /**
@@ -43,6 +42,7 @@ function noteLine(expense: ExpenseRow): string {
  */
 export function ExpenseMobileList({
   expenses,
+  serviceItemNames = {},
   onDelete,
 }: ExpenseMobileListProps) {
   const groups = useMemo(
@@ -78,7 +78,7 @@ export function ExpenseMobileList({
           />
 
           {group.rows.map((expense) => {
-            const note = noteLine(expense)
+            const note = noteLine(expense, serviceItemNames[expense.id])
             const payment = paymentSummary(expense)
             return (
               <div

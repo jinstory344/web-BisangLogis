@@ -11,7 +11,7 @@ const KINDS = Object.keys(TRASH_TABLE) as TrashKind[]
 
 /** 복구·완전 삭제 뒤 원래 목록들이 새 내용을 보이게 */
 function refreshLists() {
-  for (const path of ["/", "/sales", "/expenses", "/dispatches", "/clients", "/vehicles", "/memos", "/trash"]) {
+  for (const path of ["/", "/sales", "/expenses", "/dispatches", "/clients", "/vehicles", "/memos", "/car-ledger", "/trash"]) {
     revalidatePath(path)
   }
 }

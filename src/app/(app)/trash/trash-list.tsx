@@ -13,7 +13,7 @@ import { cn } from "@/lib/utils"
 
 import { purgeTrashAction, restoreTrashAction } from "./actions"
 
-const TABS: ("all" | TrashKind)[] = ["all", "sale", "expense", "dispatch", "client", "vehicle", "memo"]
+const TABS: ("all" | TrashKind)[] = ["all", "sale", "expense", "dispatch", "client", "vehicle", "memo", "car_log"]
 /** 밀었을 때 드러나는 버튼 두 개의 폭 */
 const ACTIONS_W = 128
 const keyOf = (item: Pick<TrashItem, "kind" | "id">) => `${item.kind}:${item.id}`

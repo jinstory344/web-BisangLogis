@@ -7,6 +7,7 @@ import { ListPageHead } from "@/components/list/list-page-head"
 import { SummaryMonthPicker } from "@/components/list/summary-month-picker"
 import { Button } from "@/components/ui/button"
 import { MonthSwipe } from "@/components/list/month-swipe"
+import { loadServiceItemNamesForExpenses } from "@/lib/car-ledger/service-items-db"
 import { getCurrentMonthRangeInSeoul } from "@/lib/date"
 import { createClient } from "@/lib/supabase/server"
 import type { ExpenseRow } from "@/lib/supabase/database.types"
@@ -122,6 +123,10 @@ async function ExpensesBody({ params }: { params: ExpenseSearchParams }) {
   }
 
   const totalPages = Math.max(1, Math.ceil((count ?? 0) / PAGE_SIZE))
+  // 정비 줄의 항목 이름 (비고 앞에 붙인다)
+  const serviceItemNames = Object.fromEntries(
+    await loadServiceItemNamesForExpenses(supabase, (data ?? []) as ExpenseRow[])
+  )
 
   return (
     <MonthSwipe className="flex flex-col gap-3 md:gap-4">
@@ -149,6 +154,7 @@ async function ExpensesBody({ params }: { params: ExpenseSearchParams }) {
               summary={summary}
               page={page}
               totalPages={totalPages}
+              serviceItemNames={serviceItemNames}
             />
           )}
           </MonthSwipe>

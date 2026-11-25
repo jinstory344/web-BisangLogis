@@ -1,13 +1,17 @@
 /** 휴지통에 보이는 종류 (DB 표 이름과 짝) */
-export type TrashKind = "dispatch" | "sale" | "expense" | "client" | "vehicle" | "memo"
+export type TrashKind = "dispatch" | "sale" | "expense" | "client" | "vehicle" | "memo" | "car_log"
 
-export const TRASH_TABLE: Record<TrashKind, "dispatches" | "sales" | "expenses" | "clients" | "vehicles" | "memos"> = {
+export const TRASH_TABLE: Record<
+  TrashKind,
+  "dispatches" | "sales" | "expenses" | "clients" | "vehicles" | "memos" | "car_logs"
+> = {
   dispatch: "dispatches",
   sale: "sales",
   expense: "expenses",
   client: "clients",
   vehicle: "vehicles",
   memo: "memos",
+  car_log: "car_logs",
 }
 
 export const TRASH_KIND_LABEL: Record<TrashKind, string> = {
@@ -17,6 +21,7 @@ export const TRASH_KIND_LABEL: Record<TrashKind, string> = {
   client: "거래처",
   vehicle: "차량",
   memo: "메모",
+  car_log: "차계부",
 }
 
 /** 종류 꼬리표 색 — 앱의 메뉴 색(매출 파랑·지출 빨강·배차 노랑·차량 파랑·거래처 초록·메모 회색) */
@@ -27,6 +32,7 @@ export const TRASH_KIND_TAG: Record<TrashKind, string> = {
   vehicle: "bg-[#6f93cf] text-[#0f1a2c]",
   client: "bg-[#6aad83] text-[#0f2418]",
   memo: "bg-[#a1a1aa] text-[#18181b]",
+  car_log: "bg-[#9b7fd1] text-[#1a1230]",
 }
 
 /** 지운 지 이만큼 지나면 저절로 완전 삭제 (DB pg_cron 'bisang-trash-purge'와 같은 값) */

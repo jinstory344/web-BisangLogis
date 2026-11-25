@@ -79,6 +79,7 @@ describe("expensesToSheet", () => {
       installment_no: null,
       card_name: null,
       liters: null,
+      odometer_km: null,
       vendor: null,
       has_tax_invoice: true,
       memo: "메모",

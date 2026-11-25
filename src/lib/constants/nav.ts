@@ -2,6 +2,7 @@ import type { LucideIcon } from "lucide-react"
 import {
   BarChart3,
   Building2,
+  Gauge,
   Receipt,
   Route,
   Send,
@@ -38,6 +39,7 @@ export const secondaryNavItems: NavItem[] = [
   { label: "매출 목록", href: "/sales", icon: TrendingUp },
   { label: "지출 목록", href: "/expenses", icon: Wallet },
   { label: "통계", href: "/stats", icon: BarChart3 },
+  { label: "차계부", href: "/car-ledger", icon: Gauge },
   { label: "계산서", href: "/tax-invoices", icon: Receipt, soon: true },
   { label: "설정", href: "/settings", icon: Settings },
 ]
@@ -56,6 +58,7 @@ export const sidebarNavGroups: NavItem[][] = [
     { label: "매출", href: "/sales", icon: TrendingUp },
     { label: "지출", href: "/expenses", icon: Wallet },
     { label: "통계", href: "/stats", icon: BarChart3 },
+    { label: "차계부", href: "/car-ledger", icon: Gauge },
   ],
   [
     { label: "배차", href: "/dispatches", icon: Route },

@@ -236,6 +236,8 @@ async function handleExpense(chatId: number, lines: string[]) {
     installment_months: expense.installment_months,
     card_name: expense.card_name,
     liters: expense.liters,
+    // km는 봇 입력 2단계에서
+    odometer_km: null,
     vendor: null,
     has_tax_invoice: false,
     memo: expense.memo,

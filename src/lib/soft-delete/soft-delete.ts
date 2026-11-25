@@ -15,6 +15,7 @@ export const SOFT_DELETABLE_TABLES = [
   "expenses",
   "tax_invoices",
   "purchase_invoices",
+  "car_logs",
 ] as const
 
 export type SoftDeletableTable = (typeof SOFT_DELETABLE_TABLES)[number]

@@ -1,7 +1,8 @@
 import { z } from "zod"
 
+import { parseKm } from "@/lib/car-ledger/constants"
 import { parseLiters } from "@/lib/fuel"
-import { amountSchema } from "@/lib/money"
+import { amountSchema, MAX_AMOUNT } from "@/lib/money"
 import type { ExpenseRow } from "@/lib/supabase/database.types"
 
 /**
@@ -12,6 +13,21 @@ import type { ExpenseRow } from "@/lib/supabase/database.types"
  * [[zod-coerce-preprocess-breaks-rhf-zodresolver]] 문제를 피하기 위해
  * FormData 문자열 → 숫자/불리언 변환은 서버 액션에서 처리한다.
  */
+/** 정비 항목 줄 (지출 차량 › 정비, 차계부 기록 정비 공용). 금액은 선택(빈칸 null) */
+export const serviceItemsSchema = z
+  .array(
+    z.object({
+      item: z.string().trim().min(1, "항목 이름을 입력하세요").max(30, "항목 이름은 30자 이하로 입력하세요"),
+      amount: z
+        .number()
+        .int("금액은 정수여야 합니다")
+        .min(0, "금액은 0 이상이어야 합니다")
+        .max(MAX_AMOUNT, "금액이 최대 허용치를 초과했습니다")
+        .nullable(),
+    })
+  )
+  .max(30, "정비 항목은 30개까지예요")
+
 export const expenseFormSchema = z.object({
   expense_date: z.string().min(1, "지출일자를 입력하세요"),
   category_major: z.string().min(1, "대분류를 선택하세요"),
@@ -25,10 +41,18 @@ export const expenseFormSchema = z.object({
   liters: z
     .string()
     .refine((v) => !Number.isNaN(parseLiters(v)), "리터는 숫자로 입력하세요 (예: 120 또는 85.5)"),
+  /** 주행거리(차량 › 정비·주유비·요소수일 때만, 빈칸이면 없음). 글자로 두고 서버에서 숫자로 바꾼다 */
+  odometer_km: z
+    .string()
+    .refine((v) => !Number.isNaN(parseKm(v)), "km는 숫자로 입력하세요 (예: 615,848)"),
+  /** 정비 항목 줄 (차량 › 정비일 때만). 금액은 선택(빈칸 null) */
+  service_items: serviceItemsSchema,
   vendor: z.string().trim(),
   has_tax_invoice: z.boolean(),
   memo: z.string().trim(),
 })
+
+export type ServiceItemValue = z.infer<typeof serviceItemsSchema>[number]
 
 export type ExpenseFormValues = z.infer<typeof expenseFormSchema>
 
@@ -41,13 +65,18 @@ export const expenseFormDefaults: ExpenseFormValues = {
   installment_months: undefined,
   card_name: "",
   liters: "",
+  odometer_km: "",
+  service_items: [],
   vendor: "",
   has_tax_invoice: false,
   memo: "",
 }
 
-/** 저장된 지출 행 → 폼 값 (수정 화면). */
-export function expenseRowToFormValues(row: ExpenseRow): ExpenseFormValues {
+/** 저장된 지출 행 → 폼 값 (수정 화면). serviceItems는 그 지출(할부면 1회차)의 정비 항목 줄. */
+export function expenseRowToFormValues(
+  row: ExpenseRow,
+  serviceItems: readonly ServiceItemValue[] = []
+): ExpenseFormValues {
   return {
     expense_date: row.expense_date,
     category_major: row.category_major,
@@ -57,6 +86,8 @@ export function expenseRowToFormValues(row: ExpenseRow): ExpenseFormValues {
     installment_months: row.installment_months ?? undefined,
     card_name: row.card_name ?? "",
     liters: row.liters !== null ? String(row.liters) : "",
+    odometer_km: row.odometer_km !== null ? String(row.odometer_km) : "",
+    service_items: serviceItems.map((line) => ({ item: line.item, amount: line.amount })),
     vendor: row.vendor ?? "",
     has_tax_invoice: row.has_tax_invoice,
     memo: row.memo ?? "",
@@ -70,7 +101,8 @@ export function expenseRowToFormValues(row: ExpenseRow): ExpenseFormValues {
  */
 export function buildExpenseCopyDefaults(
   row: ExpenseRow,
-  today: string
+  today: string,
+  serviceItems: readonly ServiceItemValue[] = []
 ): ExpenseFormValues {
   return {
     ...expenseFormDefaults,
@@ -82,6 +114,8 @@ export function buildExpenseCopyDefaults(
     installment_months: row.installment_months ?? undefined,
     card_name: row.card_name ?? "",
     liters: row.liters !== null ? String(row.liters) : "",
+    // 정비 항목은 함께 복사한다 (km는 그때마다 달라서 비운다)
+    service_items: serviceItems.map((line) => ({ item: line.item, amount: line.amount })),
     memo: row.memo ?? "",
   }
 }
@@ -95,7 +129,8 @@ export function buildExpenseFormData(values: ExpenseFormValues): FormData {
   const fd = new FormData()
   Object.entries(values).forEach(([key, value]) => {
     if (value === undefined) return
-    fd.set(key, String(value))
+    // 정비 항목 줄(배열)은 JSON 글자로 보낸다
+    fd.set(key, key === "service_items" ? JSON.stringify(value) : String(value))
   })
   return fd
 }
@@ -118,6 +153,18 @@ export function coerceExpenseFormData(
     // 카드 이름도 카드일 때만
     card_name: raw.payment_method === "CARD" ? (raw.card_name ?? "") : "",
     liters: raw.liters ?? "",
+    odometer_km: raw.odometer_km ?? "",
+    service_items: parseServiceItemsJson(raw.service_items),
     has_tax_invoice: raw.has_tax_invoice === "true",
+  }
+}
+
+/** FormData의 정비 항목 줄(JSON 글자) → 배열. 없거나 깨졌으면 빈 배열(검증은 스키마가 한다) */
+export function parseServiceItemsJson(raw: FormDataEntryValue | undefined): unknown {
+  if (typeof raw !== "string" || raw === "") return []
+  try {
+    return JSON.parse(raw) as unknown
+  } catch {
+    return []
   }
 }

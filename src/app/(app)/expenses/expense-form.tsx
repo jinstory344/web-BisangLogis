@@ -5,6 +5,11 @@ import { startTransition, useActionState, useState } from "react"
 import { useForm } from "react-hook-form"
 import { toast } from "sonner"
 
+import {
+  ServiceItemsField,
+  serviceLinesTotal,
+  type ServiceLineValue,
+} from "@/components/car-ledger/service-items-field"
 import { AmountInput } from "@/components/form/amount-input"
 import { AmountKeypadField } from "@/components/form/amount-keypad"
 import { DateRow } from "@/components/form/date-row"
@@ -38,6 +43,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
+import { isCarServiceCategory, isCarTrackedCategory } from "@/lib/car-ledger/constants"
 import { EXPENSE_PAYMENT_METHOD_OPTIONS } from "@/lib/constants/payment-method"
 import {
   CUSTOM_MINOR,
@@ -82,6 +88,8 @@ interface ExpenseFormProps {
   /** 카드 이름 목록 (DB) */
   cards: string[]
   cardsEditable: boolean
+  /** 정비 항목 목록 (차량 › 정비일 때 칩으로) */
+  serviceItemNames?: string[]
 }
 
 export function ExpenseForm({
@@ -93,6 +101,7 @@ export function ExpenseForm({
   installmentGroupSize = 0,
   cards,
   cardsEditable,
+  serviceItemNames = [],
 }: ExpenseFormProps) {
   const [state, formAction, isPending] = useActionState(action, {
     error: null,
@@ -113,6 +122,24 @@ export function ExpenseForm({
   const installmentMonths = form.watch("installment_months")
   const watchedAmount = form.watch("amount")
   const watchedDate = form.watch("expense_date")
+  const isService = isCarServiceCategory(categoryMajor, categoryMinor)
+  const isCarTracked = isCarTrackedCategory(categoryMajor, categoryMinor)
+  // 금액이 비어 있을 때 정비 항목 금액을 적으면 그 합으로 채운다. 금액을 직접 고치면 멈춘다.
+  const [amountFollowsItems, setAmountFollowsItems] = useState(() => defaultValues.amount === 0)
+
+  function changeAmount(onChange: (value: number) => void, value: number) {
+    setAmountFollowsItems(false)
+    onChange(value)
+  }
+
+  function changeServiceItems(lines: ServiceLineValue[]) {
+    form.setValue("service_items", lines, { shouldValidate: true })
+    const total = serviceLinesTotal(lines)
+    if (total > 0 && (amountFollowsItems || form.getValues("amount") === 0)) {
+      setAmountFollowsItems(true)
+      form.setValue("amount", total, { shouldValidate: true })
+    }
+  }
   // 할부면 달마다 어떻게 나뉘는지 미리 보여 준다 (저장도 같은 함수로 나눈다)
   const installmentParts =
     paymentMethod === "CARD" && isInstallment(installmentMonths) && watchedAmount > 0 && watchedDate
@@ -244,7 +271,7 @@ export function ExpenseForm({
                 <AmountKeypadField
                   title="금액"
                   value={field.value}
-                  onChange={field.onChange}
+                  onChange={(value) => changeAmount(field.onChange, value)}
                   autoOpen={autoOpenKeypad}
                   amountClassName={EXPENSE_TEXT_CLASS}
                   placeholder="금액"
@@ -259,7 +286,7 @@ export function ExpenseForm({
                     name={field.name}
                     onBlur={field.onBlur}
                     value={field.value}
-                    onChange={field.onChange}
+                    onChange={(value) => changeAmount(field.onChange, value)}
                     placeholder="0"
                   />
                 </FormControl>
@@ -322,6 +349,46 @@ export function ExpenseForm({
             </FormItem>
           )}
         />
+
+        {/* 차량 › 정비면 정비 항목 칩 + 줄 금액 (차계부에 항목별로 보인다) */}
+        {isService ? (
+          <FormField
+            control={form.control}
+            name="service_items"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>정비 항목</FormLabel>
+                <ServiceItemsField
+                  names={serviceItemNames}
+                  value={field.value}
+                  onChange={changeServiceItems}
+                />
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        ) : null}
+
+        {/* 차량 › 정비·주유비·요소수면 정비소/주유소 (사용처 칸) */}
+        {isCarTracked ? (
+          <FormField
+            control={form.control}
+            name="vendor"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>{isService ? "정비소" : "주유소"}</FormLabel>
+                <FormControl>
+                  <Input
+                    {...field}
+                    placeholder={isService ? "예: 완정모터스 (안 적어도 돼요)" : "안 적어도 돼요"}
+                    className="h-11"
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        ) : null}
 
         <FormField
           control={form.control}
@@ -439,6 +506,31 @@ export function ExpenseForm({
                     />
                   </FormControl>
                   <span className="shrink-0 text-base text-muted-foreground">L</span>
+                </div>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        ) : null}
+
+        {/* km는 차량 › 정비·주유비·요소수일 때만 (안 적어도 된다). 차계부의 교체 주기·간격에 쓴다. */}
+        {isCarTracked ? (
+          <FormField
+            control={form.control}
+            name="odometer_km"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>주행거리</FormLabel>
+                <div className="flex items-center gap-2">
+                  <FormControl>
+                    <Input
+                      {...field}
+                      inputMode="numeric"
+                      placeholder="계기판 km (안 적어도 돼요)"
+                      className="h-11 flex-1 text-right"
+                    />
+                  </FormControl>
+                  <span className="shrink-0 text-base text-muted-foreground">km</span>
                 </div>
                 <FormMessage />
               </FormItem>

@@ -32,6 +32,8 @@ interface ExpenseListProps {
   }
   page: number
   totalPages: number
+  /** 지출 id → 정비 항목 이름들 (비고 앞에 붙인다) */
+  serviceItemNames?: Record<string, string[]>
 }
 
 
@@ -39,6 +41,7 @@ export function ExpenseList({
   expenses,
   page,
   totalPages,
+  serviceItemNames = {},
 }: ExpenseListProps) {
   const pathname = usePathname()
   const searchParams = useSearchParams()
@@ -81,6 +84,7 @@ export function ExpenseList({
       <div>
         <ExpenseMobileList
           expenses={expenses}
+          serviceItemNames={serviceItemNames}
           onDelete={setDeleteTarget}
         />
       </div>

@@ -1,4 +1,5 @@
-import { formatLiters } from "@/lib/fuel"
+import { expenseNoteLine } from "@/lib/car-ledger/expense-note"
+import { loadServiceItemNamesForExpenses } from "@/lib/car-ledger/service-items-db"
 import { expensePaymentLabel } from "@/lib/constants/payment-method"
 import { formatSaleSource } from "@/lib/constants/sale-sources"
 import type { AmountRow, LedgerEntry } from "@/lib/ledger"
@@ -123,7 +124,7 @@ function toSaleEntry(row: SaleRow): SaleLedgerEntry {
   }
 }
 
-function toExpenseEntry(row: ExpenseRow): ExpenseLedgerEntry {
+function toExpenseEntry(row: ExpenseRow, itemNames: Map<string, string[]>): ExpenseLedgerEntry {
   return {
     kind: "expense",
     id: row.id,
@@ -132,10 +133,8 @@ function toExpenseEntry(row: ExpenseRow): ExpenseLedgerEntry {
     amount: row.amount,
     major: row.category_major,
     minor: row.category_minor,
-    note: [row.liters !== null ? formatLiters(row.liters) : null, row.vendor, row.memo]
-      .map((text) => text?.trim())
-      .filter(Boolean)
-      .join(" · "),
+    // 정비면 항목 이름을 앞에, 정비·주유비·요소수면 km도
+    note: expenseNoteLine(row, itemNames.get(row.id)),
     // "카드 · 신한복지 · 할부 3/6"
     paymentLabel: expensePaymentLabel(row),
     row,
@@ -173,7 +172,8 @@ export async function fetchLedgerEntries(
     ),
   ])
 
-  return [...sales.map(toSaleEntry), ...expenses.map(toExpenseEntry)]
+  const itemNames = await loadServiceItemNamesForExpenses(supabase, expenses)
+  return [...sales.map(toSaleEntry), ...expenses.map((row) => toExpenseEntry(row, itemNames))]
 }
 
 /** 검색 결과 최대 건수 (매출·지출 각각) */
@@ -244,8 +244,9 @@ export async function searchLedgerEntries(
 
   const saleRows = saleRes.data ?? []
   const expenseRows = expenseRes.data ?? []
+  const itemNames = await loadServiceItemNamesForExpenses(supabase, expenseRows)
   return {
-    entries: [...saleRows.map(toSaleEntry), ...expenseRows.map(toExpenseEntry)],
+    entries: [...saleRows.map(toSaleEntry), ...expenseRows.map((row) => toExpenseEntry(row, itemNames))],
     isTruncated:
       saleRows.length >= SEARCH_RESULT_LIMIT ||
       expenseRows.length >= SEARCH_RESULT_LIMIT,

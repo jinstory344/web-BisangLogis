@@ -27,6 +27,7 @@ const baseRow: ExpenseRow = {
   installment_no: null,
   card_name: "신한복지",
   liters: null,
+  odometer_km: null,
   vendor: "OO주유소",
   has_tax_invoice: true,
   memo: "만땅",
@@ -56,6 +57,8 @@ describe("expenseRowToFormValues (수정 화면)", () => {
       installment_months: 3,
       card_name: "신한복지",
       liters: "",
+      odometer_km: "",
+      service_items: [],
       vendor: "OO주유소",
       has_tax_invoice: true,
       memo: "만땅",
@@ -176,5 +179,40 @@ describe("할부는 카드일 때만 저장된다 (coerceExpenseFormData)", () =
     expect(
       expenseFormSchema.safeParse(coerceExpenseFormData(entries)).success
     ).toBe(false)
+  })
+})
+
+describe("정비 항목·km (차계부)", () => {
+  it("항목 줄은 JSON으로 오가고 km 글자는 검증한다", () => {
+    const values: ExpenseFormValues = {
+      ...expenseFormDefaults,
+      expense_date: "2026-11-25",
+      category_major: "차량",
+      category_minor: "정비",
+      amount: 200000,
+      odometer_km: "615,848",
+      service_items: [
+        { item: "엔진오일", amount: 80000 },
+        { item: "배터리", amount: null },
+      ],
+    }
+    const parsed = expenseFormSchema.parse(coerceExpenseFormData(submittedEntries(values)))
+    expect(parsed.service_items).toEqual(values.service_items)
+    expect(parsed.odometer_km).toBe("615,848")
+
+    const bad = expenseFormSchema.safeParse(
+      coerceExpenseFormData(submittedEntries({ ...values, odometer_km: "61만" }))
+    )
+    expect(bad.success).toBe(false)
+  })
+
+  it("깨진 항목 JSON은 빈 배열", () => {
+    expect(coerceExpenseFormData({ service_items: "{" }).service_items).toEqual([])
+  })
+
+  it("수정 화면에 km·항목을 채운다", () => {
+    const values = expenseRowToFormValues({ ...baseRow, odometer_km: 615848 }, [{ item: "엔진오일", amount: null }])
+    expect(values.odometer_km).toBe("615848")
+    expect(values.service_items).toEqual([{ item: "엔진오일", amount: null }])
   })
 })
