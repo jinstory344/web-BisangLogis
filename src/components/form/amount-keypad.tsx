@@ -108,9 +108,25 @@ export function AmountKeypadField(props: AmountKeypadFieldProps) {
       setOpen(false)
     }
     document.addEventListener("pointerdown", onPointerDown)
-    // 금액 줄이 키패드에 가리지 않게
-    rowRef.current?.scrollIntoView({ block: "nearest" })
-    return () => document.removeEventListener("pointerdown", onPointerDown)
+    // 금액 줄이 키패드에 가리지 않게: 키패드 높이만큼 아래 여백을 잠깐 늘리고, 줄이 키패드 위로 올라오게 민다
+    // (scrollIntoView는 화면 아래를 덮는 키패드를 모르므로 직접 계산)
+    const body = document.body
+    const before = body.style.paddingBottom
+    const frame = requestAnimationFrame(() => {
+      const panel = panelRef.current
+      const row = rowRef.current
+      if (!panel || !row) return
+      const panelHeight = panel.getBoundingClientRect().height
+      body.style.paddingBottom = `${panelHeight}px`
+      const visibleBottom = window.innerHeight - panelHeight - 16
+      const rowBottom = row.getBoundingClientRect().bottom
+      if (rowBottom > visibleBottom) window.scrollBy({ top: rowBottom - visibleBottom, behavior: "smooth" })
+    })
+    return () => {
+      cancelAnimationFrame(frame)
+      body.style.paddingBottom = before
+      document.removeEventListener("pointerdown", onPointerDown)
+    }
   }, [open])
 
   function press(key: KeypadKey | "next") {

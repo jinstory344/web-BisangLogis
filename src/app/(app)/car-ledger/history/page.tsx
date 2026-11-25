@@ -23,7 +23,7 @@ export default async function CarServiceHistoryPage({
   const rows = car ? await loadServiceHistory(supabase, car.id) : []
 
   return (
-    <div className="px-4 pb-8 md:p-6">
+    <div className="px-4 pt-6 pb-8 md:p-6">
       <div className="mx-auto flex max-w-lg flex-col gap-4">
         <FormPageHeader title="11월 이전 정비 기록" backHref="/car-ledger/settings" backLabel="차계부 설정" />
         <HistoryTab rows={rows} />

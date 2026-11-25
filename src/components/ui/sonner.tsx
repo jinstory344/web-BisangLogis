@@ -38,7 +38,7 @@ const Toaster = ({ ...props }: ToasterProps) => {
       }
       toastOptions={{
         // "복사했어요" 같은 알림은 확인만 하면 되니 2초 뒤 사라지게(기본 4초)
-        duration: 2000,
+        duration: 1000,
         classNames: {
           toast: "cn-toast",
         },

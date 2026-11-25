@@ -33,7 +33,7 @@ export default async function CarLedgerSettingsPage() {
   const history = truck ? await loadServiceHistory(supabase, truck.id) : []
 
   return (
-    <div className="px-4 pb-8 md:p-6">
+    <div className="px-4 pt-6 pb-8 md:p-6">
       <div className="mx-auto flex max-w-lg flex-col gap-6">
         <FormPageHeader title="차계부 설정" backHref="/car-ledger" backLabel="차계부" />
 

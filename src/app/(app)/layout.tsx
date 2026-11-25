@@ -1,6 +1,7 @@
 import type { ReactNode } from "react"
 
 import { AppShell } from "@/components/layout/app-shell"
+import { KeepFocusedVisible } from "@/components/layout/keep-focused-visible"
 import { PullToRefresh } from "@/components/layout/pull-to-refresh"
 import { RefreshIfStale, RefreshOnReturn } from "@/components/layout/service-worker"
 import { createClient } from "@/lib/supabase/server"
@@ -24,6 +25,8 @@ export default async function AppLayout({
       <RefreshOnReturn />
       {/* 맨 위에서 쓸어내리면 새로 고침 */}
       <PullToRefresh />
+      {/* 폰 키보드가 입력 칸을 가리지 않게 */}
+      <KeepFocusedVisible />
       {children}
     </AppShell>
   )

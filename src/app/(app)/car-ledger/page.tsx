@@ -93,7 +93,7 @@ export default async function CarLedgerPage({
   // 그날 내역의 날짜 줄이 머리 바로 밑에 붙게 한다
   const head =
     view === "day" ? (
-      <div className={headClassName}>{headContent}</div>
+      <div data-car-head className={headClassName}>{headContent}</div>
     ) : (
       <StickyHead className={headClassName}>{headContent}</StickyHead>
     )
