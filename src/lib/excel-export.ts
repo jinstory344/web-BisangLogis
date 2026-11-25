@@ -6,7 +6,7 @@ import { EXPENSE_PAYMENT_METHOD_LABELS, PAYMENT_METHOD_LABELS } from "@/lib/cons
 import type { ClientRow, DispatchRow, ExpenseRow, SaleRow, VehicleRow } from "@/lib/supabase/database.types"
 
 /** 엑셀 내보내기 종류 (시트 하나씩) */
-export type ExportKind = "sale" | "expense" | "dispatch" | "client" | "vehicle"
+export type ExportKind = "sale" | "expense" | "dispatch" | "client" | "vehicle" | "car_log"
 
 export const EXPORT_KINDS: { value: ExportKind; label: string; unit: string }[] = [
   { value: "sale", label: "매출", unit: "건" },
@@ -14,10 +14,11 @@ export const EXPORT_KINDS: { value: ExportKind; label: string; unit: string }[] 
   { value: "dispatch", label: "배차", unit: "건" },
   { value: "client", label: "거래처", unit: "곳" },
   { value: "vehicle", label: "차량", unit: "대" },
+  { value: "car_log", label: "차계부", unit: "건" },
 ]
 
 /** 날짜·기간이 있는 종류 (거래처·차량은 기간과 상관없이 전부) */
-export const DATED_KINDS: readonly ExportKind[] = ["sale", "expense", "dispatch"]
+export const DATED_KINDS: readonly ExportKind[] = ["sale", "expense", "dispatch", "car_log"]
 
 export type Cell = string | number
 export type Table = Cell[][]
@@ -95,6 +96,37 @@ export function vehiclesTable(rows: VehicleRow[]): Table {
   return [
     ["차량번호", "차주", "연락처", "차종", "파렛수", "메모"],
     ...rows.map((r) => [r.plate_no, r.driver_name, s(r.driver_phone), s(r.vehicle_type), n(r.pallet_count), s(r.memo)]),
+  ]
+}
+
+/** 차계부 한 줄 (지출 기반 트럭 기록 + 차계부에만 넣은 기록, 할부는 회차 줄마다) */
+export interface CarExportRow {
+  car: string
+  date: string
+  kind: string
+  items: string
+  amount: number
+  liters: number | null
+  km: number | null
+  vendor: string | null
+  payment: string
+  memo: string | null
+}
+
+export function carLedgerTable(rows: CarExportRow[]): Table {
+  return [
+    ["차", "날짜", "종류", "정비 항목", "금액", "리터", "주행거리(km)", "정비소·장소", "결제", "비고"],
+    ...rows.map((r) => [r.car, r.date, r.kind, r.items, r.amount, n(r.liters), n(r.km), s(r.vendor), r.payment, s(r.memo)]),
+  ]
+}
+
+/** 차계부 이전 정비 기록(엑셀에서 옮긴 것) */
+export function carHistoryTable(
+  rows: { car: string; service_date: string; odometer_km: number | null; content: string; amount: number | null; vendor: string | null }[]
+): Table {
+  return [
+    ["차", "날짜", "주행거리(km)", "정비 내역", "금액", "정비소"],
+    ...rows.map((r) => [r.car, r.service_date, n(r.odometer_km), r.content.replace(/\n/g, " / "), n(r.amount), s(r.vendor)]),
   ]
 }
 

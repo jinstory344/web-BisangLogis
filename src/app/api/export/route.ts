@@ -1,7 +1,10 @@
 import * as XLSX from "xlsx"
 
 import { fetchAllRows } from "@/app/(app)/ledger-data"
+import { loadCarExportRows } from "@/app/(app)/car-ledger/data"
 import {
+  carHistoryTable,
+  carLedgerTable,
   clientsTable,
   dispatchesTable,
   EXPORT_KINDS,
@@ -20,7 +23,7 @@ export const dynamic = "force-dynamic"
 const DATE = /^\d{4}-\d{2}-\d{2}$/
 
 /**
- * 엑셀 내보내기: /api/export?kinds=sale,expense,dispatch,client,vehicle&from=2026-11-01&to=2026-11-30
+ * 엑셀 내보내기: /api/export?kinds=sale,expense,dispatch,client,vehicle,car_log&from=2026-11-01&to=2026-11-30
  * 종류마다 시트 하나. 매출·지출·배차는 기간 안만(from·to 없으면 전체), 거래처·차량은 늘 전부.
  * 로그인한 사람만(미들웨어 + 여기서 한 번 더). 지운 것(휴지통)은 넣지 않는다.
  */
@@ -77,6 +80,10 @@ export async function GET(request: Request) {
       } else if (kind === "vehicle") {
         const { data } = await supabase.from("vehicles").select("*").is("deleted_at", null).order("driver_name")
         sheets.push({ name: "차량", table: vehiclesTable((data ?? []) as VehicleRow[]) })
+      } else if (kind === "car_log") {
+        const { rows, history } = await loadCarExportRows(supabase, period)
+        sheets.push({ name: "차계부", table: carLedgerTable(rows) })
+        if (history.length) sheets.push({ name: "차계부 이전 정비", table: carHistoryTable(history) })
       }
     }
   } catch (error) {

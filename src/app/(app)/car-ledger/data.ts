@@ -15,6 +15,8 @@ import {
   type ServiceItemInput,
 } from "@/lib/car-ledger/entries"
 import type { CycleInput } from "@/lib/car-ledger/stats"
+import { expensePaymentLabel } from "@/lib/constants/payment-method"
+import type { CarExportRow } from "@/lib/excel-export"
 import type { CarItemRow, CarRow } from "@/lib/supabase/database.types"
 import { createClient } from "@/lib/supabase/server"
 
@@ -262,4 +264,104 @@ export async function loadServiceHistory(supabase: Supabase, carId: string): Pro
     .order("service_date")
     .order("sort_order")
   return error ? [] : (data ?? [])
+}
+
+/**
+ * 엑셀 내보내기용 차계부 줄: 모든 차의 기록을 기간 안에서(없으면 전체) 한 줄씩.
+ * 업무용 트럭은 차계부 화면과 같은 규칙의 지출(정비·주유비·요소수, 할부는 회차 줄마다), 그 밖의 차는 car_logs.
+ */
+export async function loadCarExportRows(
+  supabase: Supabase,
+  period: { from: string; to: string } | null
+): Promise<{ rows: CarExportRow[]; history: { car: string; service_date: string; odometer_km: number | null; content: string; amount: number | null; vendor: string | null }[] }> {
+  const { cars } = await loadCarMasters(supabase)
+  const nameOf = new Map(cars.map((car) => [car.id, car.plate_no ? `${car.name} ${car.plate_no}` : car.name]))
+  const truckId = primaryBusinessCarId(cars)
+  const inPeriod = (date: string) => !period || (date >= period.from && date <= period.to)
+  const otherMinors = CAR_EXPENSE_MINORS.filter((minor) => minor !== CAR_SERVICE_MINOR)
+
+  const [serviceExpenses, otherExpenses, logs, historyRes] = await Promise.all([
+    truckId ? loadServiceExpenses(supabase) : Promise.resolve([] as CarExpenseInput[]),
+    truckId
+      ? fetchAllRows<CarExpenseInput>((a, b) => {
+          let q = carExpenseQuery(supabase).in("category_minor", otherMinors)
+          if (period) q = q.gte("expense_date", period.from).lte("expense_date", period.to)
+          return q.order("expense_date").order("id").range(a, b)
+        })
+      : Promise.resolve([] as CarExpenseInput[]),
+    fetchAllRows<CarLogInput & { car_id: string }>((a, b) => {
+      let q = supabase
+        .from("car_logs")
+        .select("id, car_id, log_date, kind, amount, liters, odometer_km, vendor, memo")
+        .is("deleted_at", null)
+      if (period) q = q.gte("log_date", period.from).lte("log_date", period.to)
+      return q.order("log_date").order("id").range(a, b)
+    }),
+    (() => {
+      let q = supabase
+        .from("car_service_history")
+        .select("car_id, service_date, odometer_km, content, amount, vendor, sort_order")
+        .is("deleted_at", null)
+      if (period) q = q.gte("service_date", period.from).lte("service_date", period.to)
+      return q.order("service_date").order("sort_order")
+    })(),
+  ])
+
+  const expenses = [...serviceExpenses.filter((row) => inPeriod(row.expense_date)), ...otherExpenses]
+  const expenseIds = serviceExpenses.map((row) => row.id)
+  const logIds = logs.map((row) => row.id)
+  const [expenseItems, logItems] = await Promise.all([
+    expenseIds.length
+      ? fetchAllRows<ServiceItemInput>((a, b) =>
+          supabase.from("car_service_items").select("expense_id, car_log_id, item, amount, sort_order").in("expense_id", expenseIds).order("id").range(a, b)
+        )
+      : Promise.resolve([] as ServiceItemInput[]),
+    logIds.length
+      ? fetchAllRows<ServiceItemInput>((a, b) =>
+          supabase.from("car_service_items").select("expense_id, car_log_id, item, amount, sort_order").in("car_log_id", logIds).order("id").range(a, b)
+        )
+      : Promise.resolve([] as ServiceItemInput[]),
+  ])
+  // 정비 항목은 할부 1회차에 붙어 있으므로 묶음(installment_group_id)으로도 찾는다
+  const firstOfGroup = new Map<string, string>()
+  for (const row of serviceExpenses) {
+    if (row.installment_group_id && row.installment_no === 1) firstOfGroup.set(row.installment_group_id, row.id)
+  }
+  const itemText = (list: ServiceItemInput[], parentId: string, key: "expense_id" | "car_log_id") =>
+    list
+      .filter((line) => line[key] === parentId)
+      .sort((a, b) => a.sort_order - b.sort_order)
+      .map((line) => (line.amount !== null ? `${line.item} ${line.amount.toLocaleString("ko-KR")}` : line.item))
+      .join(", ")
+
+  const truckName = truckId ? (nameOf.get(truckId) ?? "") : ""
+  const rows: CarExportRow[] = [
+    ...expenses.map((row) => ({
+      car: truckName,
+      date: row.expense_date,
+      kind: expenseKindOf(row.category_minor),
+      items: itemText(expenseItems, (row.installment_group_id && firstOfGroup.get(row.installment_group_id)) || row.id, "expense_id"),
+      amount: Number(row.amount),
+      liters: row.liters === null ? null : Number(row.liters),
+      km: row.odometer_km,
+      vendor: row.vendor,
+      payment: expensePaymentLabel({ ...row, payment_method: row.payment_method ?? null }),
+      memo: row.memo,
+    })),
+    ...logs.map((row) => ({
+      car: nameOf.get(row.car_id) ?? "",
+      date: row.log_date,
+      kind: row.kind,
+      items: itemText(logItems, row.id, "car_log_id"),
+      amount: Number(row.amount),
+      liters: row.liters === null ? null : Number(row.liters),
+      km: row.odometer_km,
+      vendor: row.vendor,
+      payment: "",
+      memo: row.memo,
+    })),
+  ].sort((a, b) => a.car.localeCompare(b.car) || a.date.localeCompare(b.date))
+
+  const history = (historyRes.data ?? []).map((row) => ({ ...row, car: nameOf.get(row.car_id) ?? "" }))
+  return { rows, history }
 }
