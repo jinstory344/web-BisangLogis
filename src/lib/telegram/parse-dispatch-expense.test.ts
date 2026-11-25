@@ -233,6 +233,13 @@ describe("parseExpenseLines", () => {
     })
   })
 
+  it("토스·카카오는 토스페이·카카오페이 결제", () => {
+    const toss = parseExpenseLines(["1.2만 토스", "식비"], { today, categories })
+    expect(toss.ok && toss.value.payment_method).toBe("TOSS_PAY")
+    const kakao = parseExpenseLines(["1.2만", "카카오페이", "식비"], { today, categories })
+    expect(kakao.ok && kakao.value.payment_method).toBe("KAKAO_PAY")
+  })
+
   it("같은 이름의 소분류가 여러 대분류에 있으면 '대분류,소분류'로 고른다", () => {
     expect(parseExpenseLines(["1만", "주차"], { today, categories }).ok).toBe(false)
     const r = parseExpenseLines(["1만", "차량,주차"], { today, categories })

@@ -21,6 +21,8 @@ export const EXPENSE_PAYMENT_METHOD_LABELS: Record<
   CARD: "카드",
   TRANSFER: "계좌이체",
   CASH: "현금",
+  TOSS_PAY: "토스페이",
+  KAKAO_PAY: "카카오페이",
 }
 
 export const EXPENSE_PAYMENT_METHOD_OPTIONS = (

@@ -33,7 +33,7 @@ export function CostSummary({
     <section aria-label={`${monthLabel} 차 비용`} className="rounded-xl border bg-card px-4 py-3">
       {carLabel || action ? (
         <div className="-mt-1.5 -mr-1.5 flex items-center gap-2">
-          <p className={`min-w-0 flex-1 truncate ${SUMMARY_TITLE_CLASS} font-semibold`}>{carLabel}</p>
+          <p className="min-w-0 flex-1 truncate text-sm font-semibold text-foreground">{carLabel}</p>
           {action}
         </div>
       ) : null}

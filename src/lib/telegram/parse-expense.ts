@@ -11,7 +11,7 @@ import {
 } from "@/lib/telegram/parse-sale"
 
 /**
- * 텔레그램 지출 메시지: 금액·날짜·결제방법(카드/이체/현금)·분류(소분류 앞글자, 또는 "차량,주유비")는 아무 줄에나,
+ * 텔레그램 지출 메시지: 금액·날짜·결제방법(카드/이체/현금/토스/카카오)·분류(소분류 앞글자, 또는 "차량,주유비")는 아무 줄에나,
  * 나머지 줄은 비고. 결제방법을 안 쓰면 카드.
  * 할부는 금액 줄에 "6개월" 또는 "할부6"(2~12개월, 카드만) — 달마다 나눠 지출로 잡힌다.
  * 카드 이름(앱의 카드 목록, 띄어쓰기 무시)은 금액 줄 안이나 따로 한 줄로 — 결제는 카드로 잡힌다.
@@ -77,6 +77,11 @@ const PAYMENT_WORDS: Record<string, ExpensePaymentMethod> = {
   이체: "TRANSFER",
   계좌이체: "TRANSFER",
   현금: "CASH",
+  토스: "TOSS_PAY",
+  토스페이: "TOSS_PAY",
+  카카오: "KAKAO_PAY",
+  카카오페이: "KAKAO_PAY",
+  카페이: "KAKAO_PAY",
 }
 
 function parseMoneyLine(

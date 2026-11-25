@@ -33,7 +33,7 @@ export const expenseFormSchema = z.object({
   category_major: z.string().min(1, "대분류를 선택하세요"),
   category_minor: z.string().min(1, "소분류를 선택하세요"),
   amount: amountSchema,
-  payment_method: z.enum(["CARD", "TRANSFER", "CASH"]),
+  payment_method: z.enum(["CARD", "TRANSFER", "CASH", "TOSS_PAY", "KAKAO_PAY"]),
   installment_months: z.number().int().min(1).max(12).optional(),
   /** 카드 이름 (결제방법이 카드일 때만, 빈칸이면 없음) */
   card_name: z.string().trim().max(20, "카드 이름은 20자 이하로 입력하세요"),

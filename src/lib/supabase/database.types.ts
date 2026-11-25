@@ -9,7 +9,7 @@
  */
 
 export type PaymentMethod = "TAX_INVOICE" | "TRANSFER" | "CASH"
-export type ExpensePaymentMethod = "CARD" | "TRANSFER" | "CASH"
+export type ExpensePaymentMethod = "CARD" | "TRANSFER" | "CASH" | "TOSS_PAY" | "KAKAO_PAY"
 export type PaymentStatus = "UNPAID" | "PAID"
 export type TaxInvoiceMode = "MANUAL" | "POPBILL"
 export type TaxInvoiceStatus =

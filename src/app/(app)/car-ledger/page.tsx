@@ -265,9 +265,9 @@ function SettingsLink() {
     <Link
       href="/car-ledger/settings"
       aria-label="차계부 설정"
-      className="flex size-9 shrink-0 items-center justify-center rounded-full text-muted-foreground hover:bg-muted"
+      className="flex size-8 shrink-0 items-center justify-center rounded-full text-muted-foreground hover:bg-muted"
     >
-      <Settings className="size-5" />
+      <Settings className="size-4" />
     </Link>
   )
 }
