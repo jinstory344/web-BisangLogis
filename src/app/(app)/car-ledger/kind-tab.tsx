@@ -15,6 +15,7 @@ export function KindTab({
   kind,
   entries,
   month,
+  periodLabel,
   showLiters,
   today,
 }: {
@@ -22,11 +23,13 @@ export function KindTab({
   /** 이 달, 이 종류 기록 */
   entries: CarEntry[]
   month: DateRange
+  /** "11월" 또는 1년치 보기면 "2026년" */
+  periodLabel: string
   showLiters: boolean
   today: string
 }) {
   const summary = kindSummary(entries, kind, month.from, month.to)
-  const monthLabel = `${Number(month.from.slice(5, 7))}월`
+  const monthLabel = periodLabel
   const rows = sortEntriesDesc(entries)
 
   return (

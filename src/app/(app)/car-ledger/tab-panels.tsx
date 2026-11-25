@@ -56,7 +56,7 @@ export function TabPanels({
               onClick={() => select(tab.value)}
               aria-current={isActive ? "page" : undefined}
               className={cn(
-                "relative flex min-h-10 flex-1 shrink-0 items-center justify-center px-3 text-sm whitespace-nowrap transition-colors",
+                "relative flex min-h-10 flex-1 shrink-0 items-center justify-center px-2 text-sm whitespace-nowrap transition-colors",
                 isActive ? "font-semibold text-foreground" : "text-muted-foreground hover:text-foreground"
               )}
             >

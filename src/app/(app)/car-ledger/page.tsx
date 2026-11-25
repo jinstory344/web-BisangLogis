@@ -5,8 +5,8 @@ import { Settings } from "lucide-react"
 import { SearchButton } from "@/components/layout/search-button"
 import { PageTitle } from "@/components/layout/page-title"
 import { SummaryMonthNav } from "@/components/list/summary-month-nav"
-import { formatManwon, isLiterKind, kindColor, SERVICE_KIND } from "@/lib/car-ledger/constants"
-import { buildCycleRows, inRange, itemHistory, kindTotals, serviceItemCounts, yearTotal } from "@/lib/car-ledger/stats"
+import { isLiterKind, kindColor, SERVICE_KIND } from "@/lib/car-ledger/constants"
+import { buildCycleRows, inRange, itemHistory, kindTotals, serviceItemCounts } from "@/lib/car-ledger/stats"
 import { carKindOrder, carTabs, parseCarTab } from "@/lib/car-ledger/tabs"
 import { carLedgerHref, CYCLE_TAB, firstParam, HISTORY_TAB, SERVICE_TAB } from "@/lib/car-ledger/url"
 import { getCurrentMonthRangeInSeoul, getMonthRange, getTodayInSeoul } from "@/lib/date"
@@ -30,12 +30,13 @@ export const metadata: Metadata = {
 type CarLedgerSearchParams = {
   car?: string | string[]
   from?: string | string[]
+  to?: string | string[]
   tab?: string | string[]
   item?: string | string[]
 }
 
 /**
- * 차계부: 차 칩 · 달 이동(올해 합계) · 이달 차 비용(종류별 막대) · 탭(정비/교체 주기/주유/요소수…).
+ * 차계부: 차 칩 · 달 이동(해 전체 보기 가능) · 이달 차 비용(종류별 막대) · 탭(정비/교체 주기/주유/요소수…).
  * 업무용 트럭은 지출(차량 › 정비·주유비·요소수)을 그대로 가져와 보여 주고(다시 입력하지 않음),
  * 승용차 등은 차계부에만 저장한 기록(car_logs)을 보여 준다.
  */
@@ -46,7 +47,11 @@ export default async function CarLedgerPage({
 }) {
   const params = await searchParams
   const today = getTodayInSeoul()
-  const month = getMonthRange(parseAnchorDate(firstParam(params.from), getCurrentMonthRangeInSeoul().from))
+  const anchor = parseAnchorDate(firstParam(params.from), getCurrentMonthRangeInSeoul().from)
+  // 달 고르기 창에서 "2026년 전체"를 누르면 from=1/1, to=12/31 — 1년치 보기
+  const isYearView = anchor.slice(5) === "01-01" && firstParam(params.to) === `${anchor.slice(0, 4)}-12-31`
+  const month = isYearView ? { from: anchor, to: `${anchor.slice(0, 4)}-12-31` } : getMonthRange(anchor)
+  const periodLabel = isYearView ? `${anchor.slice(0, 4)}년` : `${Number(month.from.slice(5, 7))}월`
   const supabase = await createClient()
   const masters = await loadCarMasters(supabase)
 
@@ -101,7 +106,6 @@ export default async function CarLedgerPage({
   const item = tab === SERVICE_TAB ? firstParam(params.item).trim() : ""
 
   const monthTotals = kindTotals(data.amountRows, month.from, month.to, kindOrder)
-  const year = month.from.slice(0, 4)
   const serviceEntries = data.entries.filter((entry) => entry.kind === SERVICE_KIND)
 
   return (
@@ -111,25 +115,14 @@ export default async function CarLedgerPage({
 
         <CarChips cars={cars} selectedId={car.id} from={month.from} to={month.to} />
 
-        <div className="flex items-center gap-2">
-          <div className="min-w-0 flex-1">
-            <SummaryMonthNav from={month.from} to={month.to} />
-          </div>
-          <p className="shrink-0 text-right text-xs leading-tight text-muted-foreground">
-            {year === today.slice(0, 4) ? "올해" : `${year}년`}
-            <br />
-            <span className="text-sm font-semibold text-foreground tabular-nums">
-              {formatManwon(yearTotal(data.amountRows, year))}
-            </span>
-          </p>
-        </div>
+        <SummaryMonthNav from={month.from} to={month.to} allowYear />
 
         <TabPanels
           tabs={tabs}
           initial={tab}
           before={
             <CostSummary
-              monthLabel={`${Number(month.from.slice(5, 7))}월`}
+              monthLabel={periodLabel}
               total={monthTotals.total}
               byKind={monthTotals.byKind.map((row) => ({
                 ...row,
@@ -166,6 +159,7 @@ export default async function CarLedgerPage({
                     (entry) => entry.kind === t.value && inRange(entry.date, month.from, month.to)
                   )}
                   month={month}
+                  periodLabel={periodLabel}
                   showLiters={isLiterKind(t.value)}
                   today={today}
                 />
