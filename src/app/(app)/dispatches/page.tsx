@@ -69,7 +69,7 @@ export default async function DispatchesPage({
               </Link>
             </Button>
           }
-          viewTabs={<ListViewTabs />}
+          viewTabs={<ListViewTabs accentClassName={SECTION_COLORS.dispatch.titleBar} />}
           periodPicker={<SummaryMonthPicker from={from} to={to} />}
         />
 

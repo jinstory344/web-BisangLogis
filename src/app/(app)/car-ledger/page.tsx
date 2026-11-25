@@ -25,7 +25,7 @@ import {
 import { createClient } from "@/lib/supabase/server"
 
 import { AddButton } from "./add-button"
-import { CarChips } from "./car-chips"
+import { CarCalendar } from "./car-calendar"
 import { CostSummary } from "./cost-summary"
 import { CycleTable } from "./cycle-table"
 import {
@@ -84,7 +84,7 @@ export default async function CarLedgerPage({
         <SummaryMonthPicker from={month.from} to={month.to} />
       </header>
       <div className="mt-3">
-        <ListViewTabs />
+        <ListViewTabs accentClassName="bg-[#9b7fd1]" />
       </div>
     </div>
   )
@@ -117,6 +117,8 @@ export default async function CarLedgerPage({
   const car =
     cars.find((row) => row.id === requestedCar) ?? cars.find((row) => row.kind === "business") ?? cars[0]
   const isExpenseCar = car.id === primaryBusinessCarId(cars)
+  // 첫 화면은 내 트럭(업무용). 다른 차는 ⚙ 설정에서 골라 같은 화면으로 연다.
+  const defaultCarId = (cars.find((row) => row.kind === "business") ?? cars[0]).id
 
   if (view !== "day") {
     return (
@@ -129,7 +131,7 @@ export default async function CarLedgerPage({
             today={today}
             params={params}
             car={car}
-            cars={cars}
+            isDefault={car.id === defaultCarId}
             isExpenseCar={isExpenseCar}
           />
         </div>
@@ -158,13 +160,7 @@ export default async function CarLedgerPage({
       <div className="mx-auto flex max-w-2xl flex-col gap-3">
         {head}
 
-        <CarChips
-          cars={cars}
-          selectedId={car.id}
-          from={month.from}
-          to={month.to}
-          trailing={<SettingsLink />}
-        />
+        <CarBar car={car} isDefault={car.id === defaultCarId} />
 
         <TabPanels
           tabs={tabs}
@@ -233,7 +229,25 @@ export default async function CarLedgerPage({
   )
 }
 
-/** 차계부 설정(차·항목) — 머리 오른쪽 자리를 달력 아이콘에 내주고 차 칩 줄 끝으로 옮겼다 */
+/** 보고 있는 차 이름 줄 + 설정 ⚙. 내 트럭이 아니면 "내 트럭으로" 돌아가기. */
+function CarBar({ car, isDefault }: { car: CarRow; isDefault: boolean }) {
+  return (
+    <div className="flex items-center gap-2">
+      <p className="min-w-0 flex-1 truncate text-sm">
+        <span className="font-semibold">{car.name}</span>
+        {car.plate_no ? <span className="text-muted-foreground"> · {car.plate_no}</span> : null}
+      </p>
+      {isDefault ? null : (
+        <Link href="/car-ledger" className="shrink-0 rounded-full bg-muted px-3 py-1 text-xs text-muted-foreground">
+          내 트럭으로
+        </Link>
+      )}
+      <SettingsLink />
+    </div>
+  )
+}
+
+/** 차계부 설정(차·항목) — 다른 차의 차계부도 여기서 고른다 */
 function SettingsLink() {
   return (
     <Link
@@ -256,7 +270,7 @@ async function CarPeriodBody({
   today,
   params,
   car,
-  cars,
+  isDefault,
   isExpenseCar,
 }: {
   view: Exclude<ListView, "day">
@@ -264,7 +278,7 @@ async function CarPeriodBody({
   today: string
   params: CarLedgerSearchParams
   car: CarRow
-  cars: CarRow[]
+  isDefault: boolean
   isExpenseCar: boolean
 }) {
   const range = getViewRange(view, anchor)
@@ -282,17 +296,30 @@ async function CarPeriodBody({
 
   const current = rows.filter((row) => inRange(row.date, range.from, range.to))
 
+  if (view === "calendar") {
+    // 달력: 날짜를 누르면 바로 아래에 그날 내역(처음엔 그 달 전체) — 다른 화면으로 가지 않는다
+    const data = await loadCarLedgerData(supabase, car.id, isExpenseCar, range.from.slice(0, 4))
+    const daySums: Record<string, number> = {}
+    for (const row of current) daySums[row.date] = (daySums[row.date] ?? 0) + row.amount
+    return (
+      <>
+        <CarBar car={car} isDefault={isDefault} />
+        <MonthSwipe className="flex flex-col gap-3">
+          <CarCalendar
+            anchor={anchor}
+            today={today}
+            daySums={daySums}
+            entries={data.entries.filter((entry) => entry.dates.some((date) => inRange(date, range.from, range.to)))}
+          />
+        </MonthSwipe>
+      </>
+    )
+  }
+
   const urlParams = { ...params, view: undefined, tab: undefined, item: undefined }
   return (
     <>
-      <CarChips
-        cars={cars}
-        selectedId={car.id}
-        from={firstParam(params.from)}
-        to={firstParam(params.to)}
-        view={view}
-        trailing={<SettingsLink />}
-      />
+      <CarBar car={car} isDefault={isDefault} />
       <MonthSwipe className="flex flex-col gap-3">
         <ListPeriodView
           view={view}

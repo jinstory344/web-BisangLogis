@@ -13,7 +13,12 @@ import { cn } from "@/lib/utils"
  * 매출·지출·배차·차계부 머리 아래의 보기 탭 줄: 일일 · 달력 · 주별 · 월별 · 연별 (HOME 보기 탭과 같은 모양 — 사용자 요청).
  * 거르기 값은 그대로, 보고 있는 달(기준일)도 그대로 가지고 간다.
  */
-export function ListViewTabs() {
+export function ListViewTabs({
+  accentClassName = "bg-red-400",
+}: {
+  /** 고른 탭 밑줄 색 (화면 포인트 색 — 배차 노랑, 차계부 보라. 기본은 HOME과 같은 빨강) */
+  accentClassName?: string
+} = {}) {
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const view = parseListView(searchParams.get("view") ?? undefined)
@@ -53,7 +58,7 @@ export function ListViewTabs() {
           >
             {item.label}
             {isActive ? (
-              <span aria-hidden className="absolute inset-x-3 -bottom-px h-0.5 rounded-full bg-red-400" />
+              <span aria-hidden className={cn("absolute inset-x-3 -bottom-px h-0.5 rounded-full", accentClassName)} />
             ) : null}
           </Link>
         )

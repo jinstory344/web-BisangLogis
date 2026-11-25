@@ -1,6 +1,7 @@
 "use client"
 
 import { Car, ChevronRight, Plus, Truck } from "lucide-react"
+import Link from "next/link"
 import { useState, useTransition } from "react"
 import { toast } from "sonner"
 
@@ -40,20 +41,28 @@ export function CarListEditor({ cars }: { cars: CarRow[] }) {
       {cars.map((car) => {
         const Icon = car.kind === "business" ? Truck : Car
         return (
-          <button
-            key={car.id}
-            type="button"
-            onClick={() => setEditing({ mode: "edit", car })}
-            className="flex min-h-12 w-full items-center gap-3 border-b px-4 py-2 text-left text-[15px] active:bg-muted"
-          >
-            <Icon className="size-5 shrink-0" />
-            <span className="min-w-0 flex-1 truncate">
-              {car.name}
-              {car.plate_no ? <span className="text-muted-foreground"> · {car.plate_no}</span> : null}
-            </span>
-            <span className="shrink-0 text-xs text-muted-foreground">{KIND_LABEL[car.kind]}</span>
-            <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
-          </button>
+          // 차를 누르면 그 차의 차계부(같은 화면), 오른쪽 '수정'은 이름·번호판 고치기·삭제
+          <div key={car.id} className="flex min-h-12 w-full items-center border-b text-[15px]">
+            <Link
+              href={`/car-ledger?car=${car.id}`}
+              className="flex min-h-12 min-w-0 flex-1 items-center gap-3 py-2 pl-4 active:bg-muted"
+            >
+              <Icon className="size-5 shrink-0" />
+              <span className="min-w-0 flex-1 truncate">
+                {car.name}
+                {car.plate_no ? <span className="text-muted-foreground"> · {car.plate_no}</span> : null}
+              </span>
+              <span className="shrink-0 text-xs text-muted-foreground">{KIND_LABEL[car.kind]}</span>
+              <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
+            </Link>
+            <button
+              type="button"
+              onClick={() => setEditing({ mode: "edit", car })}
+              className="shrink-0 px-4 py-3 text-sm text-[#9b7fd1] active:bg-muted"
+            >
+              수정
+            </button>
+          </div>
         )
       })}
       <button
