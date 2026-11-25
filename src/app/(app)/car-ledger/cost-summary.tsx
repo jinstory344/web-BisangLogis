@@ -2,7 +2,7 @@ import type { ReactNode } from "react"
 
 import { MonthBadge } from "@/components/list/month-badge"
 import { formatKRW } from "@/lib/money"
-import { formatChangeRate, SUMMARY_TITLE_CLASS, type SummaryComparison } from "@/lib/summary"
+import { formatChangeRate, type SummaryComparison } from "@/lib/summary"
 
 /**
  * 차 비용: 큰 숫자 + 종류별 가로 막대 한 줄 + 범례(색 점 · 이름 · 금액).
