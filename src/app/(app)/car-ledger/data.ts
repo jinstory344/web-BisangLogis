@@ -19,6 +19,8 @@ import { createClient } from "@/lib/supabase/server"
 
 import { fetchAllRows } from "../ledger-data"
 
+import type { HistoryRow } from "./history-tab"
+
 type Supabase = Awaited<ReturnType<typeof createClient>>
 
 export interface CarLedgerMasters {
@@ -182,4 +184,16 @@ export async function loadCarLedgerData(
     amountRows: toAmountRows(expenses, logs),
     cycles: cycles.data ?? [],
   }
+}
+
+/** 11월 이전 정비 기록(엑셀에서 옮긴 것) — 날짜 순서대로. 표가 없거나 못 읽으면 빈 목록. */
+export async function loadServiceHistory(supabase: Supabase, carId: string): Promise<HistoryRow[]> {
+  const { data, error } = await supabase
+    .from("car_service_history")
+    .select("id, service_date, odometer_km, content, amount, vendor")
+    .eq("car_id", carId)
+    .is("deleted_at", null)
+    .order("service_date")
+    .order("sort_order")
+  return error ? [] : (data ?? [])
 }

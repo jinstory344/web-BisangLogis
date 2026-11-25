@@ -8,7 +8,7 @@ import { SummaryMonthNav } from "@/components/list/summary-month-nav"
 import { formatManwon, isLiterKind, kindColor, SERVICE_KIND } from "@/lib/car-ledger/constants"
 import { buildCycleRows, inRange, itemHistory, kindTotals, serviceItemCounts, yearTotal } from "@/lib/car-ledger/stats"
 import { carKindOrder, carTabs, parseCarTab } from "@/lib/car-ledger/tabs"
-import { carLedgerHref, CYCLE_TAB, firstParam, SERVICE_TAB } from "@/lib/car-ledger/url"
+import { carLedgerHref, CYCLE_TAB, firstParam, HISTORY_TAB, SERVICE_TAB } from "@/lib/car-ledger/url"
 import { getCurrentMonthRangeInSeoul, getMonthRange, getTodayInSeoul } from "@/lib/date"
 import { parseAnchorDate } from "@/lib/ledger"
 import { createClient } from "@/lib/supabase/server"
@@ -17,7 +17,8 @@ import { AddButton } from "./add-button"
 import { CarChips } from "./car-chips"
 import { CostSummary } from "./cost-summary"
 import { CycleTable } from "./cycle-table"
-import { loadCarLedgerData, loadCarMasters, primaryBusinessCarId } from "./data"
+import { loadCarLedgerData, loadCarMasters, loadServiceHistory, primaryBusinessCarId } from "./data"
+import { HistoryTab } from "./history-tab"
 import { KindTab } from "./kind-tab"
 import { ServiceTab } from "./service-tab"
 import { TabPanels } from "./tab-panels"
@@ -85,14 +86,17 @@ export default async function CarLedgerPage({
   const car =
     cars.find((row) => row.id === requestedCar) ?? cars.find((row) => row.kind === "business") ?? cars[0]
   const isExpenseCar = car.id === primaryBusinessCarId(cars)
-  const data = await loadCarLedgerData(supabase, car.id, isExpenseCar, month.from.slice(0, 4))
+  const [data, history] = await Promise.all([
+    loadCarLedgerData(supabase, car.id, isExpenseCar, month.from.slice(0, 4)),
+    loadServiceHistory(supabase, car.id),
+  ])
 
   const kindOrder = carKindOrder(
     car.kind,
     masters.logKinds.map((row) => row.name),
     [...new Set(data.entries.map((entry) => entry.kind))]
   )
-  const tabs = carTabs(kindOrder)
+  const tabs = carTabs(kindOrder, history.length > 0)
   const tab = parseCarTab(firstParam(params.tab), tabs)
   const item = tab === SERVICE_TAB ? firstParam(params.item).trim() : ""
 
@@ -136,7 +140,9 @@ export default async function CarLedgerPage({
           panels={Object.fromEntries(
             tabs.map((t) => [
               t.value,
-              t.value === SERVICE_TAB ? (
+              t.value === HISTORY_TAB ? (
+                <HistoryTab key={t.value} rows={history} />
+              ) : t.value === SERVICE_TAB ? (
                 <ServiceTab
                   key={t.value}
                   monthEntries={serviceEntries.filter((entry) => entry.dates.some((date) => inRange(date, month.from, month.to)))}
@@ -173,7 +179,7 @@ export default async function CarLedgerPage({
                 key={t.value}
                 carId={car.id}
                 mode={isExpenseCar ? "expense" : "log"}
-                defaultKind={t.value === SERVICE_TAB || t.value === CYCLE_TAB ? SERVICE_KIND : t.value}
+                defaultKind={t.value === SERVICE_TAB || t.value === CYCLE_TAB || t.value === HISTORY_TAB ? SERVICE_KIND : t.value}
                 returnTo={carLedgerHref({ car: car.id, from: month.from, to: month.to, tab: t.value })}
               />,
             ])

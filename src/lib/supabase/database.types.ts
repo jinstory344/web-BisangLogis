@@ -314,6 +314,17 @@ export type CarItemCycleRow = BaseColumns & {
   sort_order: number
 }
 
+/** 11월 이전 정비 기록 (엑셀에서 옮긴 보기 전용 목록) */
+export type CarServiceHistoryRow = BaseColumns & {
+  car_id: string
+  service_date: string
+  odometer_km: number | null
+  content: string
+  amount: number | null
+  vendor: string | null
+  sort_order: number
+}
+
 type TableDef<Row> = {
   Row: Row
   Insert: Partial<Row>
@@ -339,6 +350,7 @@ export type Database = {
       car_logs: TableDef<CarLogRow>
       car_service_items: TableDef<CarServiceItemRow>
       car_item_cycles: TableDef<CarItemCycleRow>
+      car_service_history: TableDef<CarServiceHistoryRow>
       tax_invoices: TableDef<TaxInvoiceRow>
       tax_invoice_dispatches: TableDef<TaxInvoiceDispatchRow>
       purchase_invoices: TableDef<PurchaseInvoiceRow>

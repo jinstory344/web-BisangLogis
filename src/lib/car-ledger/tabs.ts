@@ -1,5 +1,5 @@
 import { BUSINESS_KINDS, SERVICE_KIND } from "./constants"
-import { CYCLE_TAB, SERVICE_TAB } from "./url"
+import { CYCLE_TAB, HISTORY_TAB, SERVICE_TAB } from "./url"
 
 export interface CarTab {
   value: string
@@ -22,12 +22,13 @@ export function carKindOrder(
   return base
 }
 
-/** 탭: 정비 | 교체 주기 | (정비 외 종류들) */
-export function carTabs(kindOrder: readonly string[]): CarTab[] {
+/** 탭: 정비 | 교체 주기 | (정비 외 종류들) | (11월 이전 — 옮긴 예전 기록이 있을 때만) */
+export function carTabs(kindOrder: readonly string[], hasHistory = false): CarTab[] {
   return [
     { value: SERVICE_TAB, label: "정비" },
     { value: CYCLE_TAB, label: "교체 주기" },
     ...kindOrder.filter((kind) => kind !== SERVICE_KIND).map((kind) => ({ value: kind, label: kind })),
+    ...(hasHistory ? [{ value: HISTORY_TAB, label: "11월 이전" }] : []),
   ]
 }
 

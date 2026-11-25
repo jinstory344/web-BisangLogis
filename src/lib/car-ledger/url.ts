@@ -8,6 +8,8 @@ export const CAR_LEDGER_PATH = "/car-ledger"
 /** 탭 값: 정비 · 교체 주기 · 그 밖의 종류 이름(주유·요소수·세차…) */
 export const SERVICE_TAB = "service"
 export const CYCLE_TAB = "cycle"
+/** 11월 이전 정비 기록(엑셀에서 옮긴 보기 전용 목록) */
+export const HISTORY_TAB = "history"
 
 export interface CarLedgerQuery {
   car?: string | null
