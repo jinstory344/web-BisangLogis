@@ -58,7 +58,7 @@ export function CarListEditor({ cars }: { cars: CarRow[] }) {
             <button
               type="button"
               onClick={() => setEditing({ mode: "edit", car })}
-              className="shrink-0 px-4 py-3 text-sm text-[#9b7fd1] active:bg-muted"
+              className="shrink-0 px-4 py-3 text-sm text-[#2a95a5] active:bg-muted"
             >
               수정
             </button>
@@ -68,7 +68,7 @@ export function CarListEditor({ cars }: { cars: CarRow[] }) {
       <button
         type="button"
         onClick={() => setEditing({ mode: "add" })}
-        className="flex h-12 w-full items-center gap-3 px-4 text-[15px] text-[#9b7fd1] active:bg-muted"
+        className="flex h-12 w-full items-center gap-3 px-4 text-[15px] text-[#2a95a5] active:bg-muted"
       >
         <Plus className="size-5" />
         차 추가

@@ -64,7 +64,7 @@ export interface CarLedgerData {
 }
 
 const EXPENSE_COLUMNS =
-  "id, expense_date, category_minor, amount, installment_group_id, installment_no, installment_months, card_name, liters, odometer_km, vendor, memo"
+  "id, expense_date, category_minor, amount, installment_group_id, installment_no, installment_months, card_name, payment_method, liters, odometer_km, vendor, memo"
 
 /**
  * 차계부 정비 기록을 보여 주는 첫날. 그 전 정비 지출은 지출(가계부)에만 남고 차계부에는 안 보인다

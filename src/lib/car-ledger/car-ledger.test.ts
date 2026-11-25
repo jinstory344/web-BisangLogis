@@ -9,7 +9,9 @@ import {
   unitPrice,
 } from "./constants"
 import {
+  carEntryPaymentLabel,
   carLogsToEntries,
+  entryRowsInRange,
   expensesToCarEntries,
   toAmountRows,
   type CarExpenseInput,
@@ -221,5 +223,27 @@ describe("expenseNoteLine", () => {
       "120L · 615,848km · 환영모터스"
     )
     expect(expenseNoteLine({ ...base, category_minor: "하이패스", memo: "메모" }, ["무시"])).toBe("환영모터스 · 메모")
+  })
+})
+
+describe("entryRowsInRange · carEntryPaymentLabel", () => {
+  it("할부는 그 기간 회차 금액·'할부 n/m', 결제수단은 지출 목록과 같은 글자", () => {
+    const entries = expensesToCarEntries(
+      [
+        expense({ id: "a", expense_date: "2026-10-05", amount: 100001, installment_group_id: "g", installment_no: 1, installment_months: 3, card_name: "신한", payment_method: "CARD" }),
+        expense({ id: "b", expense_date: "2026-11-05", amount: 100000, installment_group_id: "g", installment_no: 2, installment_months: 3, card_name: "신한", payment_method: "CARD" }),
+        expense({ id: "c", expense_date: "2026-12-05", amount: 100000, installment_group_id: "g", installment_no: 3, installment_months: 3, card_name: "신한", payment_method: "CARD" }),
+        expense({ id: "d", expense_date: "2026-11-20", category_minor: "주유비", amount: 50000, payment_method: "TRANSFER" }),
+      ],
+      []
+    )
+    const rows = entryRowsInRange(entries, "2026-11-01", "2026-11-30")
+    expect(rows.map((row) => [row.date, row.amount, row.installmentNo])).toEqual([
+      ["2026-11-20", 50000, null],
+      ["2026-11-05", 100000, 2],
+    ])
+    expect(carEntryPaymentLabel(rows[1].entry, rows[1].installmentNo)).toBe("카드 · 신한 · 할부 2/3")
+    expect(carEntryPaymentLabel(rows[0].entry, null)).toBe("계좌이체")
+    expect(carEntryPaymentLabel(rows[1].entry, null)).toBe("카드 · 신한 · 3개월 할부")
   })
 })

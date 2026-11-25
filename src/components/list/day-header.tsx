@@ -11,6 +11,8 @@ interface DayHeaderProps {
   totalLabel: ReactNode
   /** 목록이 여러 달에 걸쳐 있으면 월도 함께 보여 준다. */
   showMonth?: boolean
+  /** 여러 해에 걸친 목록(차계부 항목 이력 등)이면 해까지: "2025년 3월" */
+  showYear?: boolean
   /** 고정될 위치 — 기본은 위 고정 머리 바로 밑. 그날 목록이 끝날 때까지 붙어 있다. */
   stickyTopClassName?: string
 }
@@ -20,6 +22,7 @@ export function DayHeader({
   date,
   totalLabel,
   showMonth = false,
+  showYear = false,
   stickyTopClassName = UNDER_STICKY_HEAD,
 }: DayHeaderProps) {
   return (
@@ -27,8 +30,9 @@ export function DayHeader({
     <div className={cn("sticky z-10 bg-background", stickyTopClassName)}>
     <div className="flex items-center justify-between bg-muted/50 px-4 py-2">
       <span className="flex items-center gap-1.5">
-        {showMonth ? (
+        {showMonth || showYear ? (
           <span className="text-xs text-muted-foreground">
+            {showYear ? `${date.slice(0, 4)}년 ` : ""}
             {Number(date.slice(5, 7))}월
           </span>
         ) : null}

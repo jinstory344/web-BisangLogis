@@ -32,7 +32,7 @@ export const TRASH_KIND_TAG: Record<TrashKind, string> = {
   vehicle: "bg-[#6f93cf] text-[#0f1a2c]",
   client: "bg-[#6aad83] text-[#0f2418]",
   memo: "bg-[#a1a1aa] text-[#18181b]",
-  car_log: "bg-[#9b7fd1] text-[#1a1230]",
+  car_log: "bg-[#2a95a5] text-white",
 }
 
 /** 지운 지 이만큼 지나면 저절로 완전 삭제 (DB pg_cron 'bisang-trash-purge'와 같은 값) */

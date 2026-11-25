@@ -4,11 +4,12 @@ import { Settings } from "lucide-react"
 
 import { SearchButton } from "@/components/layout/search-button"
 import { PageTitle } from "@/components/layout/page-title"
+import { StickyHead } from "@/components/layout/sticky-head"
 import { ListPeriodView } from "@/components/list/list-period-view"
 import { ListViewTabs } from "@/components/list/list-view-menu"
 import { MonthSwipe } from "@/components/list/month-swipe"
 import { SummaryMonthPicker } from "@/components/list/summary-month-picker"
-import { isLiterKind, kindColor, SERVICE_KIND } from "@/lib/car-ledger/constants"
+import { kindColor, SERVICE_KIND } from "@/lib/car-ledger/constants"
 import type { CarRow } from "@/lib/supabase/database.types"
 import { buildCycleRows, inRange, itemHistory, kindTotals, serviceItemCounts } from "@/lib/car-ledger/stats"
 import { carKindOrder, carTabs, parseCarTab } from "@/lib/car-ledger/tabs"
@@ -74,19 +75,28 @@ export default async function CarLedgerPage({
   const supabase = await createClient()
   const masters = await loadCarMasters(supabase)
 
-  const head = (
-    <div className="sticky top-0 z-30 -mx-4 bg-background px-4 pt-6 md:static md:mx-0 md:px-0 md:pt-0">
+  const headContent = (
+    <>
       <header className="grid h-10 grid-cols-[2.5rem_1fr_2.5rem] items-center">
         <SearchButton />
-        <PageTitle title="차계부" barClassName="bg-[#9b7fd1]" />
+        <PageTitle title="차계부" barClassName="bg-[#2a95a5]" />
         {/* 다른 화면처럼 오른쪽 끝 달력 아이콘으로 달 고르기 (월별은 해, 연별은 없음). 이전·다음은 쓸어 넘기기 */}
         <SummaryMonthPicker from={month.from} to={month.to} />
       </header>
       <div className="mt-3">
-        <ListViewTabs accentClassName="bg-[#9b7fd1]" />
+        <ListViewTabs accentClassName="bg-[#2a95a5]" />
       </div>
-    </div>
+    </>
   )
+  const headClassName = "sticky top-0 z-30 -mx-4 bg-background px-4 pt-6 md:static md:mx-0 md:px-0 md:pt-0"
+  // 일일(탭) 화면은 아래 비용 박스·탭 줄 묶음이 높이를 재므로 그냥 고정, 달력 등은 머리 높이를 재서
+  // 그날 내역의 날짜 줄이 머리 바로 밑에 붙게 한다
+  const head =
+    view === "day" ? (
+      <div className={headClassName}>{headContent}</div>
+    ) : (
+      <StickyHead className={headClassName}>{headContent}</StickyHead>
+    )
 
   if (masters.error || masters.cars.length === 0) {
     return (
@@ -179,9 +189,9 @@ export default async function CarLedgerPage({
               t.value === SERVICE_TAB ? (
                 <ServiceTab
                   key={t.value}
-                  monthEntries={serviceEntries.filter((entry) => entry.dates.some((date) => inRange(date, month.from, month.to)))}
+                  monthEntries={serviceEntries}
+                  month={month}
                   history={item ? itemHistory(serviceEntries, item) : null}
-                  today={today}
                 />
               ) : t.value === CYCLE_TAB ? (
                 <CycleTable
@@ -195,13 +205,8 @@ export default async function CarLedgerPage({
                 <KindTab
                   key={t.value}
                   kind={t.value}
-                  entries={data.entries.filter(
-                    (entry) => entry.kind === t.value && inRange(entry.date, month.from, month.to)
-                  )}
+                  entries={data.entries.filter((entry) => entry.kind === t.value)}
                   month={month}
-                  periodLabel={periodLabel}
-                  showLiters={isLiterKind(t.value)}
-                  today={today}
                 />
               ),
             ])

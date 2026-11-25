@@ -37,9 +37,9 @@ export function CostSummary({
           {action}
         </div>
       ) : null}
-      {/* HOME처럼 동그란 달 배지(차계부 보라) ↔ 금액 맨 오른쪽 */}
+      {/* HOME처럼 동그란 달 배지(차계부 청록) ↔ 금액 맨 오른쪽 */}
       <div className="mt-1 flex items-center justify-between gap-3">
-        <MonthBadge label={monthLabel} className="mr-0 h-7 bg-[#9b7fd1] px-3 text-sm text-white" />
+        <MonthBadge label={monthLabel} className="mr-0 h-7 bg-[#2a95a5] px-3 text-sm text-white" />
         <p className="text-2xl font-bold tracking-tight tabular-nums">{formatKRW(total)}</p>
       </div>
       {previous ? (
