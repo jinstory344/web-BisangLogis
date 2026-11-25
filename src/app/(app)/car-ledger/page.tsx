@@ -4,7 +4,6 @@ import { Settings } from "lucide-react"
 
 import { SearchButton } from "@/components/layout/search-button"
 import { PageTitle } from "@/components/layout/page-title"
-import { MonthSwipe } from "@/components/list/month-swipe"
 import { SummaryMonthNav } from "@/components/list/summary-month-nav"
 import { formatManwon, isLiterKind, kindColor, SERVICE_KIND } from "@/lib/car-ledger/constants"
 import { buildCycleRows, inRange, itemHistory, kindTotals, serviceItemCounts, yearTotal } from "@/lib/car-ledger/stats"
@@ -21,7 +20,7 @@ import { CycleTable } from "./cycle-table"
 import { loadCarLedgerData, loadCarMasters, primaryBusinessCarId } from "./data"
 import { KindTab } from "./kind-tab"
 import { ServiceTab } from "./service-tab"
-import { TabsNav } from "./tabs-nav"
+import { TabPanels } from "./tab-panels"
 
 export const metadata: Metadata = {
   title: "차계부 · 비상로지스",
@@ -86,7 +85,7 @@ export default async function CarLedgerPage({
   const car =
     cars.find((row) => row.id === requestedCar) ?? cars.find((row) => row.kind === "business") ?? cars[0]
   const isExpenseCar = car.id === primaryBusinessCarId(cars)
-  const data = await loadCarLedgerData(supabase, car.id, isExpenseCar)
+  const data = await loadCarLedgerData(supabase, car.id, isExpenseCar, month.from.slice(0, 4))
 
   const kindOrder = carKindOrder(
     car.kind,
@@ -99,7 +98,6 @@ export default async function CarLedgerPage({
 
   const monthTotals = kindTotals(data.amountRows, month.from, month.to, kindOrder)
   const year = month.from.slice(0, 4)
-  const currentHref = carLedgerHref({ car: car.id, from: month.from, to: month.to, tab, item })
   const serviceEntries = data.entries.filter((entry) => entry.kind === SERVICE_KIND)
 
   return (
@@ -122,50 +120,66 @@ export default async function CarLedgerPage({
           </p>
         </div>
 
-        <MonthSwipe className="flex flex-col gap-3">
-          <CostSummary
-            monthLabel={`${Number(month.from.slice(5, 7))}월`}
-            total={monthTotals.total}
-            byKind={monthTotals.byKind.map((row) => ({
-              ...row,
-              color: kindColor(kindOrder.indexOf(row.kind)),
-            }))}
-          />
-
-          <TabsNav tabs={tabs} current={tab} car={car.id} from={month.from} to={month.to} />
-
-          {tab === SERVICE_TAB ? (
-            <ServiceTab
-              monthEntries={serviceEntries.filter((entry) => inRange(entry.date, month.from, month.to))}
-              counts={serviceItemCounts(serviceEntries)}
-              history={item ? itemHistory(serviceEntries, item) : null}
-              today={today}
+        <TabPanels
+          tabs={tabs}
+          initial={tab}
+          before={
+            <CostSummary
+              monthLabel={`${Number(month.from.slice(5, 7))}월`}
+              total={monthTotals.total}
+              byKind={monthTotals.byKind.map((row) => ({
+                ...row,
+                color: kindColor(kindOrder.indexOf(row.kind)),
+              }))}
             />
-          ) : tab === CYCLE_TAB ? (
-            <CycleTable
-              carId={car.id}
-              rows={buildCycleRows(data.cycles, serviceEntries)}
-              itemNames={masters.serviceItems.map((row) => row.name)}
-              today={today}
-            />
-          ) : (
-            <KindTab
-              kind={tab}
-              entries={data.entries.filter((entry) => entry.kind === tab && inRange(entry.date, month.from, month.to))}
-              month={month}
-              showLiters={isLiterKind(tab)}
-              today={today}
-            />
+          }
+          panels={Object.fromEntries(
+            tabs.map((t) => [
+              t.value,
+              t.value === SERVICE_TAB ? (
+                <ServiceTab
+                  key={t.value}
+                  monthEntries={serviceEntries.filter((entry) => inRange(entry.date, month.from, month.to))}
+                  counts={serviceItemCounts(serviceEntries)}
+                  history={item ? itemHistory(serviceEntries, item) : null}
+                  today={today}
+                />
+              ) : t.value === CYCLE_TAB ? (
+                <CycleTable
+                  key={t.value}
+                  carId={car.id}
+                  rows={buildCycleRows(data.cycles, serviceEntries)}
+                  itemNames={masters.serviceItems.map((row) => row.name)}
+                  today={today}
+                />
+              ) : (
+                <KindTab
+                  key={t.value}
+                  kind={t.value}
+                  entries={data.entries.filter(
+                    (entry) => entry.kind === t.value && inRange(entry.date, month.from, month.to)
+                  )}
+                  month={month}
+                  showLiters={isLiterKind(t.value)}
+                  today={today}
+                />
+              ),
+            ])
           )}
-        </MonthSwipe>
+          addButtons={Object.fromEntries(
+            tabs.map((t) => [
+              t.value,
+              <AddButton
+                key={t.value}
+                carId={car.id}
+                mode={isExpenseCar ? "expense" : "log"}
+                defaultKind={t.value === SERVICE_TAB || t.value === CYCLE_TAB ? SERVICE_KIND : t.value}
+                returnTo={carLedgerHref({ car: car.id, from: month.from, to: month.to, tab: t.value })}
+              />,
+            ])
+          )}
+        />
       </div>
-
-      <AddButton
-        carId={car.id}
-        mode={isExpenseCar ? "expense" : "log"}
-        defaultKind={tab === SERVICE_TAB || tab === CYCLE_TAB ? SERVICE_KIND : tab}
-        returnTo={currentHref}
-      />
     </div>
   )
 }

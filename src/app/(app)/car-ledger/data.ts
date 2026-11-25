@@ -1,6 +1,7 @@
 import {
   CAR_EXPENSE_MAJOR,
   CAR_EXPENSE_MINORS,
+  CAR_SERVICE_MINOR,
 } from "@/lib/car-ledger/constants"
 import {
   carLogsToEntries,
@@ -63,23 +64,43 @@ const EXPENSE_COLUMNS =
   "id, expense_date, category_minor, amount, installment_group_id, installment_no, installment_months, card_name, liters, odometer_km, vendor, memo"
 
 /**
- * 한 차의 차계부 자료 전부: 지출(첫 업무용 차만) + car_logs + 정비 항목 줄 + 교체 주기 표.
- * 정비 항목 줄은 부모(지출·기록)가 지워지지 않은 것만 남긴다(car_service_items엔 deleted_at이 없음).
+ * 차계부 정비 기록을 보여 주는 첫날. 그 전 정비 지출은 지출(가계부)에만 남고 차계부에는 안 보인다
+ * (사용자 결정 2026-11-25: 예전 정비 기록은 따로 받은 엑셀 목록으로 본다).
+ */
+export const SERVICE_LEDGER_START = "2026-11-01"
+
+/**
+ * 한 차의 차계부 자료: 지출(첫 업무용 차만 — 정비는 SERVICE_LEDGER_START부터, 주유·요소수는 고른 해만)
+ * + car_logs + 그 기록들에 붙은 정비 항목 줄 + 교체 주기 표.
+ * 탭·달을 옮길 때마다 다시 읽으므로 필요한 만큼만 읽는다(예전엔 2022년부터 전부 읽어 느렸음).
  */
 export async function loadCarLedgerData(
   supabase: Supabase,
   carId: string,
-  withExpenses: boolean
+  withExpenses: boolean,
+  year: string
 ): Promise<CarLedgerData> {
-  const [expenses, logs, serviceItems, cycles] = await Promise.all([
+  const expenseQuery = () =>
+    supabase.from("expenses").select(EXPENSE_COLUMNS).is("deleted_at", null).eq("category_major", CAR_EXPENSE_MAJOR)
+  const otherMinors = CAR_EXPENSE_MINORS.filter((minor) => minor !== CAR_SERVICE_MINOR)
+
+  const [serviceExpenses, otherExpenses, logs, cycles] = await Promise.all([
     withExpenses
       ? fetchAllRows<CarExpenseInput>((a, b) =>
-          supabase
-            .from("expenses")
-            .select(EXPENSE_COLUMNS)
-            .is("deleted_at", null)
-            .eq("category_major", CAR_EXPENSE_MAJOR)
-            .in("category_minor", CAR_EXPENSE_MINORS)
+          expenseQuery()
+            .eq("category_minor", CAR_SERVICE_MINOR)
+            .gte("expense_date", SERVICE_LEDGER_START)
+            .order("expense_date")
+            .order("id")
+            .range(a, b)
+        )
+      : Promise.resolve([] as CarExpenseInput[]),
+    withExpenses
+      ? fetchAllRows<CarExpenseInput>((a, b) =>
+          expenseQuery()
+            .in("category_minor", otherMinors)
+            .gte("expense_date", `${year}-01-01`)
+            .lte("expense_date", `${year}-12-31`)
             .order("expense_date")
             .order("id")
             .range(a, b)
@@ -95,13 +116,6 @@ export async function loadCarLedgerData(
         .order("id")
         .range(a, b)
     ),
-    fetchAllRows<ServiceItemInput>((a, b) =>
-      supabase
-        .from("car_service_items")
-        .select("expense_id, car_log_id, item, amount, sort_order")
-        .order("id")
-        .range(a, b)
-    ),
     supabase
       .from("car_item_cycles")
       .select("id, item, cycle_km, manual_date, manual_km, sort_order")
@@ -110,12 +124,33 @@ export async function loadCarLedgerData(
       .order("sort_order"),
   ])
 
-  // 살아 있는 부모에 붙은 줄만
-  const expenseIds = new Set(expenses.map((row) => row.id))
-  const logIds = new Set(logs.map((row) => row.id))
-  const expenseItems = serviceItems.filter((row) => row.expense_id !== null && expenseIds.has(row.expense_id))
-  const logItems = serviceItems.filter((row) => row.car_log_id !== null && logIds.has(row.car_log_id))
+  // 정비 항목 줄은 위에서 읽은 기록(살아 있는 부모)에 붙은 것만 읽는다
+  const expenseIds = serviceExpenses.map((row) => row.id)
+  const logIds = logs.map((row) => row.id)
+  const [expenseItems, logItems] = await Promise.all([
+    expenseIds.length
+      ? fetchAllRows<ServiceItemInput>((a, b) =>
+          supabase
+            .from("car_service_items")
+            .select("expense_id, car_log_id, item, amount, sort_order")
+            .in("expense_id", expenseIds)
+            .order("id")
+            .range(a, b)
+        )
+      : Promise.resolve([] as ServiceItemInput[]),
+    logIds.length
+      ? fetchAllRows<ServiceItemInput>((a, b) =>
+          supabase
+            .from("car_service_items")
+            .select("expense_id, car_log_id, item, amount, sort_order")
+            .in("car_log_id", logIds)
+            .order("id")
+            .range(a, b)
+        )
+      : Promise.resolve([] as ServiceItemInput[]),
+  ])
 
+  const expenses = [...serviceExpenses, ...otherExpenses]
   return {
     entries: [...expensesToCarEntries(expenses, expenseItems), ...carLogsToEntries(logs, logItems)],
     amountRows: toAmountRows(expenses, logs),
