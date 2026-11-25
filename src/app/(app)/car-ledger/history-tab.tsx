@@ -40,7 +40,10 @@ export function HistoryTab({ rows }: { rows: readonly HistoryRow[] }) {
   }
   const total = rows.reduce((sum, row) => sum + (row.amount ?? 0), 0)
   // 최근 해가 맨 위, 가장 최근 해만 펼쳐 두고 나머지는 접어 둔다(해 줄을 눌러 펴고 접기)
-  const yearList = [...years].sort((a, b) => b[0].localeCompare(a[0]))
+  const yearList = [...years]
+    .sort((a, b) => b[0].localeCompare(a[0]))
+    // 한 해 안에서도 최근 날짜가 위 (같은 날은 엑셀 뒤쪽 줄이 위)
+    .map(([year, list]) => [year, [...list].reverse()] as const)
 
   return (
     <div className="flex flex-col gap-4">
