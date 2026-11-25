@@ -1,12 +1,5 @@
-import Link from "next/link"
 import type { ReactNode } from "react"
 
-import {
-  CalendarAmount,
-  CalendarDayNumber,
-  CalendarGrid,
-  calendarCellClass,
-} from "@/components/ledger/calendar-grid"
 import { bucketLabel } from "@/components/ledger/ledger-range-list"
 import { PeriodRangeList, type PeriodRangeItem } from "@/components/ledger/period-range-list"
 import {
@@ -20,17 +13,16 @@ import {
   type PeriodSums,
 } from "@/lib/period-view"
 
-export interface CalendarLine {
-  /** 칸이 좁아 "원" 없이 숫자만 (예: "125,000" / "3건") */
-  text: string
-  className?: string
-}
+import type { CalendarLine } from "./day-pick-calendar"
+
+export type { CalendarLine }
 
 export type RangeRowView = Pick<PeriodRangeItem, "value" | "valueClassName" | "details" | "countText">
 
 /**
  * 매출·지출·배차·차계부의 달력·주별·월별·연별 보기 본문 (HOME 장부와 같은 모양).
- * - 달력: 날짜 칸마다 그날 합계, 칸을 누르면 그날만 일일 목록. 달력 아래에 그 달 집계 카드.
+ * - 달력: 날짜 칸마다 그날 합계. 칸 줄은 여기서 만들고, 달력(날짜 고르기 + 그날 내역)은 renderCalendar가 그린다
+ *   (HOME 달력처럼 칸을 누르면 다른 화면으로 가지 않고 바로 아래에 그날 내역).
  * - 주별: 그 달의 주차마다 합계 줄, 누르면 그 주 일일 목록.
  * - 월별: 위에 그 해 집계 카드 + 1~12월 줄, 누르면 그 달 일일 목록.
  * - 연별: 위에 전체 기간 집계 카드 + 해마다 줄, 누르면 그 해 월별.
@@ -47,6 +39,7 @@ export function ListPeriodView<K extends string>({
   cellLines,
   rowView,
   summaryCard,
+  renderCalendar,
 }: {
   view: Exclude<ListView, "day">
   anchor: string
@@ -62,51 +55,16 @@ export function ListPeriodView<K extends string>({
   rowView: (sums: PeriodSums<K>) => RangeRowView
   /** 집계 카드 (달력: 그 달, 월별: 그 해, 연별: 전체). 주별에는 없음 */
   summaryCard?: ReactNode
+  /** 달력 보기: 날짜 → 칸 줄을 받아 날짜 고르기 달력(DayPickCalendar를 쓰는 화면별 부품)을 그린다 */
+  renderCalendar?: (cells: Record<string, CalendarLine[]>) => ReactNode
 }) {
   if (view === "calendar") {
     const byDate = buildDailySums(rows, keys)
+    const cells: Record<string, CalendarLine[]> = {}
+    for (const [date, sums] of Object.entries(byDate)) cells[date] = cellLines(sums)
     return (
       <div className="flex flex-col gap-4">
-        <div className="flex flex-col">
-          <CalendarGrid
-            anchor={anchor}
-            today={today}
-            renderCell={(cell) => {
-              const sums = cell.inMonth ? byDate[cell.date] : undefined
-              const label = `${Number(cell.date.slice(5, 7))}월 ${cell.day}일`
-              const content = (
-                <>
-                  <CalendarDayNumber cell={cell} />
-                  {sums ? (
-                    <span className="flex flex-col items-end text-right">
-                      {cellLines(sums).map((line, index) => (
-                        <CalendarAmount key={index} text={line.text} className={line.className} />
-                      ))}
-                    </span>
-                  ) : null}
-                </>
-              )
-              if (!cell.inMonth) {
-                return (
-                  <span key={cell.date} aria-hidden className={calendarCellClass(cell)}>
-                    {content}
-                  </span>
-                )
-              }
-              return (
-                <Link
-                  key={cell.date}
-                  href={listViewHref(pathname, params, bucketTarget(view, { from: cell.date, to: cell.date }))}
-                  prefetch={false}
-                  aria-label={label}
-                  className={`${calendarCellClass(cell)} active:bg-muted md:hover:bg-muted/50`}
-                >
-                  {content}
-                </Link>
-              )
-            }}
-          />
-        </div>
+        {renderCalendar?.(cells)}
         {summaryCard}
       </div>
     )

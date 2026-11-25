@@ -297,7 +297,7 @@ async function CarPeriodBody({
   const current = rows.filter((row) => inRange(row.date, range.from, range.to))
 
   if (view === "calendar") {
-    // 달력: 날짜를 누르면 바로 아래에 그날 내역(처음엔 그 달 전체) — 다른 화면으로 가지 않는다
+    // 달력: 날짜를 누르면 바로 아래에 그날 내역(처음엔 이번 달이면 오늘) — 다른 화면으로 가지 않는다
     const data = await loadCarLedgerData(supabase, car.id, isExpenseCar, range.from.slice(0, 4))
     const daySums: Record<string, number> = {}
     for (const row of current) daySums[row.date] = (daySums[row.date] ?? 0) + row.amount

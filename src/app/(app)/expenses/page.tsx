@@ -29,11 +29,15 @@ import { filterExpenses, summarizeExpenses } from "@/lib/expense-list"
 
 import { fetchAllRows } from "../ledger-data"
 
+import { ExpenseCalendar } from "./expense-calendar"
 import { ExpenseList } from "./expense-list"
 import { ExpenseMobileControls } from "./expense-mobile-controls"
 import { getExpenseCategories } from "./categories"
 
 const PAGE_SIZE = 100 // 100건까지는 페이지 넘기기 없이
+
+/** 주별·월별·연별 합계에 쓰는 지출 금액 칸 */
+type ExpenseAmountRow = Pick<ExpenseRow, "expense_date" | "category_major" | "category_minor" | "amount">
 
 interface ExpenseSearchParams {
   view?: string
@@ -181,7 +185,7 @@ async function ExpensesBody({ params }: { params: ExpenseSearchParams }) {
 }
 
 /**
- * 달력·주별·월별·연별 보기: 금액 줄만 읽어(목록 전체 X) 칸별 합계와 집계 카드를 만든다.
+ * 달력·주별·월별·연별 보기: 칸별 합계를 만든다(달력은 그 달 지출 전체, 나머지는 금액 줄만).
  * 거르기(대분류·소분류)는 모든 보기에 그대로 적용된다. 할부는 회차 줄 금액(목록과 같은 기준).
  */
 async function ExpensesPeriodBody({
@@ -201,23 +205,43 @@ async function ExpensesPeriodBody({
   const categoryMinor = params.category_minor ?? ""
 
   const supabase = await createClient()
-  let rows
-  let categories
-  try {
-    ;[rows, { tree: categories }] = await Promise.all([
-      fetchAllRows((a, b) =>
+  // 달력 보기는 그날 내역을 바로 펼치도록 그 달 지출 전체(일일 목록과 같은 칸)를 한 번에 읽는다.
+  // 주별·월별·연별은 기간이 길어 금액 칸만.
+  const loadRows = async (): Promise<{ rows: ExpenseAmountRow[]; full: ExpenseRow[] | null }> => {
+    if (view === "calendar") {
+      const full = (await fetchAllRows((a, b) =>
         supabase
           .from("expenses")
-          .select("expense_date, category_major, category_minor, amount")
+          .select("*")
           .is("deleted_at", null)
           .gte("expense_date", range.from)
           .lte("expense_date", range.to)
+          // 그날 안에서는 일일 목록처럼 최근 등록 먼저
           .order("expense_date")
+          .order("created_at", { ascending: false })
           .order("id")
           .range(a, b)
-      ),
-      getExpenseCategories(),
-    ])
+      )) as ExpenseRow[]
+      return { rows: full, full }
+    }
+    const rows = await fetchAllRows((a, b) =>
+      supabase
+        .from("expenses")
+        .select("expense_date, category_major, category_minor, amount")
+        .is("deleted_at", null)
+        .gte("expense_date", range.from)
+        .lte("expense_date", range.to)
+        .order("expense_date")
+        .order("id")
+        .range(a, b)
+    )
+    return { rows, full: null }
+  }
+
+  let loaded
+  let categories
+  try {
+    ;[loaded, { tree: categories }] = await Promise.all([loadRows(), getExpenseCategories()])
   } catch (error) {
     return (
       <p className="text-sm text-destructive">
@@ -225,9 +249,16 @@ async function ExpensesPeriodBody({
       </p>
     )
   }
+  const { rows, full } = loaded
 
   const current = rowsInPeriod(rows, (row) => row.expense_date, range.from, range.to)
   const shown = filterExpenses(current, categoryMajor, categoryMinor)
+  const shownFull = full ? filterExpenses(full, categoryMajor, categoryMinor) : []
+  // 정비 줄의 항목 이름 (비고 앞에 붙인다) — 달력에서 펼치는 그날 내역용
+  const serviceItemNames: Record<string, string[]> =
+    shownFull.length > 0
+      ? Object.fromEntries(await loadServiceItemNamesForExpenses(supabase, shownFull))
+      : {}
 
 
   return (
@@ -254,6 +285,15 @@ async function ExpensesPeriodBody({
         rows={expenseMetricRows(shown)}
         keys={AMOUNT_METRIC_KEYS}
         cellLines={({ sums }) => [{ text: sums.amount.toLocaleString("ko-KR"), className: EXPENSE_TEXT_CLASS }]}
+        renderCalendar={(cells) => (
+          <ExpenseCalendar
+            anchor={anchor}
+            today={today}
+            cells={cells}
+            expenses={shownFull}
+            serviceItemNames={serviceItemNames}
+          />
+        )}
         rowView={({ count, sums }) => ({
           countText: `${count}건`,
           value: formatKRW(sums.amount),

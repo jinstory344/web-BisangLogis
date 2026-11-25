@@ -28,11 +28,18 @@ import { pickStatusTotals, summarizeByPaymentStatus } from "@/lib/sales-list"
 
 import { fetchAllRows } from "../ledger-data"
 
+import { SalesCalendar } from "./sales-calendar"
 import { SalesList } from "./sales-list"
 import { SalesMobileControls } from "./sales-mobile-controls"
 import { getSaleSources } from "./sources"
 
 const PAGE_SIZE = 100 // 100건까지는 페이지 넘기기 없이
+
+/** 주별·월별·연별 합계에 쓰는 매출 금액 칸 */
+type SaleAmountRow = Pick<
+  SaleRow,
+  "sale_date" | "source_major" | "source_minor" | "supply_amount" | "total_amount" | "payment_status"
+>
 
 interface SalesSearchParams {
   view?: string
@@ -201,7 +208,7 @@ async function SalesBody({ params }: { params: SalesSearchParams }) {
 }
 
 /**
- * 달력·주별·월별·연별 보기: 금액 줄만 읽어(목록 전체 X) 칸별 합계와 집계 카드를 만든다.
+ * 달력·주별·월별·연별 보기: 칸별 합계를 만든다(달력은 그 달 매출 전체, 나머지는 금액 줄만).
  * 거르기(출처·하위분류·지불방법·입금 상태)는 모든 보기에 그대로 적용된다.
  */
 async function SalesPeriodBody({
@@ -223,24 +230,44 @@ async function SalesPeriodBody({
   const paymentMethod = params.payment_method ?? ""
 
   const supabase = await createClient()
-  let rows
-  let sourceTree
-  try {
-    ;[rows, { tree: sourceTree }] = await Promise.all([
-      fetchAllRows((a, b) => {
+  // 달력 보기는 그날 내역을 바로 펼치도록 그 달 매출 전체(일일 목록과 같은 칸)를 한 번에 읽는다.
+  // 주별·월별·연별은 기간이 길어 금액 칸만.
+  const loadRows = async (): Promise<{ rows: SaleAmountRow[]; full: SaleRow[] | null }> => {
+    if (view === "calendar") {
+      const full = await fetchAllRows((a, b) => {
         let query = supabase
           .from("sales")
-          .select("sale_date, source_major, source_minor, supply_amount, total_amount, payment_status")
+          .select("*")
           .is("deleted_at", null)
           .gte("sale_date", range.from)
           .lte("sale_date", range.to)
         if (sourceMajor) query = query.eq("source_major", sourceMajor)
         if (sourceSub) query = query.eq("source_sub", sourceSub)
         if (paymentMethod) query = query.eq("payment_method", paymentMethod as PaymentMethod)
-        return query.order("sale_date").order("id").range(a, b)
-      }),
-      getSaleSources(),
-    ])
+        // 그날 안에서는 일일 목록처럼 최근 등록 먼저
+        return query.order("sale_date").order("created_at", { ascending: false }).order("id").range(a, b)
+      })
+      return { rows: full, full: full as SaleRow[] }
+    }
+    const rows = await fetchAllRows((a, b) => {
+      let query = supabase
+        .from("sales")
+        .select("sale_date, source_major, source_minor, supply_amount, total_amount, payment_status")
+        .is("deleted_at", null)
+        .gte("sale_date", range.from)
+        .lte("sale_date", range.to)
+      if (sourceMajor) query = query.eq("source_major", sourceMajor)
+      if (sourceSub) query = query.eq("source_sub", sourceSub)
+      if (paymentMethod) query = query.eq("payment_method", paymentMethod as PaymentMethod)
+      return query.order("sale_date").order("id").range(a, b)
+    })
+    return { rows, full: null }
+  }
+
+  let loaded
+  let sourceTree
+  try {
+    ;[loaded, { tree: sourceTree }] = await Promise.all([loadRows(), getSaleSources()])
   } catch (error) {
     return (
       <p className="text-sm text-destructive">
@@ -248,11 +275,13 @@ async function SalesPeriodBody({
       </p>
     )
   }
+  const { rows, full } = loaded
 
   const byStatus = (row: { payment_status: PaymentStatus }) =>
     !paymentStatus || row.payment_status === paymentStatus
   const current = rowsInPeriod(rows, (row) => row.sale_date, range.from, range.to)
   const shown = current.filter(byStatus)
+  const shownFull = full ? full.filter(byStatus) : []
 
 
   return (
@@ -286,6 +315,9 @@ async function SalesPeriodBody({
             ? [{ text: sums.unpaid.toLocaleString("ko-KR"), className: "text-destructive" }]
             : []),
         ]}
+        renderCalendar={(cells) => (
+          <SalesCalendar anchor={anchor} today={today} cells={cells} sales={shownFull} />
+        )}
         rowView={({ count, sums }) => ({
           countText: `${count}건`,
           value: formatKRW(sums.supply),

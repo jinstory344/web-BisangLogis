@@ -30,10 +30,17 @@ import {
 
 import { fetchAllRows } from "../ledger-data"
 
+import { DispatchCalendar } from "./dispatch-calendar"
 import { DispatchList } from "./dispatch-list"
 import { DispatchMobileControls } from "./dispatch-mobile-controls"
 
 const PAGE_SIZE = 200 // 한 달 배차가 많아 200건까지는 페이지 넘기기 없이
+
+/** 주별·월별·연별 합계에 쓰는 배차 금액 칸 */
+type DispatchAmountRow = Pick<
+  DispatchRow,
+  "dispatch_date" | "client_id" | "plate_no_snapshot" | "driver_name_snapshot" | "freight_amount" | "fee_amount"
+>
 
 interface DispatchSearchParams {
   view?: string
@@ -175,7 +182,7 @@ async function DispatchesBody({ params }: { params: DispatchSearchParams }) {
 }
 
 /**
- * 달력·주별·월별·연별 보기: 금액 줄만 읽어(목록 전체 X) 칸별 건수·운임·수수료와 집계 카드를 만든다.
+ * 달력·주별·월별·연별 보기: 칸별 건수·운임·수수료를 만든다(달력은 그 달 배차 전체, 나머지는 금액 줄만).
  * 거래처 거르기는 모든 보기에 그대로 적용된다(기간 직접 지정은 일일 보기에만).
  */
 async function DispatchesPeriodBody({
@@ -195,21 +202,44 @@ async function DispatchesPeriodBody({
   const clientName = params.client_name ?? ""
 
   const supabase = await createClient()
-  let rows
-  let clientRows
-  try {
-    ;[rows, { data: clientRows }] = await Promise.all([
-      fetchAllRows((a, b) =>
+  // 달력 보기는 그날 내역을 바로 펼치도록 그 달 배차 전체(일일 목록과 같은 칸)를 한 번에 읽는다.
+  // 주별·월별·연별은 기간이 길어 금액 칸만.
+  const loadRows = async (): Promise<{ rows: DispatchAmountRow[]; full: DispatchRow[] | null }> => {
+    if (view === "calendar") {
+      const full = (await fetchAllRows((a, b) =>
         supabase
           .from("dispatches")
-          .select("dispatch_date, client_id, plate_no_snapshot, driver_name_snapshot, freight_amount, fee_amount")
+          .select("*")
           .is("deleted_at", null)
           .gte("dispatch_date", range.from)
           .lte("dispatch_date", range.to)
+          // 그날 안에서는 일일 목록처럼 최근 등록 먼저
           .order("dispatch_date")
+          .order("created_at", { ascending: false })
           .order("id")
           .range(a, b)
-      ),
+      )) as DispatchRow[]
+      return { rows: full, full }
+    }
+    const rows = await fetchAllRows((a, b) =>
+      supabase
+        .from("dispatches")
+        .select("dispatch_date, client_id, plate_no_snapshot, driver_name_snapshot, freight_amount, fee_amount")
+        .is("deleted_at", null)
+        .gte("dispatch_date", range.from)
+        .lte("dispatch_date", range.to)
+        .order("dispatch_date")
+        .order("id")
+        .range(a, b)
+    )
+    return { rows, full: null }
+  }
+
+  let loaded
+  let clientRows
+  try {
+    ;[loaded, { data: clientRows }] = await Promise.all([
+      loadRows(),
       supabase.from("clients").select("id, name"),
     ])
   } catch (error) {
@@ -219,12 +249,14 @@ async function DispatchesPeriodBody({
       </p>
     )
   }
+  const { rows, full } = loaded
 
   const clientNameMap: Record<string, string> = Object.fromEntries(
     (clientRows ?? []).map((c) => [c.id, c.name])
   )
   const current = rowsInPeriod(rows, (row) => row.dispatch_date, range.from, range.to)
   const shown = filterDispatchesByClient(current, clientId)
+  const shownFull = full ? filterDispatchesByClient(full, clientId) : []
 
 
   return (
@@ -253,6 +285,15 @@ async function DispatchesPeriodBody({
           { text: `${count}건`, className: "text-muted-foreground" },
           ...(sums.freight > 0 ? [{ text: sums.freight.toLocaleString("ko-KR") }] : []),
         ]}
+        renderCalendar={(cells) => (
+          <DispatchCalendar
+            anchor={anchor}
+            today={today}
+            cells={cells}
+            dispatches={shownFull}
+            clientNameMap={clientNameMap}
+          />
+        )}
         rowView={({ count, sums }) => ({
           countText: `${count}건`,
           value: formatKRW(sums.freight),

@@ -28,6 +28,8 @@ import { cn } from "@/lib/utils"
 
 interface SalesMobileListProps {
   sales: SaleRow[]
+  /** false면 "선택" 줄을 숨긴다 (기본 true) */
+  selectable?: boolean
   selectMode: boolean
   onSelectModeChange: (selectMode: boolean) => void
   selected: ReadonlySet<string>
@@ -61,6 +63,7 @@ function PaidLabel({ sale }: { sale: SaleRow }) {
  */
 export function SalesMobileList({
   sales,
+  selectable = true,
   selectMode,
   onSelectModeChange,
   selected,
@@ -87,6 +90,7 @@ export function SalesMobileList({
 
   return (
     <div className="flex flex-col gap-3">
+      {selectable ? (
       <div className="flex min-h-9 items-center justify-between">
         {selectMode ? (
           <>
@@ -119,6 +123,7 @@ export function SalesMobileList({
           </>
         )}
       </div>
+      ) : null}
 
       {groups.map((group) => (
         <section key={group.date} className="-mx-4 -mt-3 border-b">

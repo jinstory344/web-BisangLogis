@@ -42,3 +42,18 @@ export function spansMultipleMonths(groups: readonly { date: string }[]): boolea
   const months = new Set(groups.map((group) => group.date.slice(0, 7)))
   return months.size > 1
 }
+
+/** 날짜 → 그날 행들 (입력 순서 유지). 달력에서 고른 날 내역을 바로 꺼내 쓸 때. */
+export function groupRowsByDate<T>(
+  rows: readonly T[],
+  getDate: (row: T) => string
+): Map<string, T[]> {
+  const byDate = new Map<string, T[]>()
+  for (const row of rows) {
+    const date = getDate(row)
+    const list = byDate.get(date)
+    if (list) list.push(row)
+    else byDate.set(date, [row])
+  }
+  return byDate
+}

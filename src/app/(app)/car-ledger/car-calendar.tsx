@@ -1,17 +1,13 @@
 "use client"
 
-import { useState } from "react"
+import { useMemo } from "react"
 
-import {
-  CalendarAmount,
-  CalendarDayNumber,
-  CalendarGrid,
-  calendarCellClass,
-} from "@/components/ledger/calendar-grid"
-import { formatEntryDate, formatKm } from "@/lib/car-ledger/constants"
+import { DayHeader } from "@/components/list/day-header"
+import { DayPickCalendar, DayPickEmpty, type CalendarLine } from "@/components/list/day-pick-calendar"
+import { formatKm } from "@/lib/car-ledger/constants"
 import { sortEntriesDesc, type CarEntry } from "@/lib/car-ledger/entries"
 import { formatLiters } from "@/lib/fuel"
-import { cn } from "@/lib/utils"
+import { formatKRW } from "@/lib/money"
 
 import { EntryLink } from "./entry-link"
 
@@ -31,7 +27,7 @@ function entryDetail(entry: CarEntry): string {
 
 /**
  * 차계부 달력: 날짜 칸마다 그날 차 비용, 칸을 누르면 다른 화면으로 가지 않고 바로 아래에 그날 내역(정비·주유·요소수 전부).
- * 처음엔 그 달 전체 내역. 같은 날짜를 다시 누르면 전체로 돌아간다.
+ * HOME 달력처럼 처음엔 이번 달이면 오늘, 아니면 아무 날도 고르지 않는다. 같은 날짜를 다시 누르면 접힌다.
  */
 export function CarCalendar({
   anchor,
@@ -46,95 +42,48 @@ export function CarCalendar({
   /** 그 달에 돈이 나간 기록들 */
   entries: readonly CarEntry[]
 }) {
-  const [selected, setSelected] = useState<string | null>(null)
-  const shown = sortEntriesDesc(selected ? entries.filter((entry) => entry.dates.includes(selected)) : [...entries])
-  const monthLabel = `${Number(anchor.slice(5, 7))}월`
+  const cells = useMemo(() => {
+    const result: Record<string, CalendarLine[]> = {}
+    for (const [date, sum] of Object.entries(daySums)) {
+      if (sum) result[date] = [{ text: sum.toLocaleString("ko-KR") }]
+    }
+    return result
+  }, [daySums])
 
   return (
-    <div className="flex flex-col gap-3">
-      <div className="flex flex-col">
-        <CalendarGrid
-          anchor={anchor}
-          today={today}
-          renderCell={(cell) => {
-            const sum = cell.inMonth ? daySums[cell.date] : undefined
-            const content = (
-              <>
-                <CalendarDayNumber cell={cell} />
-                {sum ? (
-                  <span className="flex flex-col items-end text-right">
-                    <CalendarAmount value={sum} />
-                  </span>
-                ) : null}
-              </>
-            )
-            if (!cell.inMonth) {
-              return (
-                <span key={cell.date} aria-hidden className={calendarCellClass(cell)}>
-                  {content}
-                </span>
-              )
-            }
-            const isSelected = selected === cell.date
-            return (
-              <button
-                key={cell.date}
-                type="button"
-                onClick={() => setSelected(isSelected ? null : cell.date)}
-                aria-pressed={isSelected}
-                aria-label={`${Number(cell.date.slice(5, 7))}월 ${cell.day}일`}
-                className={cn(calendarCellClass(cell, isSelected), "active:bg-muted md:hover:bg-muted/50")}
-              >
-                {content}
-              </button>
-            )
-          }}
-        />
-      </div>
-
-      <div className="flex items-center justify-between text-sm">
-        <span className="font-semibold">
-          {selected ? formatEntryDate(selected, today) : `${monthLabel} 전체`} · {shown.length}건
-        </span>
-        {selected ? (
-          <button
-            type="button"
-            onClick={() => setSelected(null)}
-            className="rounded-full bg-muted px-3 py-1 text-xs text-muted-foreground"
-          >
-            {monthLabel} 전체 보기
-          </button>
-        ) : null}
-      </div>
-
-      {shown.length === 0 ? (
-        <p className="py-8 text-center text-sm text-muted-foreground">
-          {selected ? "이날 기록이 없어요." : "이달 기록이 없어요."}
-        </p>
-      ) : (
-        <ul className="-mx-4 flex flex-col border-t">
-          {shown.map((entry) => (
-            <li key={entry.key} className="border-b">
-              <EntryLink entry={entry} className="px-4 py-2.5">
-                <div className="flex items-baseline justify-between gap-2">
-                  <span className="min-w-0 truncate text-sm">
-                    <span className="text-xs text-muted-foreground tabular-nums">
-                      {formatEntryDate(selected ?? entry.dates.find((date) => date.startsWith(anchor.slice(0, 7))) ?? entry.date, today)}
-                    </span>{" "}
-                    <span className="font-medium">{entry.kind}</span>
-                  </span>
-                  <span className="shrink-0 font-semibold tabular-nums">
-                    {entry.amount.toLocaleString("ko-KR")}
-                  </span>
-                </div>
-                {entryDetail(entry) ? (
-                  <p className="mt-0.5 truncate text-xs text-muted-foreground">{entryDetail(entry)}</p>
-                ) : null}
-              </EntryLink>
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
+    <DayPickCalendar
+      anchor={anchor}
+      today={today}
+      cells={cells}
+      renderDay={(date) => {
+        const shown = sortEntriesDesc(entries.filter((entry) => entry.dates.includes(date)))
+        if (shown.length === 0) {
+          return <DayPickEmpty>이 날은 기록된 차 비용이 없습니다.</DayPickEmpty>
+        }
+        return (
+          // 날짜 줄은 HOME 일일 장부처럼, 기록 줄은 예전 차계부 달력 줄 그대로
+          <section className="-mx-4 border-b">
+            <DayHeader date={date} totalLabel={formatKRW(daySums[date] ?? 0)} />
+            <ul className="flex flex-col">
+              {shown.map((entry) => (
+                <li key={entry.key} className="border-t">
+                  <EntryLink entry={entry} className="px-4 py-2.5">
+                    <div className="flex items-baseline justify-between gap-2">
+                      <span className="min-w-0 truncate text-sm font-medium">{entry.kind}</span>
+                      <span className="shrink-0 font-semibold tabular-nums">
+                        {entry.amount.toLocaleString("ko-KR")}
+                      </span>
+                    </div>
+                    {entryDetail(entry) ? (
+                      <p className="mt-0.5 truncate text-xs text-muted-foreground">{entryDetail(entry)}</p>
+                    ) : null}
+                  </EntryLink>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )
+      }}
+    />
   )
 }

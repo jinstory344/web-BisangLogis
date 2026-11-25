@@ -41,6 +41,8 @@ interface SalesListProps {
   }
   page: number
   totalPages: number
+  /** false면 "선택"(여러 건 입금·삭제) 줄을 숨긴다 — 달력 아래 그날 내역처럼 짧은 목록 */
+  selectable?: boolean
 }
 
 
@@ -49,6 +51,7 @@ export function SalesList({
   sales,
   page,
   totalPages,
+  selectable = true,
 }: SalesListProps) {
   const pathname = usePathname()
   const searchParams = useSearchParams()
@@ -199,6 +202,7 @@ export function SalesList({
       <div>
         <SalesMobileList
           sales={sales}
+          selectable={selectable}
           selectMode={selectMode}
           onSelectModeChange={changeSelectMode}
           selected={selected}

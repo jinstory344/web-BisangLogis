@@ -31,6 +31,8 @@ interface DispatchListProps {
   }
   page: number
   totalPages: number
+  /** false면 거래처로 걸렀을 때의 합계 줄을 숨긴다 — 달력 아래 그날 내역(날짜 줄에 합계가 있음) */
+  showFilteredTotals?: boolean
 }
 
 /**
@@ -43,6 +45,7 @@ export function DispatchList({
   summary,
   page,
   totalPages,
+  showFilteredTotals = true,
 }: DispatchListProps) {
   const pathname = usePathname()
   const searchParams = useSearchParams()
@@ -86,7 +89,7 @@ export function DispatchList({
           dispatches={dispatches}
           clientNameMap={clientNameMap}
           filteredTotals={
-            searchParams.get("client_id") ? summary : null
+            showFilteredTotals && searchParams.get("client_id") ? summary : null
           }
           onDelete={setDeleteTarget}
         />
