@@ -14,7 +14,7 @@ const EXPENSE_CHOICES = [
 ] as const
 
 const FAB_CLASS =
-  "fixed right-4 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-40 flex size-12 items-center justify-center rounded-full bg-[#c4524e] text-white shadow-lg transition-transform active:scale-95 md:bottom-6"
+  "fixed right-4 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-40 flex size-12 items-center justify-center rounded-full bg-[#2a95a5] text-white shadow-lg transition-transform active:scale-95 md:bottom-6"
 
 /**
  * 차계부 오른쪽 아래 ＋.
